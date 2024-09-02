@@ -1,35 +1,21 @@
 package org.firstinspires.ftc.teamcode.assemblies;
 
-import static org.firstinspires.ftc.teamcode.libs.teamUtil.Alliance.RED;
-
 import androidx.core.math.MathUtils;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.lynx.LynxModule;
-import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DigitalChannel;
-import com.qualcomm.robotcore.hardware.DigitalChannelController;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import org.firstinspires.ftc.teamcode.libs.Blinkin;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-import org.opencv.core.Point;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BasicDrive {
@@ -90,11 +76,20 @@ public class BasicDrive {
     public double CRAWL_DISTANCE_SPINS = 30;
     public boolean details = true;
     public double CMS_PER_INCH = 2.54;
+    float STRAIGHT_HEADING_DECLINATION = .09f; // convert strafe encoder error into heading declination
+    float MAX_STRAIGHT_DECLINATION = 27f; // don't veer off of straight more than this number of degrees
+    float STRAFE_HEADING_DECLINATION = .09f; // convert strafe encoder error into heading declination
+    float MAX_STRAFE_DECLINATION = 27f; // don't veer off of straight more than this number of degrees
 
     public BasicDrive() {
         teamUtil.log("Constructing BasicDrive");
         hardwareMap = teamUtil.theOpMode.hardwareMap;
         telemetry = teamUtil.theOpMode.telemetry;
+    }
+
+    public interface ActionCallback{
+        public void action();
+        //must return immediatley or launch a thread
     }
 
     public void initalize() {
@@ -149,12 +144,14 @@ public class BasicDrive {
             hub.setBulkCachingMode(LynxModule.BulkCachingMode.OFF);
         }
     }
+
     public void setBulkReadAuto() {
         List<LynxModule> allHubs = hardwareMap.getAll(LynxModule.class);
         for (LynxModule hub : allHubs) {
             hub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
         }
     }
+
     public void runMotors(double velocity) {
         lastVelocity = velocity;
         fl.setVelocity(velocity);
@@ -222,6 +219,7 @@ public class BasicDrive {
         br.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
     }
+
     public void setMotorsRunWithoutEncoder() {
         fl.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         fr.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -305,6 +303,7 @@ public class BasicDrive {
     public double getRawHeading() {
         Orientation anglesCurrent = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
         return (anglesCurrent.firstAngle);
+
     }
 
     public double getHeading() {
@@ -805,43 +804,54 @@ public class BasicDrive {
 
     }
 
-    public boolean driveStraightToTargetWithStrafeEncoderValue(double maxVelocity, double forwardTarget, double strafeTarget, double driveHeading, double robotHeading, double endVelocity, long timeout) {
+
+    //TODO: Part of new drive code
+    public boolean straightHoldingStrafeEncoder(double maxVelocity, double straightTarget, double strafeTarget, int robotHeading, double endVelocity, ActionCallback action, double actionTarget, long timeout) {
         // same as above but also includes the strafe encoder and the forwards encoder
-        teamUtil.log("driveStraightToTargetWithStrafeEncoderValue target: " + forwardTarget + " driveH: " + driveHeading + " robotH: " + robotHeading + " MaxV: " + maxVelocity + " EndV: " + endVelocity);
+
+        if(robotHeading!=90&&robotHeading!=270&&robotHeading!=0&&robotHeading!=180){
+            teamUtil.log("INCOMPATIBLE ROBOT HEADING");
+            stopMotors();
+            return false;
+        }
+
+        teamUtil.log("straightHoldingStrafeEncoder target: " + straightTarget +  " Strafe target: " + strafeTarget + " robotH: " + robotHeading + " MaxV: " + maxVelocity + " EndV: " + endVelocity);
         details = false;
         long startTime = System.currentTimeMillis();
         long timeoutTime = startTime+timeout;
 
         if (details) teamUtil.log("Starting Forward Encoder: "+ forwardEncoder.getCurrentPosition());
+        if (details) teamUtil.log("Starting Strafe Encoder: "+ strafeEncoder.getCurrentPosition());
 
         double velocityChangeNeededAccel;
         double velocityChangeNeededDecel;
+        double driveHeading;
+        double startEncoder = forwardEncoder.getCurrentPosition();
+        boolean goingUp;
+        if(straightTarget-startEncoder >=0){
+            driveHeading = robotHeading;
+            goingUp = true;
+        }else{
+            driveHeading = adjustAngle(robotHeading+180);
+            goingUp=false;
+        }
 
-        float strafeFactor = .09f; // convert strafe encoder error into heading declination
-        float maxHeadingDeclination = 27f; // don't veer off of straight more than this number of degrees
-        float headingFactor = Math.abs(driveHeading-180)<.01 ? 1 : -1; // reverse correction for going backwards
+        float headingFactor = goingUp? 1 : -1; // reverse correction for going backwards
 
         double requestedEndVelocity = endVelocity;
         if (endVelocity < MIN_END_VELOCITY) {
             endVelocity = MIN_END_VELOCITY;
         }
-        // tics^2/s
+
         if (lastVelocity == 0) {
             velocityChangeNeededAccel = maxVelocity - MIN_START_VELOCITY;
-            velocityChangeNeededDecel = maxVelocity - endVelocity;
         } else {
             velocityChangeNeededAccel = maxVelocity - lastVelocity;
-            velocityChangeNeededDecel = maxVelocity - endVelocity;
         }
+        velocityChangeNeededDecel = maxVelocity - endVelocity;
         // all are measured in tics
-        double startEncoder = forwardEncoder.getCurrentPosition();
-        if (((driveHeading< 90 || driveHeading>270)&&forwardTarget-startEncoder >=0) || ((driveHeading> 90 && driveHeading<270) && startEncoder-forwardTarget >=0)){
 
-            teamUtil.log("ALREADY PAST TARGET--Not Strafing");
-            stopMotors();
-            return false;
-        }
-        double totalTics = Math.abs(startEncoder-forwardTarget);
+        double totalTics = Math.abs(startEncoder-straightTarget);
         double accelerationDistance = Math.abs(velocityChangeNeededAccel / MAX_STRAIGHT_ACCELERATION);
         double decelerationDistance = Math.abs(velocityChangeNeededDecel / MAX_STRAIGHT_DECELERATION);
         if (accelerationDistance+decelerationDistance >= totalTics ) { // No room for cruise phase
@@ -860,29 +870,36 @@ public class BasicDrive {
             teamUtil.log("Acceleration distance: " + accelerationDistance);
             teamUtil.log("Deceleration distance: " + decelerationDistance);
         }
-        distanceRemaining = (driveHeading< 90 || driveHeading>270) ? forwardEncoder.getCurrentPosition()-forwardTarget : forwardTarget - forwardEncoder.getCurrentPosition();
+        distanceRemaining = Math.abs(straightTarget - forwardEncoder.getCurrentPosition());
 
         setBulkReadAuto();
-
+        boolean actionDone = false;
         int currentPos;
-//acceleration
+        /////////
+        //acceleration
+        /////////
         double currentVelocity;
         double adjustedDriveHeading;
         while ((distanceRemaining > (totalTics-accelerationDistance))&&teamUtil.keepGoing(timeoutTime)) {
             currentPos = forwardEncoder.getCurrentPosition();
-            distanceRemaining = (driveHeading< 90 || driveHeading>270) ? currentPos-forwardTarget : forwardTarget - currentPos;
+            distanceRemaining = (!goingUp) ? currentPos-straightTarget : straightTarget - currentPos;
             if (lastVelocity == 0) {
                 currentVelocity = MAX_STRAIGHT_ACCELERATION * (Math.max(0,totalTics-distanceRemaining)) + MIN_START_VELOCITY;
             } else {
                 currentVelocity = MAX_STRAIGHT_ACCELERATION * (Math.max(0,totalTics-distanceRemaining)) + lastVelocity;
             }
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)*strafeFactor, -maxHeadingDeclination, maxHeadingDeclination) * headingFactor;
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)* STRAIGHT_HEADING_DECLINATION, -MAX_STRAIGHT_DECLINATION, MAX_STRAIGHT_DECLINATION) * headingFactor;
             if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
 
             if (details) teamUtil.log("Accelerating at Velocity: "+ currentVelocity + " Tics Remaining: " + distanceRemaining);
             driveMotorsHeadingsFR(adjustedDriveHeading, robotHeading, currentVelocity);
+            if(action!=null&&!actionDone&&((goingUp&&currentPos>=actionTarget)||(!goingUp&&currentPos<=actionTarget))){
+                action.action();
+                actionDone=true;
+            }
+
 
         }
         if (details) {
@@ -899,14 +916,18 @@ public class BasicDrive {
 //cruise
         while ((distanceRemaining > decelerationDistance)&&teamUtil.keepGoing(timeoutTime)) {
             currentPos = forwardEncoder.getCurrentPosition();
-            distanceRemaining = (driveHeading< 90 || driveHeading>270) ? currentPos-forwardTarget : forwardTarget - currentPos;
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)*strafeFactor, -maxHeadingDeclination, maxHeadingDeclination) * headingFactor;
+            distanceRemaining = (!goingUp) ? currentPos-straightTarget : straightTarget - currentPos;
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)* STRAIGHT_HEADING_DECLINATION, -MAX_STRAIGHT_DECLINATION, MAX_STRAIGHT_DECLINATION) * headingFactor;
             if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
             if (details) teamUtil.log("Cruising at Velocity: "+ maxVelocity + " Tics Remaining: " + distanceRemaining);
 
             driveMotorsHeadingsFR(adjustedDriveHeading, robotHeading, maxVelocity);
+            if(action!=null&&!actionDone&&((goingUp&&currentPos>=actionTarget)||(!goingUp&&currentPos<=actionTarget))){
+                action.action();
+                actionDone=true;
+            }
         }
         if (details) {
             teamUtil.log("Heading:" + getHeading());
@@ -916,23 +937,26 @@ public class BasicDrive {
             teamUtil.log("TIMEOUT Triggered After Cruise Phase");
             stopMotors();
             return false;
-
-
         }
 
 
 //deceleration
         while ((distanceRemaining > 0)&&teamUtil.keepGoing(timeoutTime)) {
             currentPos = forwardEncoder.getCurrentPosition();
-            distanceRemaining = (driveHeading< 90 || driveHeading>270) ? currentPos-forwardTarget : forwardTarget - currentPos;
+            distanceRemaining = (!goingUp) ? currentPos-straightTarget : straightTarget - currentPos;
             currentVelocity = MAX_STRAIGHT_DECELERATION * distanceRemaining + endVelocity;
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)*strafeFactor, -maxHeadingDeclination, maxHeadingDeclination) * headingFactor;
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)* STRAIGHT_HEADING_DECLINATION, -MAX_STRAIGHT_DECLINATION, MAX_STRAIGHT_DECLINATION) * headingFactor;
             if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
 
             if (details) teamUtil.log("Decelerating at Velocity: "+ currentVelocity + " Tics Remaining: " + distanceRemaining);
             driveMotorsHeadingsFR(adjustedDriveHeading, robotHeading, currentVelocity);
+            if(action!=null&&!actionDone&&((goingUp&&currentPos>=actionTarget)||(!goingUp&&currentPos<=actionTarget))){
+                action.action();
+                actionDone=true;
+            }
+
         }
         if (details) {
             teamUtil.log("distance after deceleration: " + distanceRemaining);
@@ -953,46 +977,57 @@ public class BasicDrive {
         return true;
     }
 
-    //potential TODO: Not implemented?
-    public void strafeToTargetWithForwardEncoderValue(double maxVelocity, double forwardTarget, double strafeTarget, double driveHeading, double robotHeading, double endVelocity, long timeout) {
+    //TODO: Part of new drive code
+    //TODO: implement
+    public boolean strafeHoldingStraightEncoder(double maxVelocity, double strafeTarget, double straightTarget, int robotHeading, double endVelocity, ActionCallback action, double actionTarget, long timeout) {
         // same but strafes
-        teamUtil.log("driveStraightToTargetWithStrafeEncoderValue target: " + forwardTarget + " driveH: " + driveHeading + " robotH: " + robotHeading + " MaxV: " + maxVelocity + " EndV: " + endVelocity);
+        // same as above but also includes the strafe encoder and the forwards encoder
+
+        if(robotHeading!=90&&robotHeading!=270&&robotHeading!=0&&robotHeading!=180){
+            teamUtil.log("INCOMPATIBLE ROBOT HEADING");
+            stopMotors();
+            return false;
+        }
+
+        teamUtil.log("strafeHoldingStraightEncoder target: " + strafeTarget +  " Straight target: " + straightTarget + " robotH: " + robotHeading + " MaxV: " + maxVelocity + " EndV: " + endVelocity);
         details = false;
         long startTime = System.currentTimeMillis();
         long timeoutTime = startTime+timeout;
 
+        if (details) teamUtil.log("Starting Strafe Encoder: "+ strafeEncoder.getCurrentPosition());
         if (details) teamUtil.log("Starting Forward Encoder: "+ forwardEncoder.getCurrentPosition());
 
         double velocityChangeNeededAccel;
         double velocityChangeNeededDecel;
+        double driveHeading;
+        double startEncoder = strafeEncoder.getCurrentPosition();
+        boolean goingUp;
+        if(strafeTarget-startEncoder >=0){
+            driveHeading = adjustAngle(robotHeading-90);
+            goingUp = true;
+        }else{
+            driveHeading = adjustAngle(robotHeading+90);
+            goingUp=false;
+        }
 
-        float strafeFactor = .09f; // convert strafe encoder error into heading declination
-        float maxHeadingDeclination = 27f; // don't veer off of straight more than this number of degrees
-        float headingFactor = Math.abs(driveHeading-180)<.01 ? 1 : -1; // reverse correction for going backwards
+        float headingFactor = goingUp? -1 : 1; // reverse correction for going backwards
 
         double requestedEndVelocity = endVelocity;
         if (endVelocity < MIN_END_VELOCITY) {
             endVelocity = MIN_END_VELOCITY;
         }
-        // tics^2/s
+
         if (lastVelocity == 0) {
             velocityChangeNeededAccel = maxVelocity - MIN_START_VELOCITY;
-            velocityChangeNeededDecel = maxVelocity - endVelocity;
         } else {
             velocityChangeNeededAccel = maxVelocity - lastVelocity;
-            velocityChangeNeededDecel = maxVelocity - endVelocity;
         }
+        velocityChangeNeededDecel = maxVelocity - endVelocity;
         // all are measured in tics
-        double startEncoder = forwardEncoder.getCurrentPosition();
-        if (((driveHeading< 90 || driveHeading>270)&&forwardTarget-startEncoder >=0) || ((driveHeading> 90 && driveHeading<270) && startEncoder-forwardTarget >=0)){
 
-            teamUtil.log("ALREADY PAST TARGET--Not Strafing");
-            stopMotors();
-            return;
-        }
-        double totalTics = Math.abs(startEncoder-forwardTarget);
-        double accelerationDistance = Math.abs(velocityChangeNeededAccel / MAX_STRAIGHT_ACCELERATION);
-        double decelerationDistance = Math.abs(velocityChangeNeededDecel / MAX_STRAIGHT_DECELERATION);
+        double totalTics = Math.abs(startEncoder-straightTarget);
+        double accelerationDistance = Math.abs(velocityChangeNeededAccel / MAX_STRAFE_ACCELERATION);
+        double decelerationDistance = Math.abs(velocityChangeNeededDecel / MAX_STRAFE_DECELERATION);
         if (accelerationDistance+decelerationDistance >= totalTics ) { // No room for cruise phase
             if (details) teamUtil.log("Adjusting distances to eliminate cruise phase");
             double accelPercentage = accelerationDistance / (accelerationDistance + decelerationDistance);
@@ -1009,29 +1044,36 @@ public class BasicDrive {
             teamUtil.log("Acceleration distance: " + accelerationDistance);
             teamUtil.log("Deceleration distance: " + decelerationDistance);
         }
-        distanceRemaining = (driveHeading< 90 || driveHeading>270) ? forwardEncoder.getCurrentPosition()-forwardTarget : forwardTarget - forwardEncoder.getCurrentPosition();
+        distanceRemaining = Math.abs(strafeTarget - strafeEncoder.getCurrentPosition());
 
         setBulkReadAuto();
-
+        boolean actionDone = false;
         int currentPos;
-//acceleration
+        /////////
+        //acceleration
+        /////////
         double currentVelocity;
         double adjustedDriveHeading;
         while ((distanceRemaining > (totalTics-accelerationDistance))&&teamUtil.keepGoing(timeoutTime)) {
-            currentPos = forwardEncoder.getCurrentPosition();
-            distanceRemaining = (driveHeading< 90 || driveHeading>270) ? currentPos-forwardTarget : forwardTarget - currentPos;
+            currentPos = strafeEncoder.getCurrentPosition();
+            distanceRemaining = (!goingUp) ? currentPos-strafeTarget : strafeTarget - currentPos;
             if (lastVelocity == 0) {
-                currentVelocity = MAX_STRAIGHT_ACCELERATION * (Math.max(0,totalTics-distanceRemaining)) + MIN_START_VELOCITY;
+                currentVelocity = MAX_STRAFE_ACCELERATION * (Math.max(0,totalTics-distanceRemaining)) + MIN_START_VELOCITY;
             } else {
-                currentVelocity = MAX_STRAIGHT_ACCELERATION * (Math.max(0,totalTics-distanceRemaining)) + lastVelocity;
+                currentVelocity = MAX_STRAFE_ACCELERATION * (Math.max(0,totalTics-distanceRemaining)) + lastVelocity;
             }
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)*strafeFactor, -maxHeadingDeclination, maxHeadingDeclination) * headingFactor;
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((forwardEncoder.getCurrentPosition() - straightTarget)* STRAFE_HEADING_DECLINATION, -MAX_STRAFE_DECLINATION, MAX_STRAFE_DECLINATION) * headingFactor;
             if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
 
             if (details) teamUtil.log("Accelerating at Velocity: "+ currentVelocity + " Tics Remaining: " + distanceRemaining);
             driveMotorsHeadingsFR(adjustedDriveHeading, robotHeading, currentVelocity);
+            if(action!=null&&!actionDone&&((goingUp&&currentPos>=actionTarget)||(!goingUp&&currentPos<=actionTarget))){
+                action.action();
+                actionDone=true;
+            }
+
 
         }
         if (details) {
@@ -1041,21 +1083,24 @@ public class BasicDrive {
         if(System.currentTimeMillis()>timeoutTime){
             teamUtil.log("TIMEOUT Triggered After Acceleration Phase");
             stopMotors();
-            return;
+            return false;
 
 
         }
 //cruise
         while ((distanceRemaining > decelerationDistance)&&teamUtil.keepGoing(timeoutTime)) {
-            currentPos = forwardEncoder.getCurrentPosition();
-            distanceRemaining = (driveHeading< 90 || driveHeading>270) ? currentPos-forwardTarget : forwardTarget - currentPos;
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)*strafeFactor, -maxHeadingDeclination, maxHeadingDeclination) * headingFactor;
-            if (details) {
+            currentPos = strafeEncoder.getCurrentPosition();
+            distanceRemaining = (!goingUp) ? currentPos-strafeTarget : strafeTarget - currentPos;
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((forwardEncoder.getCurrentPosition() - straightTarget)* STRAFE_HEADING_DECLINATION, -MAX_STRAFE_DECLINATION, MAX_STRAFE_DECLINATION) * headingFactor;            if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
             if (details) teamUtil.log("Cruising at Velocity: "+ maxVelocity + " Tics Remaining: " + distanceRemaining);
 
             driveMotorsHeadingsFR(adjustedDriveHeading, robotHeading, maxVelocity);
+            if(action!=null&&!actionDone&&((goingUp&&currentPos>=actionTarget)||(!goingUp&&currentPos<=actionTarget))){
+                action.action();
+                actionDone=true;
+            }
         }
         if (details) {
             teamUtil.log("Heading:" + getHeading());
@@ -1064,24 +1109,26 @@ public class BasicDrive {
         if(System.currentTimeMillis()>timeoutTime){
             teamUtil.log("TIMEOUT Triggered After Cruise Phase");
             stopMotors();
-            return;
-
-
+            return false;
         }
 
 
 //deceleration
         while ((distanceRemaining > 0)&&teamUtil.keepGoing(timeoutTime)) {
-            currentPos = forwardEncoder.getCurrentPosition();
-            distanceRemaining = (driveHeading< 90 || driveHeading>270) ? currentPos-forwardTarget : forwardTarget - currentPos;
+            currentPos = strafeEncoder.getCurrentPosition();
+            distanceRemaining = (!goingUp) ? currentPos-strafeTarget : strafeTarget - currentPos;
             currentVelocity = MAX_STRAIGHT_DECELERATION * distanceRemaining + endVelocity;
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)*strafeFactor, -maxHeadingDeclination, maxHeadingDeclination) * headingFactor;
-            if (details) {
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((forwardEncoder.getCurrentPosition() - straightTarget)* STRAFE_HEADING_DECLINATION, -MAX_STRAFE_DECLINATION, MAX_STRAFE_DECLINATION) * headingFactor;            if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
 
             if (details) teamUtil.log("Decelerating at Velocity: "+ currentVelocity + " Tics Remaining: " + distanceRemaining);
             driveMotorsHeadingsFR(adjustedDriveHeading, robotHeading, currentVelocity);
+            if(action!=null&&!actionDone&&((goingUp&&currentPos>=actionTarget)||(!goingUp&&currentPos<=actionTarget))){
+                action.action();
+                actionDone=true;
+            }
+
         }
         if (details) {
             teamUtil.log("distance after deceleration: " + distanceRemaining);
@@ -1092,123 +1139,14 @@ public class BasicDrive {
         if(System.currentTimeMillis()>timeoutTime){
             teamUtil.log("TIMEOUT Triggered");
             stopMotors();
-            return;
+            return false;
 
 
         }
         setBulkReadOff();
         lastVelocity = endVelocity;
-        teamUtil.log("driveStraightToTargetWithStrafeEncoderValue--Finished.  Current Forward Encoder:" + forwardEncoder.getCurrentPosition());
-
-    }
-
-
-
-    public void moveStraightCmWithStrafeEncoder(double maxVelocity, double centimeters, int strafeTarget, double driveHeading, double robotHeading, double endVelocity) {
-        // movecm with strafe encoder for side vector
-        teamUtil.log("Strafe Target" + strafeTarget);
-        teamUtil.log("Strafe Start Value" + strafeEncoder.getCurrentPosition());
-
-        teamUtil.log("MoveStraightCMwStrafeEnc cms:" + centimeters + " strafe:" + strafeTarget + " driveH:" + driveHeading + " robotH:" + robotHeading + " MaxV:" + maxVelocity + " EndV:" + endVelocity);
-
-        float strafeFactor = .04f; // convert strafe encoder error into heading declination
-        float maxHeadingDeclination = 20f; // don't veer off of straight more than this number of degrees
-        float headingFactor = Math.abs(driveHeading-180)<.01 ? 1 : -1; // reverse correction for going backwards
-
-        details = false;
-        MotorData data = new MotorData();
-        getDriveMotorData(data);
-
-        double velocityChangeNeededAccel;
-        double velocityChangeNeededDecel;
-        if (endVelocity < MIN_END_VELOCITY) {
-            endVelocity = MIN_END_VELOCITY;
-        }
-        // tics^2/s
-        if (lastVelocity == 0) {
-            velocityChangeNeededAccel = maxVelocity - MIN_START_VELOCITY;
-            velocityChangeNeededDecel = maxVelocity - endVelocity;
-        } else {
-            velocityChangeNeededAccel = maxVelocity - lastVelocity;
-            velocityChangeNeededDecel = maxVelocity - endVelocity;
-        }
-        setMotorsWithEncoder();
-        // all are measured in tics
-        double totalTics = centimeters * COUNTS_PER_CENTIMETER;
-        double accelerationDistance = Math.abs(velocityChangeNeededAccel / MAX_ACCELERATION);
-        double decelerationDistance = Math.abs(velocityChangeNeededDecel / MAX_DECELERATION);
-        double postCruiseDistance = totalTics - decelerationDistance;
-        if (postCruiseDistance < 0) {
-            double percentageToRemoveAccel = accelerationDistance / (accelerationDistance + decelerationDistance);
-            accelerationDistance += postCruiseDistance * percentageToRemoveAccel;
-            decelerationDistance += postCruiseDistance * percentageToRemoveAccel;
-            postCruiseDistance = 0;
-        }
-        double distance = 0;
-        if (details) {
-            teamUtil.log("Heading:" + getHeading());
-            teamUtil.log("Total tics: " + totalTics);
-            teamUtil.log("Acceleration distance: " + accelerationDistance);
-            teamUtil.log("Deceleration distance: " + decelerationDistance);
-            teamUtil.log("Post Cruise distance: " + postCruiseDistance);
-        }
-
-        //acceleration
-        while (distance < accelerationDistance) {
-            if (details) {
-                teamUtil.log("dh: " + (driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)*strafeFactor, -maxHeadingDeclination, maxHeadingDeclination)));
-            }
-            distance = getEncoderDistance(data);
-            if (lastVelocity == 0) {
-                driveMotorsHeadingsFR(driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)*strafeFactor, -maxHeadingDeclination, maxHeadingDeclination) * headingFactor, robotHeading, MAX_ACCELERATION * distance + MIN_START_VELOCITY);
-            } else {
-                driveMotorsHeadingsFR(driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)*strafeFactor, -maxHeadingDeclination, maxHeadingDeclination) * headingFactor, robotHeading, MAX_ACCELERATION * distance + lastVelocity);
-            }
-        }
-        if (details) {
-            teamUtil.log("Heading:" + getHeading());
-            teamUtil.log("distance after acceleration: " + distance);
-        }
-
-        //cruise
-        while (distance < postCruiseDistance) {
-            if (details) {
-                teamUtil.log("dh: " + (driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)*strafeFactor, -maxHeadingDeclination, maxHeadingDeclination)));
-            }
-            distance = getEncoderDistance(data);
-            driveMotorsHeadingsFR(driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)*strafeFactor, -maxHeadingDeclination, maxHeadingDeclination) * headingFactor, robotHeading, maxVelocity);
-        }
-        if (details) {
-            teamUtil.log("Heading:" + getHeading());
-            teamUtil.log("distance after cruise: " + distance);
-        }
-
-        //deceleration
-        double startDecelerationDistance = distance;
-        double ticsUntilEnd = totalTics - distance;
-        while (distance < totalTics) {
-            if (details) {
-                teamUtil.log("dh: " + (driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)*strafeFactor, -maxHeadingDeclination, maxHeadingDeclination)));
-            }
-            distance = getEncoderDistance(data);
-            ticsUntilEnd = totalTics - distance;
-            driveMotorsHeadingsFR(driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)*strafeFactor, -maxHeadingDeclination, maxHeadingDeclination) * headingFactor, robotHeading, MAX_DECELERATION * ticsUntilEnd + endVelocity);
-
-        }
-        if (details) {
-            teamUtil.log("distance after deceleration: " + distance);
-        }
-        if (endVelocity <= MIN_END_VELOCITY) {
-            stopMotors();
-            if (details) {
-                teamUtil.log("Went below or was at min end velocity");
-            }
-        }
-        lastVelocity = endVelocity;
-        teamUtil.log("Strafe Encoder End Value" + strafeEncoder.getCurrentPosition());
-
-        teamUtil.log("MoveStraightCMwStrafeEnc--Finished");
-
+        teamUtil.log("strafeHoldingStraightEncoder--Finished.  Current Strafe Encoder:" + strafeEncoder.getCurrentPosition());
+        return true;
     }
 
 
