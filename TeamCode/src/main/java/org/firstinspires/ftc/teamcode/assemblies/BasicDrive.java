@@ -81,6 +81,8 @@ public class BasicDrive {
     float STRAFE_HEADING_DECLINATION = .09f; // convert strafe encoder error into heading declination
     float MAX_STRAFE_DECLINATION = 27f; // don't veer off of straight more than this number of degrees
 
+    /************************************************************************************************************/
+    // Initialization
     public BasicDrive() {
         teamUtil.log("Constructing BasicDrive");
         hardwareMap = teamUtil.theOpMode.hardwareMap;
@@ -122,6 +124,8 @@ public class BasicDrive {
         teamUtil.log("Initializing Drive - FINISHED");
     }
 
+    /************************************************************************************************************/
+    // Telemetry
     public void driveMotorTelemetry() {
         telemetry.addData("Drive ", "flm:%d frm:%d blm:%d brm:%d strafe:%d forward:%d heading:%f ",
                 fl.getCurrentPosition(), fr.getCurrentPosition(), bl.getCurrentPosition(), br.getCurrentPosition(), strafeEncoder.getCurrentPosition(), forwardEncoder.getCurrentPosition(),getHeading());
@@ -134,8 +138,7 @@ public class BasicDrive {
         teamUtil.log("bl: " + bl.getCurrentPosition());
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////
+    /************************************************************************************************************/
     //   Basic Motor Operations
 
     public void setBulkReadOff() {
@@ -242,8 +245,7 @@ public class BasicDrive {
         br.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////
+    /************************************************************************************************************/
     //   Holonomic Motor Operations
 
     public void driveMotorsHeadings(double driveHeading, double robotHeading, double velocity) {
@@ -348,10 +350,8 @@ public class BasicDrive {
 
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////
+    /************************************************************************************************************/
     // Methods to drive based on motor encoders
-    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     public int getEncoderDistance(MotorData initialPositions) {
         // use trig to find the hypotenuse of the side and front distances
@@ -480,12 +480,8 @@ public class BasicDrive {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Methods to drive based on odometry pods
-    // TODO: Rethink these methods
-    // TODO: Possibly implement a function callback when odometry reaches a certain point (e.g. Go to Score)
-    ////////////////////////////////////////////////////////////////////////////////////////////////
+    /************************************************************************************************************/
+    // OLD Methods to drive based on odometry pods
 
     public boolean strafeToEncoder(double driveHeading, double robotHeading, double velocity, double targetEncoderValue, long timeout) {
         // strafe to a strafe encoder value
@@ -512,7 +508,6 @@ public class BasicDrive {
             return true;
         }
     }
-
 
     public boolean strafeToEncoderWithDecel(double driveHeading, double robotHeading, double velocity, double targetEncoderValue, double endVelocity, double decelK, long timeout) {
         long timeOutTime = System.currentTimeMillis() + timeout;
@@ -804,13 +799,14 @@ public class BasicDrive {
 
     }
 
+    /************************************************************************************************************/
+    // New Methods to drive based on odometry pods
 
-    //TODO: Part of new drive code
+    // Drive straight forward or backward while attempting to hold the strafe encoder at a specific value
+    // Robot heading should be 0,90,180, or 270.  Drive Heading will be determined by the target
     public boolean straightHoldingStrafeEncoder(double maxVelocity, double straightTarget, double strafeTarget, int robotHeading, double endVelocity, ActionCallback action, double actionTarget, long timeout) {
-        // same as above but also includes the strafe encoder and the forwards encoder
-
         if(robotHeading!=90&&robotHeading!=270&&robotHeading!=0&&robotHeading!=180){
-            teamUtil.log("INCOMPATIBLE ROBOT HEADING");
+            teamUtil.log("straightHoldingStrafeEncoder - ERROR INCOMPATIBLE ROBOT HEADING");
             stopMotors();
             return false;
         }
@@ -875,9 +871,8 @@ public class BasicDrive {
         setBulkReadAuto();
         boolean actionDone = false;
         int currentPos;
-        /////////
-        //acceleration
-        /////////
+
+        //-------Acceleration Phase
         double currentVelocity;
         double adjustedDriveHeading;
         while ((distanceRemaining > (totalTics-accelerationDistance))&&teamUtil.keepGoing(timeoutTime)) {
@@ -913,7 +908,8 @@ public class BasicDrive {
 
 
         }
-//cruise
+
+        //-------Cruise Phase
         while ((distanceRemaining > decelerationDistance)&&teamUtil.keepGoing(timeoutTime)) {
             currentPos = forwardEncoder.getCurrentPosition();
             distanceRemaining = (!goingUp) ? currentPos-straightTarget : straightTarget - currentPos;
@@ -939,8 +935,7 @@ public class BasicDrive {
             return false;
         }
 
-
-//deceleration
+        //-------Deceleration Phase
         while ((distanceRemaining > 0)&&teamUtil.keepGoing(timeoutTime)) {
             currentPos = forwardEncoder.getCurrentPosition();
             distanceRemaining = (!goingUp) ? currentPos-straightTarget : straightTarget - currentPos;
@@ -977,14 +972,11 @@ public class BasicDrive {
         return true;
     }
 
-    //TODO: Part of new drive code
-    //TODO: implement
+    // Strafe straight left or right while attempting to hold the forward encoder at a specific value
+    // Robot heading should be 0,90,180, or 270.  Drive Heading will be determined by the target
     public boolean strafeHoldingStraightEncoder(double maxVelocity, double strafeTarget, double straightTarget, int robotHeading, double endVelocity, ActionCallback action, double actionTarget, long timeout) {
-        // same but strafes
-        // same as above but also includes the strafe encoder and the forwards encoder
-
         if(robotHeading!=90&&robotHeading!=270&&robotHeading!=0&&robotHeading!=180){
-            teamUtil.log("INCOMPATIBLE ROBOT HEADING");
+            teamUtil.log("strafeHoldingStraightEncoder - ERROR INCOMPATIBLE ROBOT HEADING");
             stopMotors();
             return false;
         }
@@ -1049,9 +1041,8 @@ public class BasicDrive {
         setBulkReadAuto();
         boolean actionDone = false;
         int currentPos;
-        /////////
-        //acceleration
-        /////////
+
+        //-------Acceleration Phase
         double currentVelocity;
         double adjustedDriveHeading;
         while ((distanceRemaining > (totalTics-accelerationDistance))&&teamUtil.keepGoing(timeoutTime)) {
@@ -1087,7 +1078,8 @@ public class BasicDrive {
 
 
         }
-//cruise
+
+        //-------Cruise Phase
         while ((distanceRemaining > decelerationDistance)&&teamUtil.keepGoing(timeoutTime)) {
             currentPos = strafeEncoder.getCurrentPosition();
             distanceRemaining = (!goingUp) ? currentPos-strafeTarget : strafeTarget - currentPos;
@@ -1112,8 +1104,7 @@ public class BasicDrive {
             return false;
         }
 
-
-//deceleration
+        //-------Deceleration Phase
         while ((distanceRemaining > 0)&&teamUtil.keepGoing(timeoutTime)) {
             currentPos = strafeEncoder.getCurrentPosition();
             distanceRemaining = (!goingUp) ? currentPos-strafeTarget : strafeTarget - currentPos;
@@ -1149,6 +1140,22 @@ public class BasicDrive {
         return true;
     }
 
+    // This was developed for CS April Tag Localization.  Might be some stuff here useful for the new "moveTo" odometry pod method
+    public void backToPoint(double robotHeading, double x, double y, double endVelocity) { // assumes robot heading is 180
+        // x positive means to the robots right
+        // y positive means robot move backwards (not tested for anything else!)
+        double heading, distance;
+        teamUtil.log("Move to Point: x/y " + x + "/"+ y);
+        distance = Math.sqrt(x*x+y*y);
+        if (y == 0) {
+            heading = x < 0 ? 270 : 90;
+        } else if (y > 0) { // Using vertical (y-axis) to compute reference angles since 0 is at top
+            heading = adjustAngle(Math.toDegrees(Math.atan(x / y)));
+        } else {
+            heading = 180 + Math.toDegrees(Math.atan(x / y));
+        }
+        moveCm(MAX_VELOCITY,distance,heading,180,endVelocity);
+    }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Stall detection using encoders
@@ -1176,26 +1183,10 @@ public class BasicDrive {
         return false; // didn't get a stall
     }
 
-    public void backToPoint(double robotHeading, double x, double y, double endVelocity) { // assumes robot heading is 180
-        // x positive means to the robots right
-        // y positive means robot move backwards (not tested for anything else!)
-        double heading, distance;
-        teamUtil.log("Move to Point: x/y " + x + "/"+ y);
-        distance = Math.sqrt(x*x+y*y);
-        if (y == 0) {
-            heading = x < 0 ? 270 : 90;
-        } else if (y > 0) { // Using vertical (y-axis) to compute reference angles since 0 is at top
-            heading = adjustAngle(Math.toDegrees(Math.atan(x / y)));
-        } else {
-            heading = 180 + Math.toDegrees(Math.atan(x / y));
-        }
-        moveCm(MAX_VELOCITY,distance,heading,180,endVelocity);
-    }
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /************************************************************************************************************/
     // Methods to turn the robot in place
-
 
     public void spinToHeading(double heading) {
         // moves at full speed then decelerates to spin
@@ -1267,17 +1258,9 @@ public class BasicDrive {
 
 
 
-
-
-
-
-
-    /************************************************************************************************************
-     *
-     * Methods to drive based on joystick values
-     * TODO: Why are their multiple versions?
-     *
-     /************************************************************************************************************/
+    /************************************************************************************************************/
+    //Methods to drive based on joystick values
+    //TODO: Why are their multiple versions?
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Drive robot based on two joystick values
