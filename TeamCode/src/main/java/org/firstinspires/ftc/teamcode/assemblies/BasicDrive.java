@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.assemblies;
 
 import androidx.core.math.MathUtils;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -18,6 +19,7 @@ import org.firstinspires.ftc.teamcode.libs.teamUtil;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@Config // Makes Static data members available in Dashboard
 public class BasicDrive {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -47,39 +49,39 @@ public class BasicDrive {
     public DcMotorEx forwardEncoder;
 
 
-    public double COUNTS_PER_MOTOR_REV = 537.7;    // GoBilda 5202 312 RPM
-    public double COUNTS_PER_CENTIMETER = 12.855; // Used with 435 RPM
-    public double COUNTS_PER_CENTIMETER_312 = 17.923; // Used with 312 RPM
-    public double TICS_PER_CM_STRAFE_ENCODER = 130;
-    public double TICS_PER_CM_STRAIGHT_ENCODER = 735;
+    static public double COUNTS_PER_MOTOR_REV = 537.7;    // GoBilda 5202 312 RPM
+    static public double COUNTS_PER_CENTIMETER = 12.855; // Used with 435 RPM
+    static public double COUNTS_PER_CENTIMETER_312 = 17.923; // Used with 312 RPM
+    static public double TICS_PER_CM_STRAFE_ENCODER = 130;
+    static public double TICS_PER_CM_STRAIGHT_ENCODER = 735;
 
     public double TILE_CENTER_TO_CENTER = 60.325; // tile width in Cms
 
-    public double MIN_START_VELOCITY = 300; //calibrated with 435s
-    public double MIN_END_VELOCITY = 400; //calibrated with 435s
-    public double MAX_ACCELERATION = 22; //calibrated with 435s
-    public double MAX_DECELERATION = 1.0; //calibrated with 435s
-    public double MAX_STRAIGHT_ACCELERATION = 1.0; //calibrated with 435s
-    public double MAX_STRAIGHT_DECELERATION = 0.02; //calibrated with 435s
-    public double MIN_STRAFE_START_VELOCITY = 800; //calibrated with 435s
-    public double MIN_STRAFE_END_VELOCITY = 400; //calibrated with 435s
-    public double MAX_STRAFE_DECELERATION = .15; //calibrated with 435s
-    public double MAX_STRAFE_ACCELERATION = 2; // tentaive
-    public double MAX_VELOCITY = 2450; // Was 2680
-    public double MAX_VELOCITY_STRAFE = 2000; // Added with new motors
-    public double ROTATION_ADJUST_FACTOR = 0.04;
-    public double SIDE_VECTOR_COEFFICIENT = .92;
-    public double FORWARD_VECTOR_COEFFICIENT = 1.08;
-    public double SPIN_END_OF_MAX_VELOCITY = 60;
-    public double DRIFT_SPINS = 1;
-    public double CRAWL_SPEED = 200;
-    public double CRAWL_DISTANCE_SPINS = 30;
-    public boolean details = true;
+    static public double MIN_START_VELOCITY = 300; //calibrated with 435s
+    static public double MIN_END_VELOCITY = 400; //calibrated with 435s
+    static public double MAX_ACCELERATION = 22; //calibrated with 435s
+    static public double MAX_DECELERATION = 1.0; //calibrated with 435s
+    static public double MAX_STRAIGHT_ACCELERATION = 1.0; //calibrated with 435s
+    static public double MAX_STRAIGHT_DECELERATION = 0.02; //calibrated with 435s
+    static public double MIN_STRAFE_START_VELOCITY = 800; //calibrated with 435s
+    static public double MIN_STRAFE_END_VELOCITY = 400; //calibrated with 435s
+    static public double MAX_STRAFE_DECELERATION = .15; //calibrated with 435s
+    static public double MAX_STRAFE_ACCELERATION = 2; // tentaive
+    static public double MAX_VELOCITY = 2450; // Was 2680
+    static public double MAX_VELOCITY_STRAFE = 2000; // Added with new motors
+    static public double ROTATION_ADJUST_FACTOR = 0.04;
+    static public double SIDE_VECTOR_COEFFICIENT = .92;
+    static public double FORWARD_VECTOR_COEFFICIENT = 1.08;
+    static public double SPIN_DECEL_THRESHOLD_DEGREES = 60;
+    static public double SPIN_DRIFT_DEGREES = 1;
+    static public double SPIN_CRAWL_SPEED = 200;
+    static public double SPIN_CRAWL_DEGREES = 30;
+    static public boolean details = true;
     public double CMS_PER_INCH = 2.54;
-    float STRAIGHT_HEADING_DECLINATION = .09f; // convert strafe encoder error into heading declination
-    float MAX_STRAIGHT_DECLINATION = 27f; // don't veer off of straight more than this number of degrees
-    float STRAFE_HEADING_DECLINATION = .09f; // convert strafe encoder error into heading declination
-    float MAX_STRAFE_DECLINATION = 27f; // don't veer off of straight more than this number of degrees
+    static float STRAIGHT_HEADING_DECLINATION = .09f; // convert strafe encoder error into heading declination
+    static float STRAIGHT_MAX_DECLINATION = 27f; // don't veer off of straight more than this number of degrees
+    static float STRAFE_HEADING_DECLINATION = .09f; // convert strafe encoder error into heading declination
+    static float STRAFE_MAX_DECLINATION = 27f; // don't veer off of straight more than this number of degrees
 
     /************************************************************************************************************/
     // Initialization
@@ -127,8 +129,12 @@ public class BasicDrive {
     /************************************************************************************************************/
     // Telemetry
     public void driveMotorTelemetry() {
-        telemetry.addData("Drive ", "flm:%d frm:%d blm:%d brm:%d strafe:%d forward:%d heading:%f ",
-                fl.getCurrentPosition(), fr.getCurrentPosition(), bl.getCurrentPosition(), br.getCurrentPosition(), strafeEncoder.getCurrentPosition(), forwardEncoder.getCurrentPosition(),getHeading());
+        telemetry.addData("Motors ", "flm:%d frm:%d blm:%d brm:%d",
+                fl.getCurrentPosition(), fr.getCurrentPosition(), bl.getCurrentPosition(), br.getCurrentPosition());
+        telemetry.addData("Odometry ", "strafe:%d strafe Cms:%d forward:%d forward Cms:%d heading:%f ",
+                strafeEncoder.getCurrentPosition(), strafeEncoder.getCurrentPosition()/TICS_PER_CM_STRAFE_ENCODER, forwardEncoder.getCurrentPosition(), forwardEncoder.getCurrentPosition()/TICS_PER_CM_STRAIGHT_ENCODER, getHeading());
+        telemetry.addData("Heading ", "%f ",
+                 getHeading());
     }
 
     public void logMotorPositions() {
@@ -883,7 +889,7 @@ public class BasicDrive {
             } else {
                 currentVelocity = MAX_STRAIGHT_ACCELERATION * (Math.max(0,totalTics-distanceRemaining)) + lastVelocity;
             }
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)* STRAIGHT_HEADING_DECLINATION, -MAX_STRAIGHT_DECLINATION, MAX_STRAIGHT_DECLINATION) * headingFactor;
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)* STRAIGHT_HEADING_DECLINATION, -STRAIGHT_MAX_DECLINATION, STRAIGHT_MAX_DECLINATION) * headingFactor;
             if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
@@ -913,7 +919,7 @@ public class BasicDrive {
         while ((distanceRemaining > decelerationDistance)&&teamUtil.keepGoing(timeoutTime)) {
             currentPos = forwardEncoder.getCurrentPosition();
             distanceRemaining = (!goingUp) ? currentPos-straightTarget : straightTarget - currentPos;
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)* STRAIGHT_HEADING_DECLINATION, -MAX_STRAIGHT_DECLINATION, MAX_STRAIGHT_DECLINATION) * headingFactor;
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)* STRAIGHT_HEADING_DECLINATION, -STRAIGHT_MAX_DECLINATION, STRAIGHT_MAX_DECLINATION) * headingFactor;
             if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
@@ -940,7 +946,7 @@ public class BasicDrive {
             currentPos = forwardEncoder.getCurrentPosition();
             distanceRemaining = (!goingUp) ? currentPos-straightTarget : straightTarget - currentPos;
             currentVelocity = MAX_STRAIGHT_DECELERATION * distanceRemaining + endVelocity;
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)* STRAIGHT_HEADING_DECLINATION, -MAX_STRAIGHT_DECLINATION, MAX_STRAIGHT_DECLINATION) * headingFactor;
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((strafeEncoder.getCurrentPosition() - strafeTarget)* STRAIGHT_HEADING_DECLINATION, -STRAIGHT_MAX_DECLINATION, STRAIGHT_MAX_DECLINATION) * headingFactor;
             if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
@@ -1053,7 +1059,7 @@ public class BasicDrive {
             } else {
                 currentVelocity = MAX_STRAFE_ACCELERATION * (Math.max(0,totalTics-distanceRemaining)) + lastVelocity;
             }
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((forwardEncoder.getCurrentPosition() - straightTarget)* STRAFE_HEADING_DECLINATION, -MAX_STRAFE_DECLINATION, MAX_STRAFE_DECLINATION) * headingFactor;
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((forwardEncoder.getCurrentPosition() - straightTarget)* STRAFE_HEADING_DECLINATION, -STRAFE_MAX_DECLINATION, STRAFE_MAX_DECLINATION) * headingFactor;
             if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
@@ -1083,7 +1089,7 @@ public class BasicDrive {
         while ((distanceRemaining > decelerationDistance)&&teamUtil.keepGoing(timeoutTime)) {
             currentPos = strafeEncoder.getCurrentPosition();
             distanceRemaining = (!goingUp) ? currentPos-strafeTarget : strafeTarget - currentPos;
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((forwardEncoder.getCurrentPosition() - straightTarget)* STRAFE_HEADING_DECLINATION, -MAX_STRAFE_DECLINATION, MAX_STRAFE_DECLINATION) * headingFactor;            if (details) {
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((forwardEncoder.getCurrentPosition() - straightTarget)* STRAFE_HEADING_DECLINATION, -STRAFE_MAX_DECLINATION, STRAFE_MAX_DECLINATION) * headingFactor;            if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
             if (details) teamUtil.log("Cruising at Velocity: "+ maxVelocity + " Tics Remaining: " + distanceRemaining);
@@ -1109,7 +1115,7 @@ public class BasicDrive {
             currentPos = strafeEncoder.getCurrentPosition();
             distanceRemaining = (!goingUp) ? currentPos-strafeTarget : strafeTarget - currentPos;
             currentVelocity = MAX_STRAIGHT_DECELERATION * distanceRemaining + endVelocity;
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((forwardEncoder.getCurrentPosition() - straightTarget)* STRAFE_HEADING_DECLINATION, -MAX_STRAFE_DECLINATION, MAX_STRAFE_DECLINATION) * headingFactor;            if (details) {
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((forwardEncoder.getCurrentPosition() - straightTarget)* STRAFE_HEADING_DECLINATION, -STRAFE_MAX_DECLINATION, STRAFE_MAX_DECLINATION) * headingFactor;            if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
 
@@ -1213,26 +1219,26 @@ public class BasicDrive {
         if (details) {
             teamUtil.log("turning left: " + rightCoefficient);
             teamUtil.log("current heading: " + currentHeading);
-            teamUtil.log("heading goal: " + (heading + DRIFT_SPINS));
+            teamUtil.log("heading goal: " + (heading + SPIN_DRIFT_DEGREES));
         }
         if (details) {
             teamUtil.log("crossing 0/360 barrier");
         }
-        while (Math.abs(currentHeading - heading) > SPIN_END_OF_MAX_VELOCITY) {
+        while (Math.abs(currentHeading - heading) > SPIN_DECEL_THRESHOLD_DEGREES) {
             setMotorVelocities(leftCoefficient * velocity, rightCoefficient * velocity, leftCoefficient * velocity, rightCoefficient * velocity);
             currentHeading = getHeading();
         }
         if (details) {
             teamUtil.log("current heading: " + currentHeading);
-            teamUtil.log("heading cutoff (greater): " + adjustAngle(heading - CRAWL_DISTANCE_SPINS));
+            teamUtil.log("heading cutoff (greater): " + adjustAngle(heading - SPIN_CRAWL_DEGREES));
             teamUtil.log("done with max velocity phase");
             teamUtil.log("heading: " + currentHeading);
         }
-        while (Math.abs(currentHeading - heading) > CRAWL_DISTANCE_SPINS) {
+        while (Math.abs(currentHeading - heading) > SPIN_CRAWL_DEGREES) {
             currentHeading = getHeading();
-            velocity = ((MAX_VELOCITY - CRAWL_SPEED) / (SPIN_END_OF_MAX_VELOCITY - CRAWL_DISTANCE_SPINS)) * (Math.abs(currentHeading - heading) - SPIN_END_OF_MAX_VELOCITY) + MAX_VELOCITY; // wrote an equasion
-            if (velocity < CRAWL_SPEED) {
-                velocity = CRAWL_SPEED;
+            velocity = ((MAX_VELOCITY - SPIN_CRAWL_SPEED) / (SPIN_DECEL_THRESHOLD_DEGREES - SPIN_CRAWL_DEGREES)) * (Math.abs(currentHeading - heading) - SPIN_DECEL_THRESHOLD_DEGREES) + MAX_VELOCITY; // wrote an equasion
+            if (velocity < SPIN_CRAWL_SPEED) {
+                velocity = SPIN_CRAWL_SPEED;
             }
             setMotorVelocities(leftCoefficient * velocity, rightCoefficient * velocity, leftCoefficient * velocity, rightCoefficient * velocity);
         }
@@ -1241,9 +1247,9 @@ public class BasicDrive {
             teamUtil.log("done with deceleration phase");
             teamUtil.log("heading: " + currentHeading);
         }
-        while (Math.abs(currentHeading - heading) > DRIFT_SPINS) {
+        while (Math.abs(currentHeading - heading) > SPIN_DRIFT_DEGREES) {
             currentHeading = getHeading();
-            velocity = CRAWL_SPEED;
+            velocity = SPIN_CRAWL_SPEED;
             setMotorVelocities(leftCoefficient * velocity, rightCoefficient * velocity, leftCoefficient * velocity, rightCoefficient * velocity);
         }
 
@@ -1534,7 +1540,7 @@ public class BasicDrive {
     // Testing Code
 
     public void findMaxVelocity(int cmDistance) {
-        // set motors to 3000 (theoretical max) then see how far it actually has traveled
+        // set motors to 3000 (theoretical max) then see how fast they actually go
         long startTime = System.currentTimeMillis();
         teamUtil.log("Finding Forward Max Velocities...");
         resetAllDriveEncoders();
@@ -1558,8 +1564,6 @@ public class BasicDrive {
         teamUtil.log("Tics Traveled: " + ticsTraveled);
         teamUtil.log("Cms Traveled: " + cmsTraveled);
         teamUtil.log("Cms Per Second: " + cmsTraveled/timeS);
-
-
 
         teamUtil.log("Forward Max Velocities FL:" + flmax + " FR:" + frmax + " BL:" + blmax + " BR:" + brmax);
     }
