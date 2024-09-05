@@ -13,14 +13,14 @@ import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 
 @Config
-@TeleOp(name = "Test Drive", group = "Test Code")
+@TeleOp(name = "Calibrate Drive", group = "Test Code")
 public class CalibrateDrive extends LinearOpMode {
 
     BasicDrive drive;
-    int testVelocity = 1000;
-    int testDistance = 100;
-    double HEADING = 0;
-    int SECONDS = 3;
+    public static int testVelocity = 1000;
+    public static int testDistance = 100;
+    public static double HEADING = 0;
+    public static int SECONDS = 3;
 
 
     public enum Ops {Test_Wiring,
@@ -39,9 +39,7 @@ public class CalibrateDrive extends LinearOpMode {
     public static Ops AAOP = Ops.Test_Wiring;
     public static int botX = 72;
     public static int botY = 72;
-    public static double AMPLITUDE = 10;
-    public static double PHASE = 90;
-    public static double FREQUENCY = 0.5;
+
 
     private TeamGamepad gp1 = new TeamGamepad();
     private TeamGamepad gp2 = new TeamGamepad();
@@ -123,7 +121,8 @@ public class CalibrateDrive extends LinearOpMode {
 
             // Graphing stuff and putting stuff in telemetry
             //telemetry.addData("Item", data)); // Anything written like this can be graphed against time.  Multiple items can be graphed together
-
+            telemetry.addData("Velocity", 0);
+            telemetry.addData("Encoder", 0);
             telemetry.update();
             sleep(20);
         }
@@ -217,14 +216,14 @@ public class CalibrateDrive extends LinearOpMode {
         if (gamepad1.dpad_right) {
             drive.setHeading(0);
             long startStrafe = drive.strafeEncoder.getCurrentPosition();
-            long strafeTarget = (long) (startStrafe + drive.TICS_PER_CM_STRAIGHT_ENCODER*testDistance);
+            long strafeTarget = (long) (startStrafe + drive.TICS_PER_CM_STRAFE_ENCODER*testDistance);
             long startForward = drive.forwardEncoder.getCurrentPosition();
             drive.strafeHoldingStraightEncoder(drive.MAX_VELOCITY, strafeTarget,startForward,0,0,null,0,3000);
         }
-        if (gamepad1.dpad_right) {
+        if (gamepad1.dpad_left) {
             drive.setHeading(0);
             long startStrafe = drive.strafeEncoder.getCurrentPosition();
-            long strafeTarget = (long) (startStrafe - drive.TICS_PER_CM_STRAIGHT_ENCODER*testDistance);
+            long strafeTarget = (long) (startStrafe - drive.TICS_PER_CM_STRAFE_ENCODER*testDistance);
             long startForward = drive.forwardEncoder.getCurrentPosition();
             drive.strafeHoldingStraightEncoder(drive.MAX_VELOCITY, strafeTarget,startForward,0,0,null,0,3000);
         }
@@ -270,8 +269,11 @@ public class CalibrateDrive extends LinearOpMode {
         drive.stopMotors();
         while (drive.forwardEncoder.getVelocity()> 0) {
             telemetry.addData("Velocity", drive.forwardEncoder.getVelocity());
+            teamUtil.log("Velocity: " + drive.forwardEncoder.getVelocity() + "Encoder: " + drive.forwardEncoder.getCurrentPosition());
             telemetry.addData("Encoder", drive.forwardEncoder.getCurrentPosition());
+            telemetry.update();
         }
+        drive.moveCm(BasicDrive.MIN_END_VELOCITY,20,0,0);
     }
     public void brakeTestRight () {
         drive.setHeading(0);
@@ -281,6 +283,7 @@ public class CalibrateDrive extends LinearOpMode {
         while (drive.forwardEncoder.getVelocity()> 0) {
             telemetry.addData("Velocity", drive.strafeEncoder.getVelocity());
             telemetry.addData("Encoder", drive.strafeEncoder.getCurrentPosition());
+            telemetry.update();
         }
     }
 }

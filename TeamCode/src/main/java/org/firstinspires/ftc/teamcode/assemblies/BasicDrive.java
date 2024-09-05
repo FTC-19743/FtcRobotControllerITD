@@ -7,6 +7,7 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -50,7 +51,7 @@ public class BasicDrive {
 
 
     static public double COUNTS_PER_MOTOR_REV = 537.7;    // GoBilda 5202 312 RPM
-    static public double COUNTS_PER_CENTIMETER = 12.855; // Used with 435 RPM
+    static public double COUNTS_PER_CENTIMETER = 9.625; //Was 12.855 Used with 435 RPM
     static public double COUNTS_PER_CENTIMETER_312 = 17.923; // Used with 312 RPM
     static public double TICS_PER_CM_STRAFE_ENCODER = 130;
     static public double TICS_PER_CM_STRAIGHT_ENCODER = 735;
@@ -67,8 +68,8 @@ public class BasicDrive {
     static public double MIN_STRAFE_END_VELOCITY = 400; //calibrated with 435s
     static public double MAX_STRAFE_DECELERATION = .15; //calibrated with 435s
     static public double MAX_STRAFE_ACCELERATION = 2; // tentaive
-    static public double MAX_VELOCITY = 2450; // Was 2680
-    static public double MAX_VELOCITY_STRAFE = 2000; // Added with new motors
+    static public double MAX_VELOCITY = 2350; // Was 2680
+    static public double MAX_VELOCITY_STRAFE = 2050; // Added with new motors
     static public double ROTATION_ADJUST_FACTOR = 0.04;
     static public double SIDE_VECTOR_COEFFICIENT = .92;
     static public double FORWARD_VECTOR_COEFFICIENT = 1.08;
@@ -107,12 +108,15 @@ public class BasicDrive {
         bl = hardwareMap.get(DcMotorEx.class, "blm");
         br = hardwareMap.get(DcMotorEx.class, "brm");
 
-        // TODO: Set odometry pods
+        forwardEncoder = hardwareMap.get(DcMotorEx.class, "leftForwardEncoder");
+        strafeEncoder = hardwareMap.get(DcMotorEx.class, "strafeEncoder");
 
 
         //fl.setDirection(DcMotor.Direction.REVERSE);
         br.setDirection(DcMotor.Direction.REVERSE);
-        bl.setDirection(DcMotor.Direction.REVERSE);
+        fr.setDirection(DcMotor.Direction.REVERSE);
+
+        forwardEncoder.setDirection(DcMotorSimple.Direction.REVERSE);
         //bl.setDirection(DcMotor.Direction.REVERSE);
 
         imu = hardwareMap.get(BNO055IMU.class, "imu");
@@ -131,7 +135,7 @@ public class BasicDrive {
     public void driveMotorTelemetry() {
         telemetry.addData("Motors ", "flm:%d frm:%d blm:%d brm:%d",
                 fl.getCurrentPosition(), fr.getCurrentPosition(), bl.getCurrentPosition(), br.getCurrentPosition());
-        telemetry.addData("Odometry ", "strafe:%d strafe Cms:%d forward:%d forward Cms:%d heading:%f ",
+        telemetry.addData("Odometry ", "strafe:%d strafe Cms:%f forward:%d forward Cms:%f heading:%f ",
                 strafeEncoder.getCurrentPosition(), strafeEncoder.getCurrentPosition()/TICS_PER_CM_STRAFE_ENCODER, forwardEncoder.getCurrentPosition(), forwardEncoder.getCurrentPosition()/TICS_PER_CM_STRAIGHT_ENCODER, getHeading());
         telemetry.addData("Heading ", "%f ",
                  getHeading());
@@ -488,7 +492,7 @@ public class BasicDrive {
 
     /************************************************************************************************************/
     // OLD Methods to drive based on odometry pods
-
+    /*
     public boolean strafeToEncoder(double driveHeading, double robotHeading, double velocity, double targetEncoderValue, long timeout) {
         // strafe to a strafe encoder value
         long timeOutTime = System.currentTimeMillis() + timeout;
@@ -514,6 +518,8 @@ public class BasicDrive {
             return true;
         }
     }
+
+     */
 
     public boolean strafeToEncoderWithDecel(double driveHeading, double robotHeading, double velocity, double targetEncoderValue, double endVelocity, double decelK, long timeout) {
         long timeOutTime = System.currentTimeMillis() + timeout;
@@ -818,7 +824,7 @@ public class BasicDrive {
         }
 
         teamUtil.log("straightHoldingStrafeEncoder target: " + straightTarget +  " Strafe target: " + strafeTarget + " robotH: " + robotHeading + " MaxV: " + maxVelocity + " EndV: " + endVelocity);
-        details = false;
+        details = details;
         long startTime = System.currentTimeMillis();
         long timeoutTime = startTime+timeout;
 
@@ -988,7 +994,7 @@ public class BasicDrive {
         }
 
         teamUtil.log("strafeHoldingStraightEncoder target: " + strafeTarget +  " Straight target: " + straightTarget + " robotH: " + robotHeading + " MaxV: " + maxVelocity + " EndV: " + endVelocity);
-        details = false;
+        details = details;
         long startTime = System.currentTimeMillis();
         long timeoutTime = startTime+timeout;
 
@@ -1023,7 +1029,7 @@ public class BasicDrive {
         velocityChangeNeededDecel = maxVelocity - endVelocity;
         // all are measured in tics
 
-        double totalTics = Math.abs(startEncoder-straightTarget);
+        double totalTics = Math.abs(startEncoder-strafeTarget);
         double accelerationDistance = Math.abs(velocityChangeNeededAccel / MAX_STRAFE_ACCELERATION);
         double decelerationDistance = Math.abs(velocityChangeNeededDecel / MAX_STRAFE_DECELERATION);
         if (accelerationDistance+decelerationDistance >= totalTics ) { // No room for cruise phase
@@ -1144,6 +1150,12 @@ public class BasicDrive {
         lastVelocity = endVelocity;
         teamUtil.log("strafeHoldingStraightEncoder--Finished.  Current Strafe Encoder:" + strafeEncoder.getCurrentPosition());
         return true;
+    }
+
+    public void moveTo(double maxVelocity, double robotHeading, double strafeTarget, double straightTarget, double endVelocity,ActionCallback action, double actionTarget, long timeout){
+        double straightCm = Math.abs(straightTarget - forwardEncoder.getCurrentPosition());
+        double strafeCm = Math.abs(strafeTarget - strafeEncoder.getCurrentPosition());
+        double driveHeading = Math.atan(straightCm/strafeCm);
     }
 
     // This was developed for CS April Tag Localization.  Might be some stuff here useful for the new "moveTo" odometry pod method
