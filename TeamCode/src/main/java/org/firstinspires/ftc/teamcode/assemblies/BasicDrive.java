@@ -1152,10 +1152,60 @@ public class BasicDrive {
         return true;
     }
 
-    public void moveTo(double maxVelocity, double robotHeading, double strafeTarget, double straightTarget, double endVelocity,ActionCallback action, double actionTarget, long timeout){
-        double straightCm = Math.abs(straightTarget - forwardEncoder.getCurrentPosition());
-        double strafeCm = Math.abs(strafeTarget - strafeEncoder.getCurrentPosition());
-        double driveHeading = Math.atan(straightCm/strafeCm);
+    public void moveTo(double maxVelocity, double strafeTarget, double straightTarget, double endVelocity,ActionCallback action, double actionTarget, long timeout){
+
+        details = details;
+        double straightChange = straightTarget - forwardEncoder.getCurrentPosition();
+        double strafeChange = strafeTarget - strafeEncoder.getCurrentPosition();
+        teamUtil.log("Straight Target: " + straightTarget);
+        teamUtil.log("Strafe Target: " + strafeTarget);
+        teamUtil.log("Straight Change: " + straightChange);
+        teamUtil.log("Strafe Target: " + strafeTarget);
+
+        double straightCm = Math.abs(straightChange)/TICS_PER_CM_STRAIGHT_ENCODER;
+        double strafeCm = Math.abs(strafeChange)/TICS_PER_CM_STRAFE_ENCODER;
+        double angle = Math.atan(straightCm/strafeCm);
+        teamUtil.log("Angle Without Adjustment: " + angle);
+
+        double driveHeading;
+
+
+        double startHeading = getHeading();
+        if (straightChange>0&&strafeChange>0){ //y change positive x change positive
+            driveHeading=adjustAngle(getHeading()-(90-angle));
+        }else if (straightChange>0&&strafeChange<0){ //y change positive x change negative
+            driveHeading=adjustAngle(getHeading()+(90-angle));
+        }else if (straightChange<0&&strafeChange>0){ //y change negative x change positive
+            driveHeading=adjustAngle(getHeading()-(90+angle));
+        }else{
+            driveHeading=adjustAngle(getHeading()+(90+angle));
+        }
+        teamUtil.log("Drive Heading: " + driveHeading);
+
+        double strafeTicsRemaining = Math.abs(strafeChange);
+        double straightTicsRemaining = Math.abs(straightChange);
+
+        double strafeTicsTravelled = 0;
+        double straightTicsTravelled = 0;
+        double startStrafe = strafeEncoder.getCurrentPosition();
+        double startForward = forwardEncoder.getCurrentPosition();
+
+        while(strafeTicsTravelled<strafeTicsRemaining&&straightTicsTravelled<straightTicsRemaining){
+            strafeTicsTravelled = Math.abs(strafeEncoder.getCurrentPosition()-startStrafe);
+            straightTicsTravelled = Math.abs(forwardEncoder.getCurrentPosition()-startForward);
+
+            if(details){
+                teamUtil.log("Strafe Tics Remaining: " + strafeTicsRemaining);
+                teamUtil.log("Straight Tics Remaining: " + straightTicsRemaining);
+
+            }
+
+            driveMotorsHeadingsFR(driveHeading, startHeading,maxVelocity);
+        }
+        stopMotors();
+
+
+
     }
 
     // This was developed for CS April Tag Localization.  Might be some stuff here useful for the new "moveTo" odometry pod method

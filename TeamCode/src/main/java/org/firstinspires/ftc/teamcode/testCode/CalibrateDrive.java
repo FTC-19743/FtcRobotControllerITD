@@ -12,6 +12,8 @@ import org.firstinspires.ftc.teamcode.assemblies.BasicDrive;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 
+import java.util.concurrent.SynchronousQueue;
+
 @Config
 @TeleOp(name = "Calibrate Drive", group = "Test Code")
 public class CalibrateDrive extends LinearOpMode {
@@ -21,6 +23,8 @@ public class CalibrateDrive extends LinearOpMode {
     public static int testDistance = 100;
     public static double HEADING = 0;
     public static int SECONDS = 3;
+    public static int botX = 72;
+    public static int botY = 72;
 
 
     public enum Ops {Test_Wiring,
@@ -37,8 +41,7 @@ public class CalibrateDrive extends LinearOpMode {
         Move_CMs_Test,
         Move_Encoder_Target_Test};
     public static Ops AAOP = Ops.Test_Wiring;
-    public static int botX = 72;
-    public static int botY = 72;
+
 
 
     private TeamGamepad gp1 = new TeamGamepad();
@@ -52,6 +55,7 @@ public class CalibrateDrive extends LinearOpMode {
             case Find_Max_Forward : drive.findMaxVelocity(testDistance);break;
             case Find_Max_Left : drive.findMaxStrafeVelocity(testDistance);break;
             case Move_CMs_Test : goForADriveCMs();break;
+            case Test_Move_To : testMoveTo();break;
             case Move_Encoder_Target_Test : goForADriveTarget();break;
             case Brake_Test_Forward : brakeTestForward();break;
             case Brake_Test_Right : brakeTestRight();break;
@@ -123,6 +127,10 @@ public class CalibrateDrive extends LinearOpMode {
             //telemetry.addData("Item", data)); // Anything written like this can be graphed against time.  Multiple items can be graphed together
             telemetry.addData("Velocity", 0);
             telemetry.addData("Encoder", 0);
+            telemetry.addData("Current Velocity", 0);
+            telemetry.addData("Motor Velocity", 0);
+
+
             telemetry.update();
             sleep(20);
         }
@@ -231,6 +239,12 @@ public class CalibrateDrive extends LinearOpMode {
 
     public void testMoveTo() {
         //TBD  Set up some button presses to move the robot to some X,Y values?
+
+        if (gamepad1.dpad_up){
+            drive.forwardEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            drive.forwardEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            drive.moveTo(testVelocity,botX,botY,0,null,0,0);
+        }
     }
 
     public void goForADriveCMs() {
@@ -244,6 +258,7 @@ public class CalibrateDrive extends LinearOpMode {
         drive.moveCm(testDistance, 225);
         drive.moveCm(testDistance, 315);
     }
+
 
     public void goForADriveTarget() {
         long startForward = drive.forwardEncoder.getCurrentPosition();
@@ -267,13 +282,32 @@ public class CalibrateDrive extends LinearOpMode {
         drive.moveCm(testVelocity   , testDistance  , 0, 0,testVelocity);
         drive.setMotorsBrake();
         drive.stopMotors();
-        while (drive.forwardEncoder.getVelocity()> 0) {
+        long timeBefore = System.currentTimeMillis();
+        long currentTime = System.currentTimeMillis()+1;
+
+        double timeElapsed;
+        double lastEncoder=drive.forwardEncoder.getCurrentPosition();;
+        double currentVelocity=0;
+        double currentMotorVelocity=0;
+
+        while (currentTime<timeBefore+2000) {
             telemetry.addData("Velocity", drive.forwardEncoder.getVelocity());
-            teamUtil.log("Velocity: " + drive.forwardEncoder.getVelocity() + "Encoder: " + drive.forwardEncoder.getCurrentPosition());
+            teamUtil.log("Velocity: " + drive.forwardEncoder.getVelocity() + "Encoder: " + drive.forwardEncoder.getCurrentPosition()+ "Current Velocity" + currentVelocity+"Current Motor Velocity"+currentMotorVelocity);
             telemetry.addData("Encoder", drive.forwardEncoder.getCurrentPosition());
+
+            timeElapsed = (System.currentTimeMillis()-currentTime)/1000f;
+            currentTime = System.currentTimeMillis();
+
+            currentVelocity = (drive.forwardEncoder.getCurrentPosition()-lastEncoder)/timeElapsed;
+            currentMotorVelocity = (((drive.forwardEncoder.getCurrentPosition()-lastEncoder)/76.36)/timeElapsed);
+            telemetry.addData("Current Velocity", currentVelocity);
+            telemetry.addData("Motor Velocity",currentMotorVelocity);
+
+
+            lastEncoder = drive.forwardEncoder.getCurrentPosition();
             telemetry.update();
         }
-        drive.moveCm(BasicDrive.MIN_END_VELOCITY,20,0,0);
+        //drive.moveCm(BasicDrive.MIN_END_VELOCITY,20,0,0);
     }
     public void brakeTestRight () {
         drive.setHeading(0);
