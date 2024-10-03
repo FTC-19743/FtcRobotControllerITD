@@ -34,15 +34,20 @@
 package org.firstinspires.ftc.teamcode.testCode;
 
 import android.util.Size;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCharacteristics;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
+import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.vision.VisionPortal;
 
 import java.util.Locale;
+
+import org.firstinspires.ftc.teamcode.libs.teamUtil;
 
 /*
  * This OpMode helps calibrate a webcam or RC phone camera, useful for AprilTag pose estimation
@@ -58,7 +63,7 @@ import java.util.Locale;
  * In OnBot Java, use "Add File" to add this OpMode from the list of Samples.
  */
 
-@TeleOp(name = "Utility: Camera Frame Capture for Arducam", group = "Test Code")
+@TeleOp(name = "Arducam Test Code", group = "Test Code")
 
 public class arducamTest extends LinearOpMode
 {
@@ -67,8 +72,10 @@ public class arducamTest extends LinearOpMode
      */
     final boolean USING_WEBCAM = true;
     final BuiltinCameraDirection INTERNAL_CAM_DIR = BuiltinCameraDirection.BACK;
-    final int RESOLUTION_WIDTH = 640;
-    final int RESOLUTION_HEIGHT = 480;
+    final int ARDU_RESOLUTION_WIDTH = 640;
+    final int ARDU_RESOLUTION_HEIGHT = 480;
+
+    Size arduSize = new Size(ARDU_RESOLUTION_WIDTH, ARDU_RESOLUTION_HEIGHT);
 
     // Internal state
     boolean lastX;
@@ -78,40 +85,60 @@ public class arducamTest extends LinearOpMode
     @Override
     public void runOpMode()
     {
-        VisionPortal portal;
-        CameraName cameraName;
+        teamUtil.init(this);
+        TeamGamepad gp1 = new TeamGamepad();
+        gp1.initilize(true);
 
-        if (USING_WEBCAM)
-        {
-            portal = new VisionPortal.Builder()
-                    .setCamera(hardwareMap.get(WebcamName.class, "arducam"))
-                    .setCameraResolution(new Size(RESOLUTION_WIDTH, RESOLUTION_HEIGHT))
-                    .build();
-        }
-        else
-        {
-            portal = new VisionPortal.Builder()
-                    .setCamera(INTERNAL_CAM_DIR)
-                    .setCameraResolution(new Size(RESOLUTION_WIDTH, RESOLUTION_HEIGHT))
-                    .build();
-        }
+        VisionPortal arduPortal;
+
+        OpenCVSampleDetector sampleDetector = new OpenCVSampleDetector();
+        //sampleDetector.init(); // TODO Last year's code never called init on these processors...
+        sampleDetector.viewingPipeline = true;
+
+        CameraName arducam = (CameraName)hardwareMap.get(WebcamName.class, "arducam");
+        CameraCharacteristics chars = arducam.getCameraCharacteristics();
+        teamUtil.log(arducam.toString());
+        teamUtil.log("WebCam: "+(arducam.isWebcam() ? "true" : "false"));
+        teamUtil.log("Unknown: "+(arducam.isUnknown() ? "true" : "false"));
+        teamUtil.log(chars.toString());
+
+        teamUtil.log("Setting up rearVisionPortal");
+        VisionPortal.Builder armBuilder = new VisionPortal.Builder();
+        armBuilder.setCamera(arducam);
+        //armBuilder.setLiveViewContainerId(visionPortalViewIDs[0]);
+        //if (!enableLiveView) {
+            armBuilder.enableLiveView(true);
+        //}
+        // Can also set resolution and stream format if we want to optimize resource usage.
+        armBuilder.setCameraResolution(arduSize);
+        //armBuilder.setStreamFormat(TBD);
+
+        armBuilder.addProcessor(sampleDetector);
+
+        arduPortal = armBuilder.build();
+        //stopStreaming(arduPortal);
+        //arduPortal.setProcessorEnabled(findPixelProcesser,false);
+
+
+        while (!opModeIsActive()) {}
+
 
         while (!isStopRequested())
         {
-            boolean x = gamepad1.x;
 
-            if (x && !lastX)
+            if (gp1.wasXPressed())
             {
-                portal.saveNextFrameRaw(String.format(Locale.US, "CameraFrameCapture-%06d", frameCount++));
+                arduPortal.saveNextFrameRaw(String.format(Locale.US, "CameraFrameCapture-%06d", frameCount++));
                 capReqTime = System.currentTimeMillis();
             }
-
-            lastX = x;
+            if (gp1.wasYPressed()){
+                sampleDetector.nextView();
+            }
 
             telemetry.addLine("######## Camera Capture Utility ########");
-            telemetry.addLine(String.format(Locale.US, " > Resolution: %dx%d", RESOLUTION_WIDTH, RESOLUTION_HEIGHT));
+            telemetry.addLine(String.format(Locale.US, " > Resolution: %dx%d", ARDU_RESOLUTION_WIDTH, ARDU_RESOLUTION_HEIGHT));
             telemetry.addLine(" > Press X (or Square) to capture a frame");
-            telemetry.addData(" > Camera Status", portal.getCameraState());
+            telemetry.addData(" > Camera Status", arduPortal.getCameraState());
 
             if (capReqTime != 0)
             {
