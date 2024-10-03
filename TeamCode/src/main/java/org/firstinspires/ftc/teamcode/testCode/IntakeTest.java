@@ -6,24 +6,20 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.assemblies.BasicDrive;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 
-import java.util.concurrent.SynchronousQueue;
-
 @Config
-@TeleOp(name = "SpecimenTransport Test", group = "Test Code")
-public class SpecimenTransportTest extends LinearOpMode {
+@TeleOp(name = "Intake Test", group = "Test Code")
+public class IntakeTest extends LinearOpMode {
 
-    public static float wristGrab= 0.84f;
-    public static float wristDeliver = 0.17f;
+    public static float clawGrab= 0.84f;
+    public static float clawExpand = 0.17f;
 
-    public static float armDeliver= 0.06f;
-    public static float armGrab= 0.625f;
+    //public static float armDeliver= 0.06f;
+    //public static float armGrab= 0.625f;
 
 
     private TeamGamepad gp1 = new TeamGamepad();
@@ -34,8 +30,8 @@ public class SpecimenTransportTest extends LinearOpMode {
         FtcDashboard dashboard = FtcDashboard.getInstance();
         //FtcDashboard.setDrawDefaultField(false); // enable to eliminate field drawing
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry()); // write telemetry to Driver Station and Dashboard
-        Servo arm = hardwareMap.get(Servo.class,"arm");
-        Servo wrist = hardwareMap.get(Servo.class,"wrist");
+        Servo claw = hardwareMap.get(Servo.class,"claw");
+        //Servo wrist = hardwareMap.get(Servo.class,"wrist");
 
         teamUtil.init(this);
 
@@ -56,26 +52,12 @@ public class SpecimenTransportTest extends LinearOpMode {
 
             // Left bumper toggles Alliance
             if (gp1.wasLeftPressed()) {
-                arm.setPosition(armDeliver);
+                claw.setPosition(clawExpand);
             }
             if (gp1.wasRightPressed()) {
-                arm.setPosition(armGrab);
+                claw.setPosition(clawGrab);
             }
-            if (gp1.wasUpPressed()) {
-                wrist.setPosition(wristDeliver);
-            }
-            if (gp1.wasDownPressed()) {
-                wrist.setPosition(wristGrab);
-            }
-            if (gp1.wasYPressed()){
-                arm.setPosition(armDeliver);
-                teamUtil.pause(500);
-                wrist.setPosition(wristDeliver);
-            }
-            if (gp1.wasXPressed()){
-                arm.setPosition(armGrab);
-                wrist.setPosition(wristGrab);
-            }
+
 
 
 
