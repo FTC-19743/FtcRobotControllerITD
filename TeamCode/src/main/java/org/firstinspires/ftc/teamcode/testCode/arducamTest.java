@@ -35,6 +35,9 @@ package org.firstinspires.ftc.teamcode.testCode;
 
 import android.util.Size;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
@@ -48,6 +51,7 @@ import org.firstinspires.ftc.vision.VisionPortal;
 import java.util.Locale;
 
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
+import org.opencv.core.Scalar;
 
 /*
  * This OpMode helps calibrate a webcam or RC phone camera, useful for AprilTag pose estimation
@@ -62,6 +66,7 @@ import org.firstinspires.ftc.teamcode.libs.teamUtil;
  *
  * In OnBot Java, use "Add File" to add this OpMode from the list of Samples.
  */
+@Config
 
 @TeleOp(name = "Arducam Test Code", group = "Test Code")
 
@@ -82,9 +87,27 @@ public class arducamTest extends LinearOpMode
     int frameCount;
     long capReqTime;
 
+    public static int blueLowH1=0;
+    public static int blueLowS1=0;
+    public static int blueLowV1=0;
+
+    public static int blueHighH1=0;
+    public static int blueHighS1=0;
+    public static int blueHighV1=0;
+
+    public static int blueErosionFactor1=0;
+
+
+
+
+
+
     @Override
     public void runOpMode()
     {
+        FtcDashboard dashboard = FtcDashboard.getInstance();
+        telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry()); // write telemetry to Driver Station and Dashboard
+
         teamUtil.init(this);
         TeamGamepad gp1 = new TeamGamepad();
         gp1.initilize(true);
@@ -102,7 +125,7 @@ public class arducamTest extends LinearOpMode
         teamUtil.log("Unknown: "+(arducam.isUnknown() ? "true" : "false"));
         teamUtil.log(chars.toString());
 
-        teamUtil.log("Setting up rearVisionPortal");
+        teamUtil.log("Setting up ArduCam VisionPortal");
         VisionPortal.Builder armBuilder = new VisionPortal.Builder();
         armBuilder.setCamera(arducam);
         //armBuilder.setLiveViewContainerId(visionPortalViewIDs[0]);
@@ -122,9 +145,27 @@ public class arducamTest extends LinearOpMode
 
         while (!opModeIsActive()) {}
 
-
+        int currentTargetColor=1;
+        sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
         while (!isStopRequested())
         {
+
+            gp1.loop();
+            /* TEST CODE FOR CHANGING VALUES LIVE
+            sampleDetector.blueLowH = blueLowH1;
+            sampleDetector.blueLowS = blueLowS1;
+            sampleDetector.blueLowV = blueLowV1;
+
+            sampleDetector.blueHighH = blueHighH1;
+            sampleDetector.blueHighS = blueHighS1;
+            sampleDetector.blueHighV = blueHighV1;
+
+            sampleDetector.blueErosionFactor = blueErosionFactor1;
+
+            sampleDetector.blueLowHSV = new Scalar(blueLowH1,blueLowS1,blueLowV1);
+            sampleDetector.blueHighHSV = new Scalar(blueHighH1,blueHighS1,blueHighV1);
+
+             */
 
             if (gp1.wasXPressed())
             {
@@ -134,7 +175,23 @@ public class arducamTest extends LinearOpMode
             if (gp1.wasYPressed()){
                 sampleDetector.nextView();
             }
+            if(gp1.wasUpPressed()){
+                currentTargetColor+=1;
+                if(currentTargetColor>3){
+                    currentTargetColor=1;
+                    sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
 
+                }
+                else if(currentTargetColor==2){
+                    sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
+                }else{
+                    sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
+                }
+            }
+            //telemetry.addLine("Blue Erosion Factor"+ blueErosionFactor1);
+            //telemetry.addLine("Blue Erosion Factor"+ sampleDetector.blueErosionFactor);
+
+            telemetry.addLine("Current Color: "+ sampleDetector.targetColor);
             telemetry.addLine("######## Camera Capture Utility ########");
             telemetry.addLine(String.format(Locale.US, " > Resolution: %dx%d", ARDU_RESOLUTION_WIDTH, ARDU_RESOLUTION_HEIGHT));
             telemetry.addLine(" > Press X (or Square) to capture a frame");

@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.libs;
 
-import android.graphics.Bitmap;
+import
+        android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -54,14 +55,22 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     Scalar yellowHighHSV = new Scalar(yellowHighH, yellowHighS, yellowHighV); // higher bound HSV for yellow
     Mat yellowErosionElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2 * yellowErosionFactor + 1, 2 * yellowErosionFactor + 1),
             new Point(yellowErosionFactor, yellowErosionFactor));
-    // TODO Repeat above section for Red and Blue
+    // TODO Repeat above section for Red
+    public int blueLowH = 100, blueLowS = 100, blueLowV = 50;
+    public int blueHighH = 120, blueHighS = 255, blueHighV = 200;
+    public int blueErosionFactor = 15;
+    public Scalar blueLowHSV = new Scalar(blueLowH, blueLowS, blueLowV); // lower bound HSV for yellow
+    public Scalar blueHighHSV = new Scalar(blueHighH, blueHighS, blueHighV); // higher bound HSV for yellow
+    Mat blueErosionElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2 * blueErosionFactor + 1, 2 * blueErosionFactor + 1),
+            new Point(blueErosionFactor, blueErosionFactor));
 
-    enum TargetColor {
+
+    public enum TargetColor {
         YELLOW,
         RED,
         BLUE
     }
-    private TargetColor targetColor = TargetColor.YELLOW;
+    public TargetColor targetColor = TargetColor.YELLOW;
     public void setTargetColor(TargetColor newTargetColor){
         targetColor = newTargetColor;
     }
@@ -133,7 +142,8 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                 teamUtil.log("RED not implemented");
                 break;
             case BLUE:
-                teamUtil.log("BLUE not implemented");
+                Core.inRange(blurredMat, blueLowHSV, blueHighHSV, thresholdMat);
+                Imgproc.erode(thresholdMat, erodedMat, blueErosionElement);
                 break;
         }
 
@@ -182,8 +192,32 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             rectPaint.setColor(Color.RED);
             rectPaint.setStyle(Paint.Style.STROKE);
             rectPaint.setStrokeWidth(scaleCanvasDensity * 4);
+            canvas.drawCircle(320, 240, 60,rectPaint);
+            double smallestDistFromCenter=0;
+            double xDist;
+            double yDist;
             for (int i = 0; i < boundRect.length; i++) {
-                canvas.drawCircle((float)boundRect[i].center.x*scaleBmpPxToCanvasPx, (float)boundRect[i].center.y*scaleBmpPxToCanvasPx, 3,rectPaint);
+                //Old Normal Circle Drawing
+                //canvas.drawCircle((float)boundRect[i].center.x*scaleBmpPxToCanvasPx, (float)boundRect[i].center.y*scaleBmpPxToCanvasPx, 3,rectPaint);
+                teamUtil.log("Center (X) " + (float)boundRect[i].center.x*scaleBmpPxToCanvasPx);
+                teamUtil.log("Height" + (float)boundRect[i].size.height);
+                teamUtil.log("Height" + (float)boundRect[i].size.width);
+                teamUtil.log("Center (Y) " +(float)boundRect[i].center.y*scaleBmpPxToCanvasPx);
+                xDist = Math.abs(((float)boundRect[i].center.x*scaleBmpPxToCanvasPx)-320);
+                yDist = Math.abs(((float)boundRect[i].center.y*scaleBmpPxToCanvasPx)-240);
+                Point vertices[] = new Point[4];;
+                boundRect[i].points(vertices);
+                for (int j = 0; j < 4; j++) {
+                    teamUtil.log("Point ("+j+") "+ "x: " + vertices[j].x+ " y: " + vertices[j].y+" RECT ANGLE " + (float)boundRect[i].angle);
+                }
+
+                //AREA TESTING
+                if(Math.hypot(xDist,yDist)<60){
+
+                    canvas.drawCircle((float)boundRect[i].center.x*scaleBmpPxToCanvasPx, (float)boundRect[i].center.y*scaleBmpPxToCanvasPx, 3,rectPaint);
+                    smallestDistFromCenter= Math.hypot(xDist,yDist);
+                }
+                //teamUtil.log("Smallest Dist From Center: " + smallestDistFromCenter);
             }
         }
         /*
