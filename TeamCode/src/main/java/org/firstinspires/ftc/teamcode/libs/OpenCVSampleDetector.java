@@ -88,8 +88,8 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     }
     @Override
     public void init(int width, int height, CameraCalibration calibration) {
-        teamUtil.log("Initializing OpenCVYellowPixelDetector processor");
-        teamUtil.log("Initializing OpenCVYellowPixelDetector processor - FINISHED");
+        teamUtil.log("Initializing OpenCVSampleDetector processor");
+        teamUtil.log("Initializing OpenCVSampleDetector processor - FINISHED");
     }
     public void outputTelemetry () {
         telemetry.addLine("Found One: " + foundOne.get() + "TBD");
@@ -116,13 +116,13 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         boolean details = false;
         if (details) teamUtil.log("Sample Detector: Process Frame");
 
-        Rect cropRect = new  Rect(0,0,frame.width(), frame.height()); // TODO Why was this removed?  Does it not affect Erosion?
+        Rect cropRect = new  Rect(0,0,frame.width(), frame.height());
 
         Imgproc.cvtColor(frame, HSVMat, Imgproc.COLOR_RGB2HSV); // convert to HSV
 
         Imgproc.blur(HSVMat, blurredMat, blurFactorSize); // get rid of noise
 
-        //Imgproc.rectangle(blurredMat, cropRect, blackColor,2); // black frame to help with erosion and boundaries. TODO: Why was this removed?
+        //Imgproc.rectangle(blurredMat, cropRect, blackColor,2); // black frame to help with erosion and boundaries. TODO: Why was this removed? Does it not affect Erosion?
 
         switch (targetColor) {
             case YELLOW:

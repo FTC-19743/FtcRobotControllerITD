@@ -15,8 +15,10 @@ import org.firstinspires.ftc.teamcode.libs.teamUtil;
 @TeleOp(name = "Intake Test", group = "Test Code")
 public class IntakeTest extends LinearOpMode {
 
-    public static float clawGrab= 0.84f;
-    public static float clawExpand = 0.17f;
+    public static float claw1Grab= 0.84f;
+    public static float claw1Expand = 0.17f;
+    public static float claw2Grab= 0.84f;
+    public static float claw2Expand = 0.17f;
 
     //public static float armDeliver= 0.06f;
     //public static float armGrab= 0.625f;
@@ -30,7 +32,8 @@ public class IntakeTest extends LinearOpMode {
         FtcDashboard dashboard = FtcDashboard.getInstance();
         //FtcDashboard.setDrawDefaultField(false); // enable to eliminate field drawing
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry()); // write telemetry to Driver Station and Dashboard
-        Servo claw = hardwareMap.get(Servo.class,"claw");
+        Servo claw1 = hardwareMap.get(Servo.class,"claw1");
+        Servo claw2 = hardwareMap.get(Servo.class,"claw2");
         //Servo wrist = hardwareMap.get(Servo.class,"wrist");
 
         teamUtil.init(this);
@@ -52,10 +55,16 @@ public class IntakeTest extends LinearOpMode {
 
             // Left bumper toggles Alliance
             if (gp1.wasLeftPressed()) {
-                claw.setPosition(clawExpand);
+                claw1.setPosition(claw1Expand);
             }
             if (gp1.wasRightPressed()) {
-                claw.setPosition(clawGrab);
+                claw1.setPosition(claw1Grab);
+            }
+            if (gp1.wasUpPressed()) {
+                claw2.setPosition(claw2Expand);
+            }
+            if (gp1.wasDownPressed()) {
+                claw2.setPosition(claw2Grab);
             }
 
 
