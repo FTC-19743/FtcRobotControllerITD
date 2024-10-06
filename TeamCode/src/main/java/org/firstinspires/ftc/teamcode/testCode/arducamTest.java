@@ -197,6 +197,13 @@ public class arducamTest extends LinearOpMode
             telemetry.addLine(String.format(Locale.US, " > Resolution: %dx%d", ARDU_RESOLUTION_WIDTH, ARDU_RESOLUTION_HEIGHT));
             telemetry.addLine(" > Press X (or Square) to capture a frame");
             telemetry.addData(" > Camera Status", arduPortal.getCameraState());
+            telemetry.addLine("Found One : "+sampleDetector.foundOne);
+            telemetry.addLine("Rect Angle : "+sampleDetector.rectAngle);
+            telemetry.addLine("Rect Center X : "+sampleDetector.rectCenterXOffset);
+            telemetry.addLine("Rect Center Y : "+sampleDetector.rectCenterYOffset);
+
+
+
 
             if (capReqTime != 0)
             {

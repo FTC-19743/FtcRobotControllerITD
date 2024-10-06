@@ -25,6 +25,7 @@ import org.opencv.imgproc.Imgproc;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class OpenCVSampleDetector extends OpenCVProcesser {
     HardwareMap hardwareMap;
@@ -37,6 +38,10 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
     public final int WIDTH = 640;
     public final int HEIGHT = 480;
+
+    private final double CMS_PER_PIXEL_X = 0; //Set
+    private final double CMS_PER_PIXEL_Y = 0; //Set
+
 
     private Mat HSVMat  = new Mat();
     private Mat blurredMat = new Mat();
@@ -56,15 +61,15 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     Mat yellowErosionElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2 * yellowErosionFactor + 1, 2 * yellowErosionFactor + 1),
             new Point(yellowErosionFactor, yellowErosionFactor));
     // TODO Repeat above section for Red
-    public int blueLowH = 100, blueLowS = 100, blueLowV = 50;
-    public int blueHighH = 120, blueHighS = 255, blueHighV = 200;
+    public int blueLowH = 100, blueLowS = 150, blueLowV = 150;
+    public int blueHighH = 120, blueHighS = 255, blueHighV = 255;
     public int blueErosionFactor = 15;
     public Scalar blueLowHSV = new Scalar(blueLowH, blueLowS, blueLowV); // lower bound HSV for yellow
     public Scalar blueHighHSV = new Scalar(blueHighH, blueHighS, blueHighV); // higher bound HSV for yellow
     Mat blueErosionElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2 * blueErosionFactor + 1, 2 * blueErosionFactor + 1),
             new Point(blueErosionFactor, blueErosionFactor));
 
-    public int redLowH = 0, redLowS = 185, redLowV = 225;
+    public int redLowH = 0, redLowS = 150, redLowV = 225;
     public int redHighH = 185, redHighS = 255, redHighV = 255;
     public int redErosionFactor = 15;
     public Scalar redLowHSV = new Scalar(redLowH, redLowS, redLowV); // lower bound HSV for yellow
@@ -85,6 +90,13 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
     public AtomicBoolean foundOne = new AtomicBoolean(false);
     // TODO: Data about the located Sample
+
+    public AtomicInteger rectAngle = new AtomicInteger(-1);
+    public AtomicInteger rectCenterXOffset = new AtomicInteger(0);
+    public AtomicInteger rectCenterYOffset = new AtomicInteger(0);
+
+
+
 
     public boolean viewingPipeline = false;
     enum Stage {
@@ -163,99 +175,154 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         Imgproc.findContours(edgesMat, contours, hierarchyMat, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE); // find contours around white areas
 
         if (!contours.isEmpty()) {
+            foundOne.set(true);
             MatOfPoint2f[] contoursPoly = new MatOfPoint2f[contours.size()];
             RotatedRect[] boundRect = new RotatedRect[contours.size()];
+            double largestAreaSelection = 0;
+            int largestAreaSelectionNum = 0;
+            //Size Check; largest area returned
             for (int i = 0; i < contours.size(); i++) {
                 contoursPoly[i] = new MatOfPoint2f();
                 Imgproc.approxPolyDP(new MatOfPoint2f(contours.get(i).toArray()), contoursPoly[i], 3, true);
                 boundRect[i] = Imgproc.minAreaRect(contoursPoly[i]);
-                Mat vertices = new Mat();
-                //boundRect[i].points(vertices);
-                
-                //Imgproc.boxPoints(boundRect[i],vertices);
-                //System.out.println("Area"+boundRect[i].size.area());
-
-                Point vertices1[] = new Point[4];;
-
-                boundRect[i].points(vertices1);
-                for (int j = 0; j < 4; j++) {
-                    double lowestY = 0;
-                    double lowestX = 0;
-                    int lowestPixel = 0;
-
-                    for (int k = 0; k < 4; k++) {
-                        if(vertices1[k].y>lowestY){
-                            lowestY=vertices1[k].y;
-                            lowestX=vertices1[k].x;
-                            lowestPixel=k;
-
-                        }
-                        //System.out.println("Point ("+k+") "+ "x: " + vertices1[k].x+ " y: " + vertices1[k].y+" RECT ANGLE " + (float)boundRect[i].angle);
-                    }
-                    double closestDist = 1000;
-                    double closestY =1000;
-                    double closestX=0;
-                    int closestPixel = 0;
-
-
-                    for (int k = 0; k < 4; k++) {
-                        if(vertices1[k].y==lowestY){
-                        }else{
-                        	/*
-                            if(Math.abs(lowestY - vertices1[k].y)<closestY){
-                                closestY=Math.abs(lowestY - vertices1[k].y);
-                                closestX= vertices1[k].x;
-                                closestPixel=k;
-
-                            }
-                            */
-                            double xDiff = Math.abs(lowestX - vertices1[k].x);
-                            double yDiff = Math.abs(lowestY - vertices1[k].y);
-
-                            if(Math.hypot(xDiff,yDiff)<closestDist){
-                                closestDist = Math.hypot(xDiff,yDiff);
-                                closestPixel = k;
-                            }
-                        }
-                    }
-
-
-
-
-
-
-                    //System.out.println("Lowest Y: " + lowestY + "Lowest X: " + lowestX);
-                    /*
-                    Imgproc.line(matImgDst,vertices1[j], vertices1[(j+1)%4], PASTEL_RED,3);
-                    Imgproc.circle(matImgDst,vertices1[lowestPixel],3,PASTEL_GREEN,14);
-                    Imgproc.circle(matImgDst,vertices1[closestPixel],3,PASTEL_PURPLE,14);
-
-                     */
-                    double xDist = Math.abs(vertices1[closestPixel].x-vertices1[lowestPixel].x);
-                    double yDist = Math.abs(vertices1[closestPixel].y-vertices1[lowestPixel].y);
-                    double realAngle = Math.toDegrees(Math.atan(yDist/xDist));
-                    if(vertices1[closestPixel].x<vertices1[lowestPixel].x) {
-                        realAngle+=90;
-                    }else {
-                        realAngle = 90-realAngle;
-                    }
-                    //System.out.println("Points"+vertices1[j]);
-                    teamUtil.log("Real Angle"+realAngle);
-                    //Imgproc.putText(matImgDst, String.valueOf(realAngle),vertices1[lowestPixel],0,1,PASTEL_GREEN);
-
-
-
-
-
-
-
+                if(boundRect[i].size.area()>largestAreaSelection){
+                    largestAreaSelection=boundRect[i].size.area();
+                    largestAreaSelectionNum = i;
                 }
 
+            }
+            /////////////AREA SELECTION THRESHOLD SELECTED AT CAMERA HEIGHT OF ABOUT 7.5 INCHES (IS 4000 AT THIS HEIGHT)
+            /////////////MAKE SURE TO CHANGE IF CAMERA HEIGHT CHANGED
+            if(largestAreaSelection<4000){
+                teamUtil.log("Too Small");
+                rectAngle.set(-10);
+                if (details) teamUtil.log("No Angle");
+                rectCenterYOffset.set(-1000);
+                rectCenterXOffset.set(-1000);
 
             }
+            else{
+                //Also finds closest Area to Center of camera
+                double closestAreaSelection = 1000;
+                int closestAreaSelectionNum = 0;
+                double xDistCenter;
+                double yDistCenter;
+                for (int i = 0; i < contours.size(); i++) {
+                    contoursPoly[i] = new MatOfPoint2f();
+                    Imgproc.approxPolyDP(new MatOfPoint2f(contours.get(i).toArray()), contoursPoly[i], 3, true);
+                    boundRect[i] = Imgproc.minAreaRect(contoursPoly[i]);
+                    xDistCenter = Math.abs(boundRect[i].center.x-320);
+                    yDistCenter = Math.abs(boundRect[i].center.y-240);
+                    if(Math.hypot(xDistCenter,yDistCenter)<closestAreaSelection) {
+                        closestAreaSelection = Math.hypot(xDistCenter, yDistCenter);
+                        closestAreaSelectionNum = i;
+                    }
+                }
+                //Decides which rectangle to use
+                //If the closest Area is not the Largest area then chooses to use closest area
+                //Makes sure that closest area is not a tiny piece of noise and then moves on
+                int selectedRect = 0;
+                if(closestAreaSelectionNum!=largestAreaSelectionNum){
+                    /////////////AREA SELECTION THRESHOLD SELECTED AT CAMERA HEIGHT OF ABOUT 7.5 INCHES (IS 4000 AT THIS HEIGHT)
+                    /////////////MAKE SURE TO CHANGE IF CAMERA HEIGHT CHANGED
+                    if(closestAreaSelection<4000){
+                        selectedRect=largestAreaSelectionNum;
+                    }
+                    else{
+                        selectedRect=closestAreaSelectionNum;
+                    }
+                }else{
+                    selectedRect=largestAreaSelectionNum;
+                }
+                //Below for loop is used for all
+                for (int i = 0; i < contours.size(); i++) {
+                    if(i!=selectedRect){
+                    }
+                    else{
+                        contoursPoly[i] = new MatOfPoint2f();
+                        Imgproc.approxPolyDP(new MatOfPoint2f(contours.get(i).toArray()), contoursPoly[i], 3, true);
+                        boundRect[i] = Imgproc.minAreaRect(contoursPoly[i]);
+
+                        Point vertices1[] = new Point[4];;
+
+                        boundRect[i].points(vertices1);
+
+                        for (int j = 0; j < 4; j++) {
+                            double lowestY = 0;
+                            double lowestX = 0;
+                            int lowestPixel = 0;
+
+                            for (int k = 0; k < 4; k++) {
+                                if(vertices1[k].y>lowestY){
+                                    lowestY=vertices1[k].y;
+                                    lowestX=vertices1[k].x;
+                                    lowestPixel=k;
+
+                                }
+                            }
+                            double closestDist = 1000;
+                            double closestY =1000;
+                            double closestX=0;
+                            int closestPixel = 0;
+
+
+                            for (int k = 0; k < 4; k++) {
+                                if(vertices1[k].y==lowestY){
+                                }else{
+
+                                    double xDiff = Math.abs(lowestX - vertices1[k].x);
+                                    double yDiff = Math.abs(lowestY - vertices1[k].y);
+
+                                    if(Math.hypot(xDiff,yDiff)<closestDist){
+                                        closestDist = Math.hypot(xDiff,yDiff);
+                                        closestPixel = k;
+                                    }
+                                }
+                            }
+
+                            double xDist = Math.abs(vertices1[closestPixel].x-vertices1[lowestPixel].x);
+                            double yDist = Math.abs(vertices1[closestPixel].y-vertices1[lowestPixel].y);
+                            double realAngle = Math.toDegrees(Math.atan(yDist/xDist));
+                            if(vertices1[closestPixel].x<vertices1[lowestPixel].x) {
+                                realAngle+=90;
+                            }else {
+                                realAngle = 90-realAngle;
+                            }
+                            if ((Math.abs((int)realAngle-rectAngle.get())>80)&&rectAngle.get()>0) {
+                                realAngle = 90;
+                            }
+                            if(Math.abs((int)realAngle-rectAngle.get())>2){
+                                rectAngle.set((int)realAngle);
+                            }
+
+                            if(Math.abs((int)boundRect[i].center.y-rectCenterYOffset.get())>2){
+                                rectCenterYOffset.set(-1*((int)boundRect[i].center.y-240));
+                            }
+                            if(Math.abs((int)boundRect[i].center.x-rectCenterXOffset.get())>2){
+                                rectCenterXOffset.set((int)boundRect[i].center.x-320);
+                            }
+                            //System.out.println("Points"+vertices1[j]);
+                            teamUtil.log("Real Angle"+realAngle);
+                            //Imgproc.putText(matImgDst, String.valueOf(realAngle),vertices1[lowestPixel],0,1,PASTEL_GREEN
+                        }
+                    }
+
+                }
+            }
+
             return boundRect; // return array of rotated rectangles we found
         }  else {
+            foundOne.set(false);
+
             if (details) teamUtil.log("No Detections");
+            rectAngle.set(-10);
+            if (details) teamUtil.log("No Angle");
+            rectCenterYOffset.set(-1000);
+            rectCenterXOffset.set(-1000);
+            if (details) teamUtil.log("No Center");
+
+
+
         }
         return null;
     }
@@ -359,6 +426,8 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                     } else {
                         realAngle = 90 - realAngle;
                     }
+
+
                     //System.out.println("Points"+vertices1[j]);
                     teamUtil.log("Real Angle" + realAngle);
                 }
