@@ -39,8 +39,8 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     public final int WIDTH = 640;
     public final int HEIGHT = 480;
 
-    private final double CMS_PER_PIXEL_X = 0; //Set
-    private final double CMS_PER_PIXEL_Y = 0; //Set
+    private final double CMS_PER_PIXEL_X = 0; //Set (Will most likely not be linear)
+    private final double CMS_PER_PIXEL_Y = 0; //Set (Will most likely not be linear)
 
 
     private Mat HSVMat  = new Mat();

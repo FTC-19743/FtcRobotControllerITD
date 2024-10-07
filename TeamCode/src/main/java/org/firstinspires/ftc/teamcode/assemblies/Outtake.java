@@ -16,48 +16,35 @@ import org.firstinspires.ftc.teamcode.libs.teamUtil;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Intake {
+public class Outtake {
     HardwareMap hardwareMap;
     Telemetry telemetry;
-    public Servo slider;
-
-    public Servo flipper;
-
-    public Servo wrist;
-    public Servo sweeper;
-
-    public Servo grabber;
-    public DcMotorEx extender;
-    public boolean intakeRunning = false;
+    public Servo outakewrist;
+    public Servo outakearm;
 
 
 
 
-    public Intake() {
-        teamUtil.log("Constructing Intake");
+    public Outtake() {
+        teamUtil.log("Constructing Outtake");
         hardwareMap = teamUtil.theOpMode.hardwareMap;
         telemetry = teamUtil.theOpMode.telemetry;
     }
 
     public void initalize() {
-        teamUtil.log("Initializing Intake");
-        /*
-        slider = hardwareMap.get(Servo.class,"slider");
-        flipper = hardwareMap.get(Servo.class,"flipper");
-        wrist = hardwareMap.get(Servo.class,"wrist");
-        sweeper = hardwareMap.get(Servo.class,"sweeper");
-        grabber = hardwareMap.get(Servo.class,"grabber");
-
-         */
-        extender = hardwareMap.get(DcMotorEx.class,"extender");
+        teamUtil.log("Initializing Outtake");
+        //outakewrist = hardwareMap.get(Servo.class,"outakewrist");
+        //outakearm = hardwareMap.get(Servo.class,"outakearm");
 
 
 
 
 
 
-        teamUtil.log("Intake Initialized ");
+
+        teamUtil.log("Intake Outtake");
     }
+
     public void calibrate(){
         //TODO: IMPLEMENT
     }

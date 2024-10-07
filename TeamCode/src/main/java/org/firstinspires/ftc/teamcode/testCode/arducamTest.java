@@ -189,6 +189,8 @@ public class arducamTest extends LinearOpMode
                     sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
                 }
             }
+
+
             //telemetry.addLine("Blue Erosion Factor"+ blueErosionFactor1);
             //telemetry.addLine("Blue Erosion Factor"+ sampleDetector.blueErosionFactor);
 

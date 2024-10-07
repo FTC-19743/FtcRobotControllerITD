@@ -17,6 +17,10 @@ public class Robot {
     HardwareMap hardwareMap;
     Telemetry telemetry;
     public BasicDrive drive;
+    public Output output;
+    public Outtake outtake;
+    public Intake intake;
+
     //public Intake intake;
     //public Output output;
     //public Lift lift;
@@ -29,11 +33,20 @@ public class Robot {
         telemetry = teamUtil.theOpMode.telemetry;
         hardwareMap = teamUtil.theOpMode.hardwareMap;
         drive = new BasicDrive();
+        outtake = new Outtake();
+        intake = new Intake();
+        output = new Output();
+
 
     }
 
     public void initialize() {
+        outtake.initalize();
         drive.initalize();
+        output.initalize();
+        intake.initalize();
+
+
     }
 
     public void outputTelemetry() {
@@ -41,7 +54,9 @@ public class Robot {
     }
 
     public void calibrate() {
-
+        output.calibrate();
+        outtake.calibrate();
+        intake.calibrate();
     }
 
     public int fieldSide() { // helper method that returns heading out towards the field

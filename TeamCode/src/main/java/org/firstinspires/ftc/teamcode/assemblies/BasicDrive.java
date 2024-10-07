@@ -108,15 +108,16 @@ public class BasicDrive {
         bl = hardwareMap.get(DcMotorEx.class, "blm");
         br = hardwareMap.get(DcMotorEx.class, "brm");
 
-        forwardEncoder = hardwareMap.get(DcMotorEx.class, "leftForwardEncoder");
-        strafeEncoder = hardwareMap.get(DcMotorEx.class, "strafeEncoder");
+        //forwardEncoder = hardwareMap.get(DcMotorEx.class, "leftForwardEncoder");
+        //strafeEncoder = hardwareMap.get(DcMotorEx.class, "strafeEncoder");
 
 
-        //fl.setDirection(DcMotor.Direction.REVERSE);
-        br.setDirection(DcMotor.Direction.REVERSE);
-        fr.setDirection(DcMotor.Direction.REVERSE);
+        fl.setDirection(DcMotor.Direction.REVERSE);
+        bl.setDirection(DcMotor.Direction.REVERSE);
 
-        forwardEncoder.setDirection(DcMotorSimple.Direction.REVERSE);
+
+
+        //forwardEncoder.setDirection(DcMotorSimple.Direction.REVERSE);
         //bl.setDirection(DcMotor.Direction.REVERSE);
 
         imu = hardwareMap.get(BNO055IMU.class, "imu");
@@ -132,14 +133,17 @@ public class BasicDrive {
 
     /************************************************************************************************************/
     // Telemetry
+
     public void driveMotorTelemetry() {
         telemetry.addData("Motors ", "flm:%d frm:%d blm:%d brm:%d",
                 fl.getCurrentPosition(), fr.getCurrentPosition(), bl.getCurrentPosition(), br.getCurrentPosition());
-        telemetry.addData("Odometry ", "strafe:%d strafe Cms:%f forward:%d forward Cms:%f heading:%f ",
-                strafeEncoder.getCurrentPosition(), strafeEncoder.getCurrentPosition()/TICS_PER_CM_STRAFE_ENCODER, forwardEncoder.getCurrentPosition(), forwardEncoder.getCurrentPosition()/TICS_PER_CM_STRAIGHT_ENCODER, getHeading());
+        //telemetry.addData("Odometry ", "strafe:%d strafe Cms:%f forward:%d forward Cms:%f heading:%f ",
+                //strafeEncoder.getCurrentPosition(), strafeEncoder.getCurrentPosition()/TICS_PER_CM_STRAFE_ENCODER, forwardEncoder.getCurrentPosition(), forwardEncoder.getCurrentPosition()/TICS_PER_CM_STRAIGHT_ENCODER, getHeading());
         telemetry.addData("Heading ", "%f ",
                  getHeading());
     }
+
+
 
     public void logMotorPositions() {
         teamUtil.log("fr: " + fr.getCurrentPosition());
