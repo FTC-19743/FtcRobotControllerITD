@@ -285,18 +285,26 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                             double realAngle = Math.toDegrees(Math.atan(yDist/xDist));
                             if(vertices1[closestPixel].x<vertices1[lowestPixel].x) {
                                 realAngle+=90;
-                            }else {
+                            }
+                            else {
                                 realAngle = 90-realAngle;
                             }
+                            if(Math.abs(xDist)<1){
+                                realAngle=90;
+                            }
+
+                            /*
                             if ((Math.abs((int)realAngle-rectAngle.get())>80)&&rectAngle.get()>0) {
                                 realAngle = 90;
                             }
+
+                             */
                             if(Math.abs((int)realAngle-rectAngle.get())>2){
                                 rectAngle.set((int)realAngle);
                             }
 
                             if(Math.abs((int)boundRect[i].center.y-rectCenterYOffset.get())>2){
-                                rectCenterYOffset.set(-1*((int)boundRect[i].center.y-240));
+                                rectCenterYOffset.set(-1*((int)boundRect[i].center.y-320));
                             }
                             if(Math.abs((int)boundRect[i].center.x-rectCenterXOffset.get())>2){
                                 rectCenterXOffset.set((int)boundRect[i].center.x-320);

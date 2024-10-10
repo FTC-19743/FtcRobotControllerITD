@@ -35,7 +35,7 @@ public class Output {
     public void initalize() {
         teamUtil.log("Initializing Output");
         lift = hardwareMap.get(DcMotorEx.class,"lift");
-
+        //bucket = hardwareMap.get(Servo.class,"bucket");
 
 
         teamUtil.log("Intake Output");

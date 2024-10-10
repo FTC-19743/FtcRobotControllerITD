@@ -1,16 +1,12 @@
 package org.firstinspires.ftc.teamcode.assemblies;
 
-import static org.firstinspires.ftc.teamcode.libs.teamUtil.Alliance.BLUE;
 import static org.firstinspires.ftc.teamcode.libs.teamUtil.Alliance.RED;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.libs.Blinkin;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
-import org.opencv.core.Point;
 
 public class Robot {
     public BNO055IMU imu;
@@ -44,13 +40,14 @@ public class Robot {
         outtake.initalize();
         drive.initalize();
         output.initalize();
-        intake.initalize();
+        intake.initialize();
 
 
     }
 
     public void outputTelemetry() {
         drive.driveMotorTelemetry();
+        intake.intakeTelemetry();
     }
 
     public void calibrate() {

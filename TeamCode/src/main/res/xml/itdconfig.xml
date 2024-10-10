@@ -10,20 +10,19 @@
         <LynxModule name="Expansion Hub 2" port="2">
             <goBILDA5202SeriesMotor name="extender" port="3" />
             <goBILDA5202SeriesMotor name="lift" port="0" />
-
+            <Servo name="outakewrist" port="0" />
+            <Servo name="flipper" port="1" />
+            <Servo name="slider" port="2" />
+            <Servo name="outakearm" port="5" />
 
 
 
         </LynxModule>
         <LynxModule name="Control Hub" port="173">
-            <!--<Servo name="flipper" port="" />
-            <Servo name="strafer" port="" />
-            <Servo name="wrist" port="" />
-            <Servo name="sweeper" port="" />
-            <Servo name="grabber" port="" />
-            <Servo name="outakewrist" port="" />
-            <Servo name="outakearm" port="" />/> -->
-
+            <Servo name="sweeper" port="0" />
+            <Servo name="grabber" port="1" />
+            <Servo name="wrist" port="2" />
+            <!---<Servo name="bucket" port="" /> -->
 
             <goBILDA5202SeriesMotor name="frm" port="0" />
             <goBILDA5202SeriesMotor name="flm" port="1" />

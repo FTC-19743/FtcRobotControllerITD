@@ -188,9 +188,10 @@ public class Teleop extends LinearOpMode {
                         robot.drive.getHeading());
             }
 
-            //if(driverGamepad.wasAPressed()){
-            //robot.drive.setHeldHeading(robot.driverSide());
-            //}
+            if(driverGamepad.wasAPressed()){
+                robot.intake.testWiring();
+                //robot.outtake.testWiring();
+            }
             if(driverGamepad.wasYPressed()||driverGamepad.wasAPressed()){
                 robot.drive.setHeldHeading(robot.fieldSide());
             }
@@ -203,7 +204,6 @@ public class Teleop extends LinearOpMode {
             telemetry.addLine("Rect Angle : "+sampleDetector.rectAngle);
             telemetry.addLine("Rect Center X : "+sampleDetector.rectCenterXOffset);
             telemetry.addLine("Rect Center Y : "+sampleDetector.rectCenterYOffset);
-
 
 
 
