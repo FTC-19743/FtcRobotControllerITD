@@ -42,15 +42,22 @@ public class Intake {
 
 
     static public float SWEEPER_READY = 0.35f;
-    static public float GRABBER_READY = 0.2f;
     static public float SWEEPER_EXPAND = 0.59f;
-    static public float SWEEPER_GRAB = 0.59f;
-    static public float GRABBER_GRAB = 0.57f;
+    static public float SWEEPER_GRAB = 0.53f; // was .59f
+    static public float GRABBER_READY = 0.35f;
+    static public float GRABBER_GRAB = 0.62f;
+    static public int GRAB_DELAY1 = 150;
+    static public int GRAB_DELAY2 = 100;
 
     static public float MM_PER_PIX_Y = 0.5625f;
     static public float MM_PER_PIX_X = 0.59375f;
     static public float MM_PER_EXTENDER_TIC = 0.3168f;
     static public float MM_PER_SLIDER_TIC = 473.333f;
+
+    static public float PIX_PER_MM_Y = 1/MM_PER_PIX_Y;
+    static public float PIX_PER_MM_X = 1/MM_PER_PIX_X;
+    static public float EXTENDER_TIC_PER_MM = 1/MM_PER_EXTENDER_TIC;
+    static public float SLIDER_TIC_PER_MM = 1/MM_PER_SLIDER_TIC;
 
 
 
@@ -120,15 +127,20 @@ public class Intake {
         sweeper.setPosition(SWEEPER_READY);
         grabber.setPosition(GRABBER_READY);
     }
-    public void grab(){
+    public void goToGrab() {
         flipper.setPosition(FLIPPER_GRAB);
         teamUtil.pause(1000);
+    }
+    public void grab(){
         sweeper.setPosition(SWEEPER_EXPAND);
-        teamUtil.pause(1000);
+        teamUtil.pause(GRAB_DELAY1);
         grabber.setPosition(GRABBER_GRAB);
-        teamUtil.pause(500);
+        teamUtil.pause(GRAB_DELAY2);
         sweeper.setPosition(SWEEPER_GRAB);
-
+    }
+    public void release() {
+        sweeper.setPosition(SWEEPER_EXPAND);
+        grabber.setPosition(GRABBER_READY);
     }
 
     public void intakeWithVision(){
@@ -136,11 +148,11 @@ public class Intake {
     }
 
     public void testWiring() {
-        wrist.setPosition(WRIST_LOAD);
-        sweeper.setPosition(SWEEPER_READY);
+        //wrist.setPosition(WRIST_LOAD);
+        //sweeper.setPosition(SWEEPER_READY);
         grabber.setPosition(GRABBER_READY);
-        flipper.setPosition(FLIPPER_READY);
-        slider.setPosition(SLIDER_UNLOAD);
+        //flipper.setPosition(FLIPPER_READY);
+        //slider.setPosition(SLIDER_UNLOAD);
     }
     public void intakeTelemetry(){
         telemetry.addLine("Extender Position: " + extender.getCurrentPosition());

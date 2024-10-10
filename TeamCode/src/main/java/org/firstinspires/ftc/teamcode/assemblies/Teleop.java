@@ -1,5 +1,9 @@
 package org.firstinspires.ftc.teamcode.assemblies;
 
+import static org.firstinspires.ftc.teamcode.assemblies.Intake.FLIPPER_GRAB;
+import static org.firstinspires.ftc.teamcode.assemblies.Intake.FLIPPER_READY;
+import static org.firstinspires.ftc.teamcode.assemblies.Intake.SWEEPER_READY;
+
 import android.util.Size;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -198,7 +202,20 @@ public class Teleop extends LinearOpMode {
             if(driverGamepad.wasXPressed()||driverGamepad.wasBPressed()){
                 robot.drive.setHeldHeading(180);
             }
-
+            if(driverGamepad.wasLeftBumperPressed()){
+                robot.intake.grab();
+            }
+            if(driverGamepad.wasRightBumperPressed()){
+                robot.intake.release();
+                teamUtil.pause(1000);
+                robot.intake.sweeper.setPosition(SWEEPER_READY);
+            }
+            if(driverGamepad.wasLeftTriggerPressed()){
+                robot.intake.flipper.setPosition(FLIPPER_GRAB);
+            }
+            if(driverGamepad.wasRightTriggerPressed()){
+                robot.intake.flipper.setPosition(FLIPPER_READY);
+            }
             robot.outputTelemetry();
             telemetry.addLine("Found One : "+sampleDetector.foundOne);
             telemetry.addLine("Rect Angle : "+sampleDetector.rectAngle);
