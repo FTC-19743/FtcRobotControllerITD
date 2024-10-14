@@ -22,6 +22,7 @@
             <Servo name="sweeper" port="0" />
             <Servo name="grabber" port="1" />
             <Servo name="wrist" port="2" />
+            <Servo name="bucket" port="3" />
             <!---<Servo name="bucket" port="" /> -->
 
             <goBILDA5202SeriesMotor name="frm" port="0" />

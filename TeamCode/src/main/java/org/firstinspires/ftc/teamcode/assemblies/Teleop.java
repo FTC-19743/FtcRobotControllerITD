@@ -88,7 +88,22 @@ public class Teleop extends LinearOpMode {
 
         VisionPortal arduPortal;
 
-        OpenCVSampleDetector sampleDetector = new OpenCVSampleDetector();
+
+        driverGamepad = new TeamGamepad();
+        driverGamepad.initilize(true);
+        armsGamepad = new TeamGamepad();
+        armsGamepad.initilize(false);
+        robot = new Robot();
+        robot.initialize();
+        if (!teamUtil.justRanAuto) { // Auto already took care of this, so save time.
+            robot.calibrate();
+        }
+
+        telemetry.addLine("Ready to start");
+        telemetry.addLine("ALLIANCE : "+ teamUtil.alliance);
+        telemetry.update();
+
+        OpenCVSampleDetector sampleDetector = robot.intake.sampleDetector;
         //sampleDetector.init(); // TODO Last year's code never called init on these processors...
         sampleDetector.viewingPipeline = true;
 
@@ -112,19 +127,6 @@ public class Teleop extends LinearOpMode {
 
         arduPortal = armBuilder.build();
 
-        driverGamepad = new TeamGamepad();
-        driverGamepad.initilize(true);
-        armsGamepad = new TeamGamepad();
-        armsGamepad.initilize(false);
-        robot = new Robot();
-        robot.initialize();
-        if (!teamUtil.justRanAuto) { // Auto already took care of this, so save time.
-            robot.calibrate();
-        }
-
-        telemetry.addLine("Ready to start");
-        telemetry.addLine("ALLIANCE : "+ teamUtil.alliance);
-        telemetry.update();
         robot.drive.setHeading(180);
         while (!opModeIsActive()) {
             driverGamepad.loop();
@@ -142,8 +144,8 @@ public class Teleop extends LinearOpMode {
 
         waitForStart();
 
+        int currentTargetColor=1;
         sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
-
         while (opModeIsActive()){
             driverGamepad.loop();
             armsGamepad.loop();
@@ -175,7 +177,19 @@ public class Teleop extends LinearOpMode {
             }
 
              */
+            if(driverGamepad.wasDownPressed()){
+                currentTargetColor+=1;
+                if(currentTargetColor>3){
+                    currentTargetColor=1;
+                    sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
 
+                }
+                else if(currentTargetColor==2){
+                    sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
+                }else{
+                    sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
+                }
+            }
             if (teamUtil.alliance == teamUtil.Alliance.RED) { // Make this work for Red and Blue Alliances
                 robot.drive.universalDriveJoystickV2(
                         driverGamepad.gamepad.left_stick_y,
@@ -194,6 +208,18 @@ public class Teleop extends LinearOpMode {
 
             if(driverGamepad.wasAPressed()){
                 robot.intake.testWiring();
+                //robot.outtake.testWiring();
+            }
+            if(driverGamepad.wasUpPressed()){
+                robot.intake.goToSample();
+                //robot.outtake.testWiring();
+            }
+            if(driverGamepad.wasLeftPressed()){
+                robot.intake.goToSampleAndGrab();
+                //robot.outtake.testWiring();
+            }
+            if(driverGamepad.wasRightPressed()){
+                robot.intake.flipAndRotateToSample(sampleDetector.rectAngle.get());
                 //robot.outtake.testWiring();
             }
             if(driverGamepad.wasYPressed()||driverGamepad.wasAPressed()){
@@ -217,6 +243,7 @@ public class Teleop extends LinearOpMode {
                 robot.intake.flipper.setPosition(FLIPPER_READY);
             }
             robot.outputTelemetry();
+            telemetry.addLine("Current Color: "+ sampleDetector.targetColor);
             telemetry.addLine("Found One : "+sampleDetector.foundOne);
             telemetry.addLine("Rect Angle : "+sampleDetector.rectAngle);
             telemetry.addLine("Rect Center X : "+sampleDetector.rectCenterXOffset);

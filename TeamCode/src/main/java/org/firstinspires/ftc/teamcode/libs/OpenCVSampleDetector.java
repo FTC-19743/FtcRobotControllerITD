@@ -61,7 +61,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     Mat yellowErosionElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2 * yellowErosionFactor + 1, 2 * yellowErosionFactor + 1),
             new Point(yellowErosionFactor, yellowErosionFactor));
     // TODO Repeat above section for Red
-    public int blueLowH = 100, blueLowS = 150, blueLowV = 150;
+    public int blueLowH = 100, blueLowS = 140, blueLowV = 150;
     public int blueHighH = 120, blueHighS = 255, blueHighV = 255;
     public int blueErosionFactor = 15;
     public Scalar blueLowHSV = new Scalar(blueLowH, blueLowS, blueLowV); // lower bound HSV for yellow
@@ -69,7 +69,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     Mat blueErosionElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2 * blueErosionFactor + 1, 2 * blueErosionFactor + 1),
             new Point(blueErosionFactor, blueErosionFactor));
 
-    public int redLowH = 0, redLowS = 150, redLowV = 225;
+    public int redLowH = 0, redLowS = 140, redLowV = 225;
     public int redHighH = 185, redHighS = 255, redHighV = 255;
     public int redErosionFactor = 15;
     public Scalar redLowHSV = new Scalar(redLowH, redLowS, redLowV); // lower bound HSV for yellow
@@ -142,7 +142,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     }
     @Override
     public Object processFrame(Mat frame, long captureTimeNanos) {
-        boolean details = false;
+        boolean details = true;
         if (details) teamUtil.log("Sample Detector: Process Frame");
 
         Rect cropRect = new  Rect(0,0,frame.width(), frame.height());
@@ -175,7 +175,6 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         Imgproc.findContours(edgesMat, contours, hierarchyMat, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE); // find contours around white areas
 
         if (!contours.isEmpty()) {
-            foundOne.set(true);
             MatOfPoint2f[] contoursPoly = new MatOfPoint2f[contours.size()];
             RotatedRect[] boundRect = new RotatedRect[contours.size()];
             double largestAreaSelection = 0;
@@ -194,11 +193,9 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             /////////////AREA SELECTION THRESHOLD SELECTED AT CAMERA HEIGHT OF ABOUT 7.5 INCHES (IS 4000 AT THIS HEIGHT)
             /////////////MAKE SURE TO CHANGE IF CAMERA HEIGHT CHANGED
             if(largestAreaSelection<4000){
-                teamUtil.log("Too Small");
-                rectAngle.set(-10);
+                if(details)teamUtil.log("Too Small");
                 if (details) teamUtil.log("No Angle");
-                rectCenterYOffset.set(-1000);
-                rectCenterXOffset.set(-1000);
+                foundOne.set(false);
 
             }
             else{
@@ -239,6 +236,8 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                     if(i!=selectedRect){
                     }
                     else{
+                        foundOne.set(true);
+
                         contoursPoly[i] = new MatOfPoint2f();
                         Imgproc.approxPolyDP(new MatOfPoint2f(contours.get(i).toArray()), contoursPoly[i], 3, true);
                         boundRect[i] = Imgproc.minAreaRect(contoursPoly[i]);
@@ -289,9 +288,8 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                             else {
                                 realAngle = 90-realAngle;
                             }
-                            if(Math.abs(xDist)<1){
-                                realAngle=90;
-                            }
+
+
 
                             /*
                             if ((Math.abs((int)realAngle-rectAngle.get())>80)&&rectAngle.get()>0) {
@@ -304,13 +302,13 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                             }
 
                             if(Math.abs((int)boundRect[i].center.y-rectCenterYOffset.get())>2){
-                                rectCenterYOffset.set(-1*((int)boundRect[i].center.y-320));
+                                rectCenterYOffset.set(-1*((int)boundRect[i].center.y-160));
                             }
                             if(Math.abs((int)boundRect[i].center.x-rectCenterXOffset.get())>2){
                                 rectCenterXOffset.set((int)boundRect[i].center.x-320);
                             }
                             //System.out.println("Points"+vertices1[j]);
-                            teamUtil.log("Real Angle"+realAngle);
+                            if(details)teamUtil.log("Real Angle"+realAngle);
                             //Imgproc.putText(matImgDst, String.valueOf(realAngle),vertices1[lowestPixel],0,1,PASTEL_GREEN
                         }
                     }
@@ -323,10 +321,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             foundOne.set(false);
 
             if (details) teamUtil.log("No Detections");
-            rectAngle.set(-10);
             if (details) teamUtil.log("No Angle");
-            rectCenterYOffset.set(-1000);
-            rectCenterXOffset.set(-1000);
             if (details) teamUtil.log("No Center");
 
 
@@ -337,6 +332,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
     @Override
     public void onDrawFrame(Canvas canvas, int onscreenWidth, int onscreenHeight, float scaleBmpPxToCanvasPx, float scaleCanvasDensity, Object userContext) {
+        boolean details = false;
         // draw rectangles around the objects we found
         if (viewingPipeline) {
             Bitmap bmp = Bitmap.createBitmap(HSVMat.cols(), HSVMat.rows(), Bitmap.Config.ARGB_8888);
@@ -359,22 +355,24 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             rectPaint.setColor(Color.RED);
             rectPaint.setStyle(Paint.Style.STROKE);
             rectPaint.setStrokeWidth(scaleCanvasDensity * 4);
-            canvas.drawCircle(320, 240, 60,rectPaint);
+            canvas.drawCircle(320, 160, 60,rectPaint);
             double smallestDistFromCenter=0;
             double xDist;
             double yDist;
             for (int i = 0; i < boundRect.length; i++) {
                 //Old Normal Circle Drawing
                 //canvas.drawCircle((float)boundRect[i].center.x*scaleBmpPxToCanvasPx, (float)boundRect[i].center.y*scaleBmpPxToCanvasPx, 3,rectPaint);
-                teamUtil.log("Center (X) " + (float)boundRect[i].center.x*scaleBmpPxToCanvasPx);
-                teamUtil.log("Height" + (float)boundRect[i].size.height);
-                teamUtil.log("Height" + (float)boundRect[i].size.width);
-                teamUtil.log("Center (Y) " +(float)boundRect[i].center.y*scaleBmpPxToCanvasPx);
-                xDist = Math.abs(((float)boundRect[i].center.x*scaleBmpPxToCanvasPx)-320);
-                yDist = Math.abs(((float)boundRect[i].center.y*scaleBmpPxToCanvasPx)-240);
-                Point vertices[] = new Point[4];;
-                boundRect[i].points(vertices);
-
+                if(details) {
+                    teamUtil.log("Center (X) " + (float) boundRect[i].center.x * scaleBmpPxToCanvasPx);
+                    teamUtil.log("Height" + (float) boundRect[i].size.height);
+                    teamUtil.log("Height" + (float) boundRect[i].size.width);
+                    teamUtil.log("Center (Y) " + (float) boundRect[i].center.y * scaleBmpPxToCanvasPx);
+                }
+                    xDist = Math.abs(((float) boundRect[i].center.x * scaleBmpPxToCanvasPx) - 320);
+                    yDist = Math.abs(((float) boundRect[i].center.y * scaleBmpPxToCanvasPx) - 240);
+                    Point vertices[] = new Point[4];
+                    ;
+                    boundRect[i].points(vertices);
                 for (int j = 0; j < 4; j++) {
                     double lowestY = 0;
                     double lowestX = 0;
@@ -393,6 +391,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                     double closestY = 1000;
                     double closestX = 0;
                     int closestPixel = 0;
+
 
 
                     for (int k = 0; k < 4; k++) {
@@ -437,17 +436,15 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
 
                     //System.out.println("Points"+vertices1[j]);
-                    teamUtil.log("Real Angle" + realAngle);
+                    if(details)teamUtil.log("Real Angle" + realAngle);
                 }
+                teamUtil.log("Area: " + (float)boundRect[i].size.area());
                 //canvas.drawCircle((float)lowestX, (float)lowestY, 3,rectPaint);
                 //canvas.drawCircle((float)closestX, (float)closestY, 3,rectPaint);
 
-
-                //AREA TESTING
-                if(Math.hypot(xDist,yDist)<60){
-
-                    canvas.drawCircle((float)boundRect[i].center.x*scaleBmpPxToCanvasPx, (float)boundRect[i].center.y*scaleBmpPxToCanvasPx, 3,rectPaint);
-                    smallestDistFromCenter= Math.hypot(xDist,yDist);
+                canvas.drawCircle((float)boundRect[i].center.x*scaleBmpPxToCanvasPx, (float)boundRect[i].center.y*scaleBmpPxToCanvasPx, 3,rectPaint);
+                for (int j = 0; j < 4; j++) {
+                    canvas.drawLine((float)vertices[j].x*scaleBmpPxToCanvasPx,(float)vertices[j].y*scaleBmpPxToCanvasPx,(float)vertices[(j+1)%4].x*scaleBmpPxToCanvasPx,(float)vertices[(j+1)%4].y*scaleBmpPxToCanvasPx,rectPaint);
                 }
                 //teamUtil.log("Smallest Dist From Center: " + smallestDistFromCenter);
             }
