@@ -6,6 +6,7 @@ import static org.firstinspires.ftc.teamcode.assemblies.Intake.SWEEPER_READY;
 
 import android.util.Size;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -15,6 +16,11 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDir
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCharacteristics;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.CameraControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.FocusControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.WhiteBalanceControl;
 import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
@@ -28,6 +34,9 @@ import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 import org.firstinspires.ftc.vision.VisionPortal;
 
+import java.util.concurrent.TimeUnit;
+
+
 @TeleOp(name = "Teleop", group = "LinearOpMode")
 public class Teleop extends LinearOpMode {
 
@@ -38,17 +47,13 @@ public class Teleop extends LinearOpMode {
     TeamGamepad armsGamepad;
     boolean endgame = false;
 
-    final boolean USING_WEBCAM = true;
-    final BuiltinCameraDirection INTERNAL_CAM_DIR = BuiltinCameraDirection.BACK;
-    final int ARDU_RESOLUTION_WIDTH = 640;
-    final int ARDU_RESOLUTION_HEIGHT = 480;
 
-    Size arduSize = new Size(ARDU_RESOLUTION_WIDTH, ARDU_RESOLUTION_HEIGHT);
 
     // Internal state
     boolean lastX;
     int frameCount;
     long capReqTime;
+
 
 
 
@@ -86,7 +91,6 @@ public class Teleop extends LinearOpMode {
     public void runOpMode() {
         teamUtil.init(this);
 
-        VisionPortal arduPortal;
 
 
         driverGamepad = new TeamGamepad();
@@ -103,29 +107,9 @@ public class Teleop extends LinearOpMode {
         telemetry.addLine("ALLIANCE : "+ teamUtil.alliance);
         telemetry.update();
 
-        OpenCVSampleDetector sampleDetector = robot.intake.sampleDetector;
-        //sampleDetector.init(); // TODO Last year's code never called init on these processors...
-        sampleDetector.viewingPipeline = true;
 
-        CameraName arducam = (CameraName)hardwareMap.get(WebcamName.class, "arducam");
-        CameraCharacteristics chars = arducam.getCameraCharacteristics();
-        teamUtil.log(arducam.toString());
-        teamUtil.log("WebCam: "+(arducam.isWebcam() ? "true" : "false"));
-        teamUtil.log("Unknown: "+(arducam.isUnknown() ? "true" : "false"));
-        teamUtil.log(chars.toString());
 
-        teamUtil.log("Setting up ArduCam VisionPortal");
-        VisionPortal.Builder armBuilder = new VisionPortal.Builder();
-        armBuilder.setCamera(arducam);
-        armBuilder.enableLiveView(true);
-        //}
-        // Can also set resolution and stream format if we want to optimize resource usage.
-        armBuilder.setCameraResolution(arduSize);
-        //armBuilder.setStreamFormat(TBD);
 
-        armBuilder.addProcessor(sampleDetector);
-
-        arduPortal = armBuilder.build();
 
         robot.drive.setHeading(180);
         while (!opModeIsActive()) {
@@ -145,7 +129,7 @@ public class Teleop extends LinearOpMode {
         waitForStart();
 
         int currentTargetColor=1;
-        sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
+        robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
         while (opModeIsActive()){
             driverGamepad.loop();
             armsGamepad.loop();
@@ -181,13 +165,13 @@ public class Teleop extends LinearOpMode {
                 currentTargetColor+=1;
                 if(currentTargetColor>3){
                     currentTargetColor=1;
-                    sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
+                    robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
 
                 }
                 else if(currentTargetColor==2){
-                    sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
+                    robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
                 }else{
-                    sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
+                    robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
                 }
             }
             if (teamUtil.alliance == teamUtil.Alliance.RED) { // Make this work for Red and Blue Alliances
@@ -206,6 +190,13 @@ public class Teleop extends LinearOpMode {
                         robot.drive.getHeading());
             }
 
+            if(armsGamepad.wasUpPressed()){
+                robot.intake.setGain();
+            }
+            if(armsGamepad.wasDownPressed()){
+                robot.intake.setExposure();
+            }
+
             if(driverGamepad.wasAPressed()){
                 robot.intake.testWiring();
                 //robot.outtake.testWiring();
@@ -219,7 +210,7 @@ public class Teleop extends LinearOpMode {
                 //robot.outtake.testWiring();
             }
             if(driverGamepad.wasRightPressed()){
-                robot.intake.flipAndRotateToSample(sampleDetector.rectAngle.get());
+                robot.intake.flipAndRotateToSample();
                 //robot.outtake.testWiring();
             }
             if(driverGamepad.wasYPressed()||driverGamepad.wasAPressed()){
@@ -242,12 +233,15 @@ public class Teleop extends LinearOpMode {
             if(driverGamepad.wasRightTriggerPressed()){
                 robot.intake.flipper.setPosition(FLIPPER_READY);
             }
+            if (armsGamepad.wasRightBumperPressed()){
+                robot.intake.sampleDetector.nextView();
+            }
             robot.outputTelemetry();
-            telemetry.addLine("Current Color: "+ sampleDetector.targetColor);
-            telemetry.addLine("Found One : "+sampleDetector.foundOne);
-            telemetry.addLine("Rect Angle : "+sampleDetector.rectAngle);
-            telemetry.addLine("Rect Center X : "+sampleDetector.rectCenterXOffset);
-            telemetry.addLine("Rect Center Y : "+sampleDetector.rectCenterYOffset);
+            telemetry.addLine("Current Color: "+ robot.intake.sampleDetector.targetColor);
+            telemetry.addLine("Found One : "+robot.intake.sampleDetector.foundOne);
+            telemetry.addLine("Rect Angle : "+robot.intake.sampleDetector.rectAngle);
+            telemetry.addLine("Rect Center X : "+robot.intake.sampleDetector.rectCenterXOffset);
+            telemetry.addLine("Rect Center Y : "+robot.intake.sampleDetector.rectCenterYOffset);
 
 
 

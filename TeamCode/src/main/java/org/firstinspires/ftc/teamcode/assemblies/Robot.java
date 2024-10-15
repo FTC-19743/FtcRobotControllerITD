@@ -41,6 +41,7 @@ public class Robot {
         drive.initalize();
         output.initalize();
         intake.initialize();
+        intake.initCV();
 
 
     }

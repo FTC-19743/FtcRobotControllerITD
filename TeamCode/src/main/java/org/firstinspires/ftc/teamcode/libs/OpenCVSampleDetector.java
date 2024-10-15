@@ -34,9 +34,6 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     Telemetry telemetry;
 
     Scalar BLACK = new Scalar(0, 0, 0);
-    Scalar PASTEL_GREEN  = new Scalar(204, 255, 204);
-    Scalar PASTEL_RED = new Scalar(204, 204, 255);
-    Scalar PASTEL_PURPLE = new Scalar(255, 204, 204);
 
     public final int WIDTH = 640;
     public final int HEIGHT = 480;
@@ -66,6 +63,9 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public int redLowH = 0, redLowS = 150, redLowV = 225;
     static public int redHighH = 185, redHighS = 255, redHighV = 255;
     static public int redErosionFactor = 15;
+
+    static public int GAIN = 15;
+    static public int EXPOSURE = 15;
 
 
 
@@ -139,7 +139,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
         // Set up the various objects needed to do the image processing
         // This is done here instead of at the class level so these can be adjusted using Acme Dashboard
-        Size blurFactorSize = new Size(blurFactor,blurFactor);
+        Size blurFactorSize = new Size(blurFactor, blurFactor);
         Scalar yellowLowHSV = new Scalar(yellowLowH, yellowLowS, yellowLowV); // lower bound HSV for yellow
         Scalar yellowHighHSV = new Scalar(yellowHighH, yellowHighS, yellowHighV); // higher bound HSV for yellow
         Mat yellowErosionElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2 * yellowErosionFactor + 1, 2 * yellowErosionFactor + 1),
@@ -153,14 +153,12 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         Mat redErosionElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2 * redErosionFactor + 1, 2 * redErosionFactor + 1),
                 new Point(redErosionFactor, redErosionFactor));
 
-        Rect cropRect = new  Rect(0,0,frame.width(), frame.height());
+        Rect cropRect = new Rect(0, 0, frame.width(), frame.height());
 
         Imgproc.cvtColor(frame, HSVMat, Imgproc.COLOR_RGB2HSV); // convert to HSV
 
         Imgproc.blur(HSVMat, blurredMat, blurFactorSize); // get rid of noise
 
-        //TODO: Why was this removed? Does it not affect Erosion?
-        //Imgproc.rectangle(blurredMat, cropRect, blackColor,2); // black frame to help with erosion and boundaries.
 
         switch (targetColor) {
             case YELLOW:
@@ -176,15 +174,17 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                 Imgproc.erode(thresholdMat, erodedMat, blueErosionElement);
                 break;
         }
+        Imgproc.rectangle(erodedMat, cropRect, BLACK, 2); // black frame to help with erosion and boundaries.
 
         Imgproc.Canny(erodedMat, edgesMat, 100, 300); // find edges
+
 
         List<MatOfPoint> contours = new ArrayList<>();
         contours.clear(); // empty the list from last time
         Imgproc.findContours(edgesMat, contours, hierarchyMat, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE); // find contours around white areas
 
         if (contours.isEmpty()) {
-            // TODO : Should we preserve the data from our last process frame (Foundone, etc.) or erase it?
+            foundOne.set(false);
             return null;
         }
 
@@ -192,126 +192,87 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         foundOne.set(true); // TODO: Have we actually found one yet?  Might be too small?
         MatOfPoint2f[] contoursPoly = new MatOfPoint2f[contours.size()];
         RotatedRect[] rotatedRect = new RotatedRect[contours.size()];
-        double largestAreaSelection = 0;
-        int largestAreaSelectionNum = 0;
         double closestAreaSelection = 1000; // TODO: What is this?
-        int closestAreaSelectionNum = 0;
+        int closestAreaSelectionNum = -1;
         double xDistCenter;
         double yDistCenter;
 
-        //Create Rotated Rectangles from contours and identify the largest one and the one closed to our target
-        // TODO I merged your loops, no point in doing all the processing x times.
-        // TODO: However, the logic in the old one was suspicious, it would happily identify a "closest" sample, but then go with the "largest" if that closest was too small...
-        // TODO: Why not just go with the closest one that meets the size threshold?
+        //Create Rotated Rectangles from contours and identify the one closest to the target that meets the threshold size
         for (int i = 0; i < contours.size(); i++) {
             contoursPoly[i] = new MatOfPoint2f();
             Imgproc.approxPolyDP(new MatOfPoint2f(contours.get(i).toArray()), contoursPoly[i], 3, true);
             rotatedRect[i] = Imgproc.minAreaRect(contoursPoly[i]);
 
-            // Is the largest one we have seen so far?
-            if (rotatedRect[i].size.area() > largestAreaSelection) {
-                largestAreaSelection = rotatedRect[i].size.area();
-                largestAreaSelectionNum = i;
-            }
-
             // Is the closest one to the target we have seen so far?
             xDistCenter = Math.abs(rotatedRect[i].center.x - TARGET_X);
             yDistCenter = Math.abs(rotatedRect[i].center.y - TARGET_Y); // TODO, this was 140 instead of the correct TARGET_Y...
-            if (Math.hypot(xDistCenter, yDistCenter) < closestAreaSelection) {
+            if (Math.hypot(xDistCenter, yDistCenter) < closestAreaSelection && rotatedRect[i].size.area() > AREA_THRESHOLD) {
                 closestAreaSelection = Math.hypot(xDistCenter, yDistCenter);
                 closestAreaSelectionNum = i;
             }
         }
 
-
-        /////////////AREA SELECTION THRESHOLD SELECTED AT CAMERA HEIGHT OF ABOUT 7.5 INCHES (IS 4000 AT THIS HEIGHT)
-        /////////////MAKE SURE TO CHANGE IF CAMERA HEIGHT CHANGED
-        if (largestAreaSelection < AREA_THRESHOLD) { // nothing big enough
+        if (closestAreaSelectionNum == -1) { // nothing big enough
             if (details) teamUtil.log("Saw blobs but nothing big enough");
             foundOne.set(false);
             return null;
         }
 
-        //Decides which rectangle to use
-        //If the closest Area is not the Largest area then chooses to use closest area
-        //Makes sure that closest area is not a tiny piece of noise and then moves on
-        int selectedRect = 0;
-        if (closestAreaSelectionNum != largestAreaSelectionNum) {
-            /////////////AREA SELECTION THRESHOLD SELECTED AT CAMERA HEIGHT OF ABOUT 7.5 INCHES (IS 4000 AT THIS HEIGHT)
-            /////////////MAKE SURE TO CHANGE IF CAMERA HEIGHT CHANGED
-            if (closestAreaSelection < AREA_THRESHOLD) {
-                selectedRect = largestAreaSelectionNum;
-            } else {
-                selectedRect = closestAreaSelectionNum;
-            }
-        } else {
-            selectedRect = largestAreaSelectionNum;
-        }
-
-        // Compute the "Real" Angle (Rotated Rect returns 0-90 but we need 0-180)
+        //Find the point with the lowest y coordinate
         Point vertices1[] = new Point[4];
-        rotatedRect[selectedRect].points(vertices1); // get the 4 corners of the rotated rectangle
-
-        for (int j = 0; j < 4; j++) { // run through corners of rotated rect
-            double lowestY = 0;
-            double lowestX = 0;
-            int lowestPixel = 0;
-
-            for (int k = 0; k < 4; k++) { // for each one, compare to the others
-                if (vertices1[k].y > lowestY) {
-                    lowestY = vertices1[k].y;
-                    lowestX = vertices1[k].x;
-                    lowestPixel = k;
-                }
+        rotatedRect[closestAreaSelectionNum].points(vertices1); // get the 4 corners of the rotated rectangle
+        int lowestPixel = 0;
+        for (int j = 1; j < 4; j++) {
+            if (vertices1[j].y > vertices1[lowestPixel].y) {
+                lowestPixel = j;
             }
-            double closestDist = 1000; // TODO: Why?
-            double closestY = 1000;
-            double closestX = 0;
-            int closestPixel = 0;
-
-
-            for (int k = 0; k < 4; k++) { // TODO: Why are we running through the vertices again?
-                if (vertices1[k].y == lowestY) {
-                } else {
-
-                    double xDiff = Math.abs(lowestX - vertices1[k].x);
-                    double yDiff = Math.abs(lowestY - vertices1[k].y);
-
-                    if (Math.hypot(xDiff, yDiff) < closestDist) {
-                        closestDist = Math.hypot(xDiff, yDiff);
-                        closestPixel = k;
-                    }
-                }
-            }
-
-            double xDist = Math.abs(vertices1[closestPixel].x - vertices1[lowestPixel].x);
-            double yDist = Math.abs(vertices1[closestPixel].y - vertices1[lowestPixel].y);
-            double realAngle = Math.toDegrees(Math.atan(yDist / xDist));
-            if (vertices1[closestPixel].x < vertices1[lowestPixel].x) {
-                realAngle += 90;
-            } else {
-                realAngle = 90 - realAngle;
-            }
-            /*
-            if ((Math.abs((int)realAngle-rectAngle.get())>80)&&rectAngle.get()>0) {
-                realAngle = 90;
-            }
-
-             */
-            if (Math.abs((int) realAngle - rectAngle.get()) > 2) {
-                rectAngle.set((int) realAngle);
-            }
-
-            if (Math.abs((int) rotatedRect[selectedRect].center.y - rectCenterYOffset.get()) > 2) {
-                rectCenterYOffset.set(-1 * ((int) rotatedRect[selectedRect].center.y - TARGET_Y));
-            }
-            if (Math.abs((int) rotatedRect[selectedRect].center.x - rectCenterXOffset.get()) > 2) {
-                rectCenterXOffset.set((int) rotatedRect[selectedRect].center.x - TARGET_X);
-            }
-            //System.out.println("Points"+vertices1[j]);
-            if (details) teamUtil.log("Real Angle" + realAngle);
-            //Imgproc.putText(matImgDst, String.valueOf(realAngle),vertices1[lowestPixel],0,1,PASTEL_GREEN
         }
+
+        //Find the point closest to lowest point
+        int closestPixel = 0;
+        double closestDist = 1000;
+        for (int k = 0; k < 4; k++) {
+            if (k == lowestPixel) {
+            } else {
+                double xDiff = Math.abs(vertices1[lowestPixel].x - vertices1[k].x);
+                double yDiff = Math.abs(vertices1[lowestPixel].x - vertices1[k].y);
+                if (Math.hypot(xDiff, yDiff) < closestDist) {
+                    closestDist = Math.hypot(xDiff, yDiff);
+                    closestPixel = k;
+                }
+            }
+
+        }
+        double xDist = Math.abs(vertices1[closestPixel].x - vertices1[lowestPixel].x);
+        double yDist = Math.abs(vertices1[closestPixel].y - vertices1[lowestPixel].y);
+        double realAngle = Math.toDegrees(Math.atan(yDist / xDist));
+        if (vertices1[closestPixel].x < vertices1[lowestPixel].x) {
+            realAngle += 90;
+        } else {
+            realAngle = 90 - realAngle;
+        }
+        /*
+        //TODO POssible change later
+        if (Math.abs((int) realAngle - rectAngle.get()) > 2) {
+            rectAngle.set((int) realAngle);
+        }
+
+        if (Math.abs((int) rotatedRect[closestAreaSelectionNum].center.y - rectCenterYOffset.get()) > 2) {
+            rectCenterYOffset.set(-1 * ((int) rotatedRect[closestAreaSelectionNum].center.y - TARGET_Y));
+        }
+        if (Math.abs((int) rotatedRect[closestAreaSelectionNum].center.x - rectCenterXOffset.get()) > 2) {
+            rectCenterXOffset.set((int) rotatedRect[closestAreaSelectionNum].center.x - TARGET_X);
+        }
+
+
+         */
+        rectCenterYOffset.set(-1 * ((int) rotatedRect[closestAreaSelectionNum].center.y - TARGET_Y));
+        rectCenterXOffset.set((int) rotatedRect[closestAreaSelectionNum].center.x - TARGET_X);
+
+        rectAngle.set((int) realAngle);
+        if (details) teamUtil.log("Real Angle" + realAngle);
+        if (details) teamUtil.log("Real Angle" + realAngle + "Lowest: " + vertices1[lowestPixel].x + "," + vertices1[lowestPixel].y+"Closest: " + vertices1[closestPixel].x+ "," +vertices1[closestPixel].y);
+
         return rotatedRect;
     }
 
@@ -339,11 +300,16 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             Paint rectPaint = new Paint();
             rectPaint.setColor(Color.MAGENTA);
             rectPaint.setStyle(Paint.Style.STROKE);
-            rectPaint.setStrokeWidth(scaleCanvasDensity * 8);
+            rectPaint.setStrokeWidth(scaleCanvasDensity * 6);
+            Paint anglePaint = new Paint();
+            anglePaint.setColor(Color.CYAN);
+            anglePaint.setStyle(Paint.Style.STROKE);
+            anglePaint.setTextSize(20);
+            anglePaint.setStrokeWidth(scaleCanvasDensity * 6);
             Paint centerPaint = new Paint();
             centerPaint.setColor(Color.BLACK);
             centerPaint.setStyle(Paint.Style.STROKE);
-            centerPaint.setStrokeWidth(scaleCanvasDensity * 8);
+            centerPaint.setStrokeWidth(scaleCanvasDensity * 6);
             canvas.drawCircle((float)TARGET_X*scaleBmpPxToCanvasPx, (float)TARGET_Y*scaleBmpPxToCanvasPx, 10,rectPaint);
 
 
@@ -360,10 +326,12 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                 }
 
                 // Draw angle vector
-                int endX = (int) (rotatedRect[i].center.x + 20 * Math.cos(rotatedRect[i].angle * 3.14 / 180.0));
-                int endY =  (int) (rotatedRect[i].center.y + 20 * Math.sin(rotatedRect[i].angle * 3.14 / 180.0));
+                int endX = (int) (rotatedRect[i].center.x + 20 * Math.cos(rectAngle.get() * 3.14 / 180.0));
+                int endY =  (int) (rotatedRect[i].center.y + 20 * Math.sin(rectAngle.get() * 3.14 / 180.0));
                 canvas.drawLine((float)rotatedRect[i].center.x*scaleBmpPxToCanvasPx,(float)rotatedRect[i].center.y*scaleBmpPxToCanvasPx,(float)endX*scaleBmpPxToCanvasPx,(float)endY*scaleBmpPxToCanvasPx,rectPaint);
                 //Imgproc.putText(matImgDst, String.valueOf((int)boundRect[i].angle),boundRect[i].center,0,1,PASTEL_GREEN);
+                canvas.drawText(Integer.toString(rectAngle.get()),(float)rotatedRect[i].center.x*scaleBmpPxToCanvasPx,(float)rotatedRect[i].center.y*scaleBmpPxToCanvasPx,anglePaint);
+
             }
         }
     }

@@ -1,14 +1,28 @@
 package org.firstinspires.ftc.teamcode.assemblies;
 
+import android.util.Size;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCharacteristics;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.FocusControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.WhiteBalanceControl;
 import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
+import org.firstinspires.ftc.vision.VisionPortal;
+
+import java.util.concurrent.TimeUnit;
 
 @Config // Makes Static data members available in Dashboard
 public class Intake {
@@ -48,10 +62,10 @@ public class Intake {
     //.34 = 45 angle
 
 
-    static public float SWEEPER_READY = 0.335f;
+    static public float SWEEPER_READY = 0.255f;
     static public float SWEEPER_EXPAND = 0.59f;
     static public float SWEEPER_GRAB = 0.53f; // was .59f
-    static public float GRABBER_READY = 0.35f;
+    static public float GRABBER_READY = 0.25f;
     static public float GRABBER_GRAB = 0.62f;
     static public int GRAB_DELAY1 = 150;
     static public int GRAB_DELAY2 = 100;
@@ -70,6 +84,16 @@ public class Intake {
     static public int EXTENDER_VELOCITY = 200; //TODO find this number and use it in movement methods
 
 
+    final boolean USING_WEBCAM = true;
+    final BuiltinCameraDirection INTERNAL_CAM_DIR = BuiltinCameraDirection.BACK;
+    final int ARDU_RESOLUTION_WIDTH = 640;
+    final int ARDU_RESOLUTION_HEIGHT = 480;
+
+    Size arduSize = new Size(ARDU_RESOLUTION_WIDTH, ARDU_RESOLUTION_HEIGHT);
+
+    VisionPortal arduPortal;
+
+
 
 
 
@@ -80,8 +104,56 @@ public class Intake {
         telemetry = teamUtil.theOpMode.telemetry;
     }
 
+    public void initCV(){
+        teamUtil.log("Initializing CV in Intake");
+        CameraName arducam = (CameraName)hardwareMap.get(WebcamName.class, "arducam");
+        CameraCharacteristics chars = arducam.getCameraCharacteristics();
+        teamUtil.log(arducam.toString());
+        teamUtil.log("WebCam: "+(arducam.isWebcam() ? "true" : "false"));
+        teamUtil.log("Unknown: "+(arducam.isUnknown() ? "true" : "false"));
+        teamUtil.log(chars.toString());
+
+        teamUtil.log("Setting up ArduCam VisionPortal");
+        VisionPortal.Builder armBuilder = new VisionPortal.Builder();
+        armBuilder.setCamera(arducam);
+        armBuilder.enableLiveView(true);
+        //}
+        // Can also set resolution and stream format if we want to optimize resource usage.
+        armBuilder.setCameraResolution(arduSize);
+        //armBuilder.setStreamFormat(TBD);
+
+        armBuilder.addProcessor(sampleDetector);
+
+        arduPortal = armBuilder.build();
+
+        //sampleDetector.init(); // TODO Last year's code never called init on these processors...
+        sampleDetector.viewingPipeline = true;
+
+        // Wait for the camera to be open
+        if (arduPortal.getCameraState() != VisionPortal.CameraState.STREAMING) {
+            telemetry.addData("Camera", "Waiting");
+            telemetry.update();
+            while (!teamUtil.theOpMode.isStopRequested() && (arduPortal.getCameraState() != VisionPortal.CameraState.STREAMING)) {
+                teamUtil.pause(20);
+            }
+            telemetry.addData("Camera", "Ready");
+            telemetry.update();
+        }
+        ExposureControl exposureControl = arduPortal.getCameraControl(ExposureControl.class);
+        GainControl gainControl = arduPortal.getCameraControl(GainControl.class);
+        WhiteBalanceControl whiteBalanceControl = arduPortal.getCameraControl(WhiteBalanceControl.class);
+
+        exposureControl.setMode(ExposureControl.Mode.Manual);
+        exposureControl.setAePriority(false);
+        exposureControl.setExposure(10,TimeUnit.MILLISECONDS);
+
+        gainControl.setGain(230);
+
+    }
+
     public void initialize() {
         teamUtil.log("Initializing Intake");slider = hardwareMap.get(Servo.class,"slider");
+
         flipper = hardwareMap.get(Servo.class,"flipper");
         wrist = hardwareMap.get(Servo.class,"wrist");
         sweeper = hardwareMap.get(Servo.class,"sweeper");
@@ -102,7 +174,7 @@ public class Intake {
         teamUtil.pause(250);
         while (extender.getCurrentPosition() != lastExtenderPosition) {
             lastExtenderPosition = extender.getCurrentPosition();
-            teamUtil.log("Calibrate Intake: Extender: " + extender.getCurrentPosition());
+            //teamUtil.log("Calibrate Intake: Extender: " + extender.getCurrentPosition());
 
             teamUtil.pause(50);
         }
@@ -112,6 +184,22 @@ public class Intake {
         extender.setTargetPosition(extender.getCurrentPosition());
         teamUtil.log("Calibrate Intake Final: Extender: "+extender.getCurrentPosition());
         extender.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    }
+
+    public void setTargetColor(OpenCVSampleDetector.TargetColor targetColor){
+        sampleDetector.setTargetColor(targetColor);
+    }
+
+    public void setExposure(){
+        ExposureControl exposureControl = arduPortal.getCameraControl(ExposureControl.class);
+
+        exposureControl.setExposure(OpenCVSampleDetector.EXPOSURE,TimeUnit.MILLISECONDS);
+
+    }
+    public void setGain(){
+        GainControl gainControl = arduPortal.getCameraControl(GainControl.class);
+
+        gainControl.setGain(OpenCVSampleDetector.GAIN);
     }
 
 
@@ -153,9 +241,9 @@ public class Intake {
         grabber.setPosition(GRABBER_READY);
     }
 
-    public void flipAndRotateToSample(int rotation){
+    public void flipAndRotateToSample(){
         teamUtil.log("FlipAndRotate Has Started");
-        rotateToSample(rotation);
+        rotateToSample(sampleDetector.rectAngle.get());
         teamUtil.pause(1000);
         flipper.setPosition(FLIPPER_GRAB);
         teamUtil.pause(500);
@@ -303,7 +391,7 @@ public class Intake {
     public void testWiring() {
         //wrist.setPosition(WRIST_LOAD);
         sweeper.setPosition(SWEEPER_READY);
-        //grabber.setPosition(GRABBER_READY);
+        grabber.setPosition(GRABBER_READY);
         //flipper.setPosition(FLIPPER_READY);
         //slider.setPosition(SLIDER_UNLOAD);
     }
