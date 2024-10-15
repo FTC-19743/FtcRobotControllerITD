@@ -36,8 +36,7 @@ public class Intake {
     public Servo grabber;
     public DcMotorEx extender;
 
-    OpenCVSampleDetector sampleDetector = new OpenCVSampleDetector();
-
+    public OpenCVSampleDetector sampleDetector = new OpenCVSampleDetector();
 
     public boolean intakeRunning = false;
 

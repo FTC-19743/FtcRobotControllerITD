@@ -44,6 +44,13 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     private final double CMS_PER_PIXEL_X = 0; //Set (Will most likely not be linear)
     private final double CMS_PER_PIXEL_Y = 0; //Set (Will most likely not be linear)
 
+    private int sampleX = TARGET_X;
+    private int sampleY = TARGET_Y;
+    static public int SAMPLE_SIZE = 10;
+    public Scalar samplePixel = new Scalar(0, 0, 0); // HSV values at sample Pixel
+    public Scalar sampleAvgs = new Scalar(0, 0, 0); // Average HSV values in sample rectangle
+
+
 
     private Mat HSVMat  = new Mat();
     private Mat blurredMat = new Mat();
@@ -116,6 +123,22 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         telemetry.addLine("Found One: " + foundOne.get() + "TBD");
     }
 
+    public void sampleUp(int step) {
+        sampleY = sampleY - step;
+        if (sampleY < 0) sampleY = 0;
+    }
+    public void sampleLeft(int step) {
+        sampleX = sampleX- step;
+        if (sampleX< 0) sampleX = 0;
+    }
+    public void sampleDown(int step) {
+        sampleY = sampleY + step;
+        if (sampleY > HEIGHT-SAMPLE_SIZE-1) sampleY = HEIGHT-SAMPLE_SIZE-1;
+    }
+    public void sampleRight(int step) {
+        sampleX = sampleX + step;
+        if (sampleX> WIDTH-SAMPLE_SIZE-1) sampleX= WIDTH-SAMPLE_SIZE-1;
+    }
     public void nextView() {
 
         int currentStageNum = stageToRenderToViewport.ordinal();
@@ -294,6 +317,10 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             canvas.drawBitmap(resizedBitmap, 0,0,null);
         }
 
+        samplePixel.set(blurredMat.get(sampleX,sampleY));
+        Rect sampleRect = new Rect(sampleX,sampleY,SAMPLE_SIZE,SAMPLE_SIZE);
+        sampleAvgs = getAverages(blurredMat,sampleRect);
+
         if (userContext != null) {
             RotatedRect[] rotatedRect = (RotatedRect[]) userContext;
 
@@ -310,8 +337,12 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             centerPaint.setColor(Color.BLACK);
             centerPaint.setStyle(Paint.Style.STROKE);
             centerPaint.setStrokeWidth(scaleCanvasDensity * 6);
-            canvas.drawCircle((float)TARGET_X*scaleBmpPxToCanvasPx, (float)TARGET_Y*scaleBmpPxToCanvasPx, 10,rectPaint);
-
+            Paint samplePaint = new Paint();
+            samplePaint.setColor(Color.GREEN);
+            samplePaint.setStyle(Paint.Style.STROKE);
+            samplePaint.setStrokeWidth(scaleCanvasDensity * 4);
+            canvas.drawCircle((float)sampleX*scaleBmpPxToCanvasPx, (float)sampleY*scaleBmpPxToCanvasPx, 5,samplePaint);
+            canvas.drawRect((float)sampleRect.tl().x*scaleBmpPxToCanvasPx, (float)sampleRect.tl().y*scaleBmpPxToCanvasPx, (float)sampleRect.br().x*scaleBmpPxToCanvasPx, (float)sampleRect.br().y*scaleBmpPxToCanvasPx,samplePaint);
 
             for (int i = 0; i < rotatedRect.length; i++) {
 
@@ -334,148 +365,5 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
             }
         }
-    }
-
-
-
-    public void OLDonDrawFrame(Canvas canvas, int onscreenWidth, int onscreenHeight, float scaleBmpPxToCanvasPx, float scaleCanvasDensity, Object userContext) {
-
-        boolean details = false;
-        // draw rectangles around the objects we found
-        if (viewingPipeline) {
-            Bitmap bmp = Bitmap.createBitmap(HSVMat.cols(), HSVMat.rows(), Bitmap.Config.ARGB_8888);
-            switch (stageToRenderToViewport) {
-                case HSV: { Utils.matToBitmap(HSVMat, bmp); break; }
-                case BLURRED: { Utils.matToBitmap(blurredMat, bmp); break;}
-                case THRESHOLD: { Utils.matToBitmap(thresholdMat, bmp); break;}
-                case ERODED: { Utils.matToBitmap(erodedMat, bmp); break;}
-                case EDGES: { Utils.matToBitmap(edgesMat, bmp); break;}
-                default: {}
-            }
-            Bitmap resizedBitmap = Bitmap.createScaledBitmap(bmp, (int)(WIDTH*scaleBmpPxToCanvasPx), (int)(HEIGHT*scaleBmpPxToCanvasPx), false);
-            canvas.drawBitmap(resizedBitmap, 0,0,null);
-        }
-
-        if (userContext != null) {
-            // TODO Annotate with centers of circles and maybe rotation vectors
-            RotatedRect[] boundRect = (RotatedRect[]) userContext;
-            Paint rectPaint = new Paint();
-            rectPaint.setColor(Color.MAGENTA);
-            rectPaint.setStyle(Paint.Style.STROKE);
-            rectPaint.setStrokeWidth(scaleCanvasDensity * 8);
-            Paint centerPaint = new Paint();
-            centerPaint.setColor(Color.BLACK);
-            centerPaint.setStyle(Paint.Style.STROKE);
-            centerPaint.setStrokeWidth(scaleCanvasDensity * 8);
-            double smallestDistFromCenter=0;
-            double xDist;
-            double yDist;
-            for (int i = 0; i < boundRect.length; i++) {
-                //Old Normal Circle Drawing
-                //canvas.drawCircle((float)boundRect[i].center.x*scaleBmpPxToCanvasPx, (float)boundRect[i].center.y*scaleBmpPxToCanvasPx, 3,rectPaint);
-                if(details) { // TODO: Why would this be here and not in process frame?
-                    teamUtil.log("Center (X) " + (float) boundRect[i].center.x * scaleBmpPxToCanvasPx);
-                    teamUtil.log("Height" + (float) boundRect[i].size.height);
-                    teamUtil.log("Height" + (float) boundRect[i].size.width);
-                    teamUtil.log("Center (Y) " + (float) boundRect[i].center.y * scaleBmpPxToCanvasPx);
-                }
-                xDist = Math.abs(((float) boundRect[i].center.x * scaleBmpPxToCanvasPx) - TARGET_X);
-                yDist = Math.abs(((float) boundRect[i].center.y * scaleBmpPxToCanvasPx) - TARGET_Y);
-                Point vertices[] = new Point[4];
-                ;
-                boundRect[i].points(vertices);
-                for (int j = 0; j < 4; j++) {
-                    double lowestY = 0;
-                    double lowestX = 0;
-                    int lowestPixel = 0;
-
-                    for (int k = 0; k < 4; k++) {
-                        if (vertices[k].y > lowestY) {
-                            lowestY = vertices[k].y;
-                            lowestX = vertices[k].x;
-                            lowestPixel = k;
-
-                        }
-                        //System.out.println("Point ("+k+") "+ "x: " + vertices1[k].x+ " y: " + vertices1[k].y+" RECT ANGLE " + (float)boundRect[i].angle);
-                    }
-                    double closestDist = 1000;
-                    double closestY = 1000;
-                    double closestX = 0;
-                    int closestPixel = 0;
-
-
-
-                    for (int k = 0; k < 4; k++) {
-                        if (vertices[k].y == lowestY) {
-                        } else {
-                        	/*
-                            if(Math.abs(lowestY - vertices1[k].y)<closestY){
-                                closestY=Math.abs(lowestY - vertices1[k].y);
-                                closestX= vertices1[k].x;
-                                closestPixel=k;
-
-                            }
-                            */
-                            double xDiff = Math.abs(lowestX - vertices[k].x);
-                            double yDiff = Math.abs(lowestY - vertices[k].y);
-
-                            if (Math.hypot(xDiff, yDiff) < closestDist) {
-                                closestDist = Math.hypot(xDiff, yDiff);
-                                closestPixel = k;
-                            }
-                        }
-                    }
-                    canvas.drawLine((float)vertices[closestPixel].x,(float)vertices[closestPixel].y,(float)vertices[closestPixel].x,(float)vertices[lowestPixel].y,rectPaint);
-                    canvas.drawLine((float)vertices[lowestPixel].x,(float)vertices[lowestPixel].y,(float)vertices[closestPixel].x,(float)vertices[lowestPixel].y,rectPaint);
-
-
-
-                    //System.out.println("Lowest Y: " + lowestY + "Lowest X: " + lowestX);
-                    /*
-                    Imgproc.line(matImgDst,vertices1[j], vertices1[(j+1)%4], PASTEL_RED,3);
-                    Imgproc.circle(matImgDst,vertices1[lowestPixel],3,PASTEL_GREEN,14);
-                    Imgproc.circle(matImgDst,vertices1[closestPixel],3,PASTEL_PURPLE,14);
-
-                     */
-
-                    double realAngle = Math.toDegrees(Math.atan(yDist / xDist));
-                    if (vertices[closestPixel].x < vertices[lowestPixel].x) {
-                        realAngle += 90;
-                    } else {
-                        realAngle = 90 - realAngle;
-                    }
-
-
-                    //System.out.println("Points"+vertices1[j]);
-                    if(details)teamUtil.log("Real Angle" + realAngle);
-                }
-                teamUtil.log("Area: " + (float)boundRect[i].size.area());
-                //canvas.drawCircle((float)lowestX, (float)lowestY, 3,rectPaint);
-                //canvas.drawCircle((float)closestX, (float)closestY, 3,rectPaint);
-
-                canvas.drawCircle((float)boundRect[i].center.x*scaleBmpPxToCanvasPx, (float)boundRect[i].center.y*scaleBmpPxToCanvasPx, 3,rectPaint);
-                for (int j = 0; j < 4; j++) {
-                    canvas.drawLine((float)vertices[j].x*scaleBmpPxToCanvasPx,(float)vertices[j].y*scaleBmpPxToCanvasPx,(float)vertices[(j+1)%4].x*scaleBmpPxToCanvasPx,(float)vertices[(j+1)%4].y*scaleBmpPxToCanvasPx,rectPaint);
-                }
-                //teamUtil.log("Smallest Dist From Center: " + smallestDistFromCenter);
-            }
-        }
-        /*
-                        Imgproc.approxPolyDP(new MatOfPoint2f(contours.get(i).toArray()), contoursPoly[i], 3, true);
-                boundRect[i] = Imgproc.minAreaRect(contoursPoly[i]);
-                Imgproc.circle(matImgDst,boundRect[i].center, 5,PASTEL_GREEN); // Draw a point at the center of the brick
-                Point endPoint = new Point();
-                endPoint.x = (int) (boundRect[i].center.x + 20 * Math.cos(boundRect[i].angle * 3.14 / 180.0));
-                endPoint.y =  (int) (boundRect[i].center.y + 20 * Math.sin(boundRect[i].angle * 3.14 / 180.0));
-                Imgproc.line(matImgDst,boundRect[i].center, endPoint, PASTEL_GREEN,3);
-                Imgproc.putText(matImgDst, String.valueOf((int)boundRect[i].angle),boundRect[i].center,0,1,PASTEL_GREEN);
-                Point vertices[] = new Point[4];;
-                boundRect[i].points(vertices);
-                for (int j = 0; j < 4; j++) {
-                    Imgproc.line(matImgDst,vertices[j], vertices[(j+1)%4], PASTEL_RED,3);
-                }
-                Rect brect = boundRect[i].boundingRect();
-                Imgproc.rectangle(matImgDst, brect, PASTEL_PURPLE,2);
-*/
     }
 }

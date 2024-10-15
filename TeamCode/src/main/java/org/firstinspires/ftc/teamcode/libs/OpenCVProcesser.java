@@ -40,7 +40,10 @@ public abstract class OpenCVProcesser implements VisionProcessor {
         return color.val[2];
     }
 
-
+    protected Scalar getAverages (Mat input, Rect rect) {
+        submat = input.submat(rect);
+        return(Core.mean(submat));
+    }
 
 
 
