@@ -4,37 +4,14 @@ import static org.firstinspires.ftc.teamcode.assemblies.Intake.FLIPPER_GRAB;
 import static org.firstinspires.ftc.teamcode.assemblies.Intake.FLIPPER_READY;
 import static org.firstinspires.ftc.teamcode.assemblies.Intake.SWEEPER_READY;
 
-import android.util.Size;
-
-import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.util.RobotLog;
 
-import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCharacteristics;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.CameraControl;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.FocusControl;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.WhiteBalanceControl;
 import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
 
-import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCharacteristics;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.internal.camera.delegating.DelegatingCaptureSequence;
 import org.firstinspires.ftc.teamcode.libs.Blinkin;
-import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
-import org.firstinspires.ftc.vision.VisionPortal;
-
-import java.util.concurrent.TimeUnit;
 
 
 @TeleOp(name = "Teleop", group = "LinearOpMode")
@@ -191,10 +168,7 @@ public class Teleop extends LinearOpMode {
             }
 
             if(armsGamepad.wasUpPressed()){
-                robot.intake.setGain();
-            }
-            if(armsGamepad.wasDownPressed()){
-                robot.intake.setExposure();
+                robot.intake.configureCam(OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE);
             }
 
             if(driverGamepad.wasAPressed()){

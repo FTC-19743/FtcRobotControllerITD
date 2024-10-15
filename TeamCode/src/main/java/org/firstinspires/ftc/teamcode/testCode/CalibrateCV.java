@@ -1,23 +1,12 @@
 package org.firstinspires.ftc.teamcode.testCode;
 
-import android.util.Size;
-
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCharacteristics;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.FocusControl;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.WhiteBalanceControl;
 import org.firstinspires.ftc.teamcode.assemblies.Intake;
+import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
-import org.firstinspires.ftc.vision.VisionPortal;
-
-import java.util.concurrent.TimeUnit;
 
 @TeleOp(name = "Calibrate CV ", group = "Test Code")
 public class CalibrateCV extends LinearOpMode {
@@ -43,13 +32,16 @@ public class CalibrateCV extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()){
+            gp1.loop();
+            gp2.loop();
+
             if (gp1.wasLeftBumperPressed()) {
-                intake.setExposure();
-                intake.setGain();
+                intake.configureCam(OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE);
             }
             if (gp1.wasRightBumperPressed()) {
-                teamUtil.log("Pixel HSV: " + ((int)intake.sampleDetector.samplePixel.val[0]) + ", " + ((int)intake.sampleDetector.samplePixel.val[1]) + ", "+ ((int)intake.sampleDetector.samplePixel.val[2]));
                 teamUtil.log("Average HSV: " + ((int)intake.sampleDetector.sampleAvgs.val[0]) + ", " + ((int)intake.sampleDetector.sampleAvgs.val[1]) + ", "+ ((int)intake.sampleDetector.sampleAvgs.val[2]));
+                //teamUtil.log("Pixel HSV: " + ((int)intake.sampleDetector.samplePixel[0]) + ", " + ((int)intake.sampleDetector.samplePixel[1]) + ", "+ ((int)intake.sampleDetector.samplePixel[2]));
+                //teamUtil.log("Pixel HSV: " + ((int)intake.sampleDetector.samplePixel.val[0]) + ", " + ((int)intake.sampleDetector.samplePixel.val[1]) + ", "+ ((int)intake.sampleDetector.samplePixel.val[2]));
             }
             if (gp1.wasUpPressed()) {
                 intake.sampleDetector.sampleUp(gp1.gamepad.right_trigger>0.5? 50: 5);
@@ -63,8 +55,41 @@ public class CalibrateCV extends LinearOpMode {
             if (gp1.wasRightPressed()) {
                 intake.sampleDetector.sampleRight(gp1.gamepad.right_trigger>0.5? 50: 5);
             }
-            telemetry.addLine("Pixel HSV: " + ((int)intake.sampleDetector.samplePixel.val[0]) + ", " + ((int)intake.sampleDetector.samplePixel.val[1]) + ", "+ ((int)intake.sampleDetector.samplePixel.val[2]));
-            telemetry.addLine("Average HSV: " + ((int)intake.sampleDetector.sampleAvgs.val[0]) + ", " + ((int)intake.sampleDetector.sampleAvgs.val[1]) + ", "+ ((int)intake.sampleDetector.sampleAvgs.val[2]));
+            if (gp1.wasYPressed()) {
+                intake.sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
+            }
+            if (gp1.wasXPressed()) {
+                intake.sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
+            }
+            if (gp1.wasBPressed()) {
+                intake.sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
+            }
+            if (gp1.wasAPressed()) {
+                intake.sampleDetector.nextView();
+            }
+
+            intake.intakeTelemetry();
+            if (intake.sampleDetector.sampleAvgs.val != null && intake.sampleDetector.sampleAvgs.val.length > 0) {
+                telemetry.addLine("Average HSV: " + ((int) intake.sampleDetector.sampleAvgs.val[0]) + ", " + ((int) intake.sampleDetector.sampleAvgs.val[1]) + ", " + ((int) intake.sampleDetector.sampleAvgs.val[2]));
+            } else {
+                telemetry.addLine("No Sample Average");
+            }
+            telemetry.update();
+            teamUtil.pause(100);
+
         }
     }
 }
+/*
+            if (intake.sampleDetector.samplePixel != null) {
+                telemetry.addLine("Pixel HSV: " + ((int) intake.sampleDetector.samplePixel[0]) + ", " + ((int) intake.sampleDetector.samplePixel[1]) + ", " + ((int) intake.sampleDetector.samplePixel[2]));
+            } else {
+                telemetry.addLine("No Pixel Sample");
+            }
+            if (intake.sampleDetector.samplePixel.val != null) {
+                telemetry.addLine("Pixel HSV: " + ((int) intake.sampleDetector.samplePixel.val[0]) + ", " + ((int) intake.sampleDetector.samplePixel.val[1]) + ", " + ((int) intake.sampleDetector.samplePixel.val[2]));
+            } else {
+                telemetry.addLine("No Pixel Sample");
+            }
+
+ */

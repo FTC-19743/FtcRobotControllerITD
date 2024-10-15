@@ -5,7 +5,6 @@ import android.util.Size;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
@@ -15,7 +14,6 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCharacteri
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.FocusControl;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.WhiteBalanceControl;
 import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
@@ -138,16 +136,7 @@ public class Intake {
             telemetry.addData("Camera", "Ready");
             telemetry.update();
         }
-        ExposureControl exposureControl = arduPortal.getCameraControl(ExposureControl.class);
-        GainControl gainControl = arduPortal.getCameraControl(GainControl.class);
-        WhiteBalanceControl whiteBalanceControl = arduPortal.getCameraControl(WhiteBalanceControl.class);
-
-        exposureControl.setMode(ExposureControl.Mode.Manual);
-        exposureControl.setAePriority(false);
-        exposureControl.setExposure(10,TimeUnit.MILLISECONDS);
-
-        gainControl.setGain(230);
-
+        configureCam(OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE);
     }
 
     public void initialize() {
@@ -189,18 +178,62 @@ public class Intake {
         sampleDetector.setTargetColor(targetColor);
     }
 
-    public void setExposure(){
+    public void configureCam (boolean autoExposure, boolean aePriority, long exposure, int gain, boolean autoWB, int wb) {
         ExposureControl exposureControl = arduPortal.getCameraControl(ExposureControl.class);
-
-        exposureControl.setExposure(OpenCVSampleDetector.EXPOSURE,TimeUnit.MILLISECONDS);
-
-    }
-    public void setGain(){
         GainControl gainControl = arduPortal.getCameraControl(GainControl.class);
+        WhiteBalanceControl wbControl = arduPortal.getCameraControl(WhiteBalanceControl.class);
 
-        gainControl.setGain(OpenCVSampleDetector.GAIN);
+        if (autoExposure) {
+            if (exposureControl.setMode(ExposureControl.Mode.AperturePriority)) {
+                teamUtil.log("Set WebCam to Auto Exposure");
+            } else {
+                teamUtil.log("FAILED to set webcam to auto exposure");
+            }
+        } else {
+            if (exposureControl.setMode(ExposureControl.Mode.Manual)) {
+                teamUtil.log("Set WebCam to Manual Exposure");
+            } else {
+                teamUtil.log("FAILED to set webcam to Manual exposure");
+            }
+            if (exposureControl.setExposure(exposure, TimeUnit.MILLISECONDS)) {
+                teamUtil.log("Set WebCam Exposure to "+ exposure);
+            } else {
+                teamUtil.log("FAILED to set WebCam Exposure");
+            }
+            if (gainControl.setGain(gain)) {
+                teamUtil.log("Set WebCam Gain to "+ gain);
+            } else {
+                teamUtil.log("FAILED to set WebCam Gain");
+            }
+        }
+
+        if (exposureControl.setAePriority(aePriority)) {
+            teamUtil.log("Set WebCam aePriority to "+ aePriority);
+        } else {
+            teamUtil.log("FAILED to set WebCam aePriority");
+        }
+
+        if (autoWB) {
+            if (wbControl.setMode(WhiteBalanceControl.Mode.AUTO)) {
+                teamUtil.log("Set WebCam to Auto White Balance");
+            } else {
+                teamUtil.log("FAILED to set webcam to auto White Balance");
+            }
+        } else {
+            if (wbControl.setMode(WhiteBalanceControl.Mode.MANUAL)) {
+                teamUtil.log("Set WebCam to Manual White Balance");
+            } else {
+                teamUtil.log("FAILED to set webcam to Manual White Balance");
+            }
+            if (wbControl.setWhiteBalanceTemperature(wb)) {
+                teamUtil.log("Set WebCam WB to "+ wb);
+            } else {
+                teamUtil.log("FAILED to set WebCam WB");
+            }
+        }
+
+
     }
-
 
     public void unload(){
         flipper.setPosition(FLIPPER_READY);
@@ -395,6 +428,9 @@ public class Intake {
         //slider.setPosition(SLIDER_UNLOAD);
     }
     public void intakeTelemetry(){
-        telemetry.addLine("Extender Position: " + extender.getCurrentPosition());
+        telemetry.addLine("Intake Extender Position: " + extender.getCurrentPosition());
+        telemetry.addLine("Found One: " + sampleDetector.foundOne.get()
+                + " Offset: "+sampleDetector.rectCenterXOffset.get()+", "+sampleDetector.rectCenterYOffset.get()
+                + " Angle: " + sampleDetector.rectAngle.get());
     }
 }
