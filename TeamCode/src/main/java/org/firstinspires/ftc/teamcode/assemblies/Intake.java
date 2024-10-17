@@ -14,6 +14,7 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCharacteri
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.FocusControl;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.WhiteBalanceControl;
 import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
@@ -103,18 +104,14 @@ public class Intake {
 
     public void initCV(){
         teamUtil.log("Initializing CV in Intake");
-        CameraName arducam = (CameraName)hardwareMap.get(WebcamName.class, "arducam");
+        CameraName arducam = (CameraName)hardwareMap.get(WebcamName.class, "arducam"); // arducam  logitechhd
         CameraCharacteristics chars = arducam.getCameraCharacteristics();
-        teamUtil.log(arducam.toString());
-        teamUtil.log("WebCam: "+(arducam.isWebcam() ? "true" : "false"));
-        teamUtil.log("Unknown: "+(arducam.isUnknown() ? "true" : "false"));
-        teamUtil.log(chars.toString());
 
-        teamUtil.log("Setting up ArduCam VisionPortal");
+        teamUtil.log("Setting up Intake VisionPortal");
         VisionPortal.Builder armBuilder = new VisionPortal.Builder();
         armBuilder.setCamera(arducam);
         armBuilder.enableLiveView(true);
-        //}
+
         // Can also set resolution and stream format if we want to optimize resource usage.
         armBuilder.setCameraResolution(arduSize);
         //armBuilder.setStreamFormat(TBD);
@@ -136,7 +133,7 @@ public class Intake {
             telemetry.addData("Camera", "Ready");
             telemetry.update();
         }
-        configureCam(OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE);
+        configureCam(OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE, OpenCVSampleDetector.AFOCUS, OpenCVSampleDetector.FOCUSLENGTH);
     }
 
     public void initialize() {
@@ -178,10 +175,11 @@ public class Intake {
         sampleDetector.setTargetColor(targetColor);
     }
 
-    public void configureCam (boolean autoExposure, boolean aePriority, long exposure, int gain, boolean autoWB, int wb) {
+    public void configureCam (boolean autoExposure, boolean aePriority, long exposure, int gain, boolean autoWB, int wb, boolean aFocus, int focalLength) {
         ExposureControl exposureControl = arduPortal.getCameraControl(ExposureControl.class);
         GainControl gainControl = arduPortal.getCameraControl(GainControl.class);
         WhiteBalanceControl wbControl = arduPortal.getCameraControl(WhiteBalanceControl.class);
+        FocusControl focusControl = arduPortal.getCameraControl(FocusControl.class);
 
         if (autoExposure) {
             if (exposureControl.setMode(ExposureControl.Mode.AperturePriority)) {
@@ -231,7 +229,24 @@ public class Intake {
                 teamUtil.log("FAILED to set WebCam WB");
             }
         }
-
+        if (aFocus) {
+            if (focusControl.setMode(FocusControl.Mode.ContinuousAuto)) {
+                teamUtil.log("Set WebCam to Continuous Auto Focus");
+            } else {
+                teamUtil.log("FAILED to set webcam to Continuous Auto Focus");
+            }
+        } else {
+            if (focusControl.setMode(FocusControl.Mode.Fixed)) {
+                teamUtil.log("Set WebCam to Fixed Focus");
+            } else {
+                teamUtil.log("FAILED to set webcam to Fixed Focus");
+            }
+            if (focusControl.setFocusLength(focalLength)) {
+                teamUtil.log("Set WebCam focal length to "+ focalLength);
+            } else {
+                teamUtil.log("FAILED to set WebCam focal length");
+            }
+        }
 
     }
 

@@ -5,6 +5,7 @@
    Webcam name="Webcam Left" serialNumber="VendorProduct:vendor=0x046d|product=0x0825|connection="
 
 /> -->
+    <!--<Webcam name="logitechhd" serialNumber="F4D6B65F" /> -->
     <Webcam name="arducam" serialNumber="YL20230518V0"/>
     <LynxUsbDevice name="Control Hub Portal" serialNumber="(embedded)" parentModuleAddress="173">
         <LynxModule name="Expansion Hub 2" port="2">

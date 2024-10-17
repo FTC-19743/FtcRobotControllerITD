@@ -13,6 +13,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibration;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
@@ -34,13 +35,9 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     Telemetry telemetry;
 
     Scalar BLACK = new Scalar(0, 0, 0);
+    Scalar GREEN = new Scalar(0, 255, 0);
 
-    static public int GAIN = 127;
-    static public int EXPOSURE = 1;
-    static public int TEMPERATURE = 4600;
-    static public boolean APEXPOSURE = false;
-    static public boolean AEPRIORITY = false;
-    static public boolean WHITEBALANCEAUTO = true;
+
     public final int WIDTH = 640;
     public final int HEIGHT = 480;
     Rect obscureRect = new Rect(0,300,WIDTH,HEIGHT-300);
@@ -48,10 +45,55 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
     static public int TARGET_X = 320;
     static public int TARGET_Y = 160;
-    static public int AREA_THRESHOLD = 4000;
+    static public int AREA_THRESHOLD = 2000;
 
     private final double CMS_PER_PIXEL_X = 0; //Set (Will most likely not be linear)
     private final double CMS_PER_PIXEL_Y = 0; //Set (Will most likely not be linear)
+
+/* No light Arducam
+    static public int GAIN = 127;
+    static public int EXPOSURE = 1;
+    static public int TEMPERATURE = 4600;
+    static public boolean APEXPOSURE = false;
+    static public boolean AEPRIORITY = false;
+    static public boolean WHITEBALANCEAUTO = true;
+    static public int blurFactor = 10;
+
+    static public int yellowLowH = 10, yellowLowS = 60, yellowLowV = 100;
+    static public int yellowHighH = 35, yellowHighS = 255, yellowHighV = 255;
+    static public int yellowErosionFactor = 20;
+    static public int blueLowH = 100, blueLowS = 50, blueLowV = 20;
+    static public int blueHighH = 140, blueHighS = 255, blueHighV = 255;
+    static public int blueErosionFactor = 20;
+    static public int redLowHA = -1, redLowSA = 100, redLowVA = 100;
+    static public int redHighHA = 8, redHighSA = 255, redHighVA = 255;
+    static public int redLowHB = 140, redLowSB = 100, redLowVB = 100;
+    static public int redHighHB = 180, redHighSB = 255, redHighVB = 255;
+    static public int redErosionFactor = 20;
+*/
+    static public boolean AFOCUS = true;
+    static public boolean APEXPOSURE = false;
+    static public boolean AEPRIORITY = false;
+    static public boolean WHITEBALANCEAUTO = true;
+    static public int FOCUSLENGTH =125;
+    static public int GAIN = 150;
+    static public int EXPOSURE = 1;
+    static public int TEMPERATURE = 2800;
+
+    static public int blurFactor = 10;
+
+    static public int yellowLowH = 10, yellowLowS = 100, yellowLowV = 150;
+    static public int yellowHighH = 35, yellowHighS = 255, yellowHighV = 255;
+    static public int yellowErosionFactor = 20;
+    static public int blueLowH = 90, blueLowS = 120, blueLowV = 10;
+    static public int blueHighH = 130, blueHighS = 255, blueHighV = 255;
+    static public int blueErosionFactor = 20;
+    static public int rbyLowH = -1, rbyLowS = 150, rbyLowV = 130;
+    static public int rbyHighH = 180, rbyHighS = 255, rbyHighV = 255;
+    static public int redErosionFactor = 20;
+    static public int redDilutionFactor = 10;
+
+    //static public int CLOSEFACTOR = 20;
 
     private int sampleX = TARGET_X;
     private int sampleY = TARGET_Y;
@@ -66,29 +108,15 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     private Mat HSVMat  = new Mat();
     private Mat blurredMat = new Mat();
     private Mat thresholdMat = new Mat();
-    private Mat thresholdMatA = new Mat();
-    private Mat thresholdMatB = new Mat();
+    private Mat thresholdMatAll = new Mat();
+    private Mat thresholdMatYellow = new Mat();
+    private Mat thresholdMatBlue = new Mat();
+    private Mat thresholdMatYB = new Mat();
+    private Mat invertedMat = new Mat();
+    private Mat floodFillMask = new Mat();
     private Mat erodedMat = new Mat();
     private Mat edgesMat = new Mat();
     private Mat hierarchyMat = new Mat();
-
-    static public int blurFactor = 10;
-
-    static public int yellowLowH = 10, yellowLowS = 60, yellowLowV = 100;
-    static public int yellowHighH = 35, yellowHighS = 255, yellowHighV = 255;
-    static public int yellowErosionFactor = 20;
-    static public int blueLowH = 100, blueLowS = 50, blueLowV = 20;
-    static public int blueHighH = 140, blueHighS = 255, blueHighV = 255;
-    static public int blueErosionFactor = 20;
-    static public int redLowHA = -1, redLowSA = 100, redLowVA = 100;
-    static public int redHighHA = 8, redHighSA = 255, redHighVA = 255;
-    static public int redLowHB = 140, redLowSB = 100, redLowVB = 100;
-    static public int redHighHB = 180, redHighSB = 255, redHighVB = 255;
-    static public int redErosionFactor = 20;
-
-
-
-
 
 
     public enum TargetColor {
@@ -117,6 +145,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         HSV,
         BLURRED,
         THRESHOLD,
+        INVERTED,
         ERODED,
         EDGES,
         FINAL
@@ -185,12 +214,13 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         Scalar blueHighHSV = new Scalar(blueHighH, blueHighS, blueHighV); // higher bound HSV for yellow
         Mat blueErosionElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2 * blueErosionFactor + 1, 2 * blueErosionFactor + 1),
                 new Point(blueErosionFactor, blueErosionFactor));
-        Scalar redLowHSVA = new Scalar(redLowHA, redLowSA, redLowVA); // lower bound HSV for yellow
-        Scalar redHighHSVA = new Scalar(redHighHA, redHighSA, redHighVA); // higher bound HSV for yellow
-        Scalar redLowHSVB = new Scalar(redLowHB, redLowSB, redLowVB); // lower bound HSV for yellow
-        Scalar redHighHSVB = new Scalar(redHighHB, redHighSB, redHighVB); // higher bound HSV for yellow
+        Scalar rbyLowHSV = new Scalar(rbyLowH, rbyLowS, rbyLowV); // lower bound HSV for yellow
+        Scalar rbyHighHSV = new Scalar(rbyHighH, rbyHighS, rbyHighV); // higher bound HSV for yellow
         Mat redErosionElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2 * redErosionFactor + 1, 2 * redErosionFactor + 1),
                 new Point(redErosionFactor, redErosionFactor));
+
+        Mat redDilutionElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2 * redDilutionFactor + 1, 2 * redDilutionFactor + 1),
+                new Point(redDilutionFactor, redDilutionFactor));
 
         Imgproc.rectangle(frame, obscureRect, BLACK, -1); // Cover view of robot
 
@@ -202,21 +232,39 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         switch (targetColor) {
             case YELLOW:
                 Core.inRange(blurredMat, yellowLowHSV, yellowHighHSV, thresholdMat);
-                //Imgproc.morphologyEx(thresholdMat, erodedMat,Imgproc.MORPH_CLOSE, yellowErosionElement);
+                //Imgproc.morphologyEx(thresholdMat, closedMat,Imgproc.MORPH_CLOSE, closeElement);
                 Imgproc.erode(thresholdMat, erodedMat, yellowErosionElement);
-                break;
-            case RED:
-                Core.inRange(blurredMat, redLowHSVA, redHighHSVA, thresholdMatA); // Deal with Red "wrapping" in H values
-                Core.inRange(blurredMat, redLowHSVB, redHighHSVB, thresholdMatB);
-                Core.bitwise_or(thresholdMatA, thresholdMatB, thresholdMat);
-                Imgproc.erode(thresholdMat, erodedMat, redErosionElement);
                 break;
             case BLUE:
                 Core.inRange(blurredMat, blueLowHSV, blueHighHSV, thresholdMat);
+                //Imgproc.morphologyEx(thresholdMat, closedMat,Imgproc.MORPH_CLOSE, closeElement);
                 Imgproc.erode(thresholdMat, erodedMat, blueErosionElement);
                 break;
+            case RED:
+                Core.inRange(blurredMat, rbyLowHSV, rbyHighHSV, thresholdMatAll); // Get Red and Yellow
+                Core.inRange(blurredMat, yellowLowHSV, yellowHighHSV, thresholdMatYellow);
+                Core.inRange(blurredMat, blueLowHSV, blueHighHSV, thresholdMatBlue);
+                Core.add(thresholdMatBlue, thresholdMatYellow, thresholdMatYB); // combine yellow and blue threshold mat
+                Core.subtract(thresholdMatAll, thresholdMatYB, thresholdMat); // Then subtract from all to get red
+
+                Core.bitwise_not(thresholdMat,invertedMat);
+                Imgproc.rectangle(invertedMat, cropRect, new Scalar(255), 2); // white frame to provide seed and propagation for fill.
+                floodFillMask = new Mat();
+                Imgproc.floodFill(invertedMat, floodFillMask, new Point(0,0),BLACK);
+                //Imgproc.Canny(dilutedMat, edgesMat, 100, 300); // find edges
+                List<MatOfPoint> contours = new ArrayList<>();
+                contours.clear(); // empty the list from last time
+                Imgproc.findContours(invertedMat, contours, hierarchyMat, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE); // find contours around holes we need to fill
+                //for (int i = 0; i < contours.size(); i++) {
+                Imgproc.drawContours(thresholdMat,contours,-1,BLACK,-1); // fill the holes back on the original threshold mat
+
+                //Core.add(dilutedMat,thresholdMat, closedMat);
+                //Imgproc.dilate(thresholdMat, dilutedMat, redDilutionElement);
+                Imgproc.erode(thresholdMat, erodedMat, redErosionElement);
+                break;
+
         }
-        Imgproc.rectangle(erodedMat, cropRect, BLACK, 2); // black frame to help with erosion and boundaries.
+        Imgproc.rectangle(erodedMat, cropRect, BLACK, 2); // black frame to help with edges and boundaries.
 
         Imgproc.Canny(erodedMat, edgesMat, 100, 300); // find edges
 
@@ -331,6 +379,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             switch (stageToRenderToViewport) {
                 case HSV: { Utils.matToBitmap(HSVMat, bmp); break; }
                 case BLURRED: { Utils.matToBitmap(blurredMat, bmp); break;}
+                case INVERTED: { Utils.matToBitmap(invertedMat, bmp); break;}
                 case THRESHOLD: { Utils.matToBitmap(thresholdMat, bmp); break;}
                 case ERODED: { Utils.matToBitmap(erodedMat, bmp); break;}
                 case EDGES: { Utils.matToBitmap(edgesMat, bmp); break;}

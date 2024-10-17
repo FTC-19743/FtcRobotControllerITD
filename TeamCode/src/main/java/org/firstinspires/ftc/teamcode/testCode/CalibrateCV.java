@@ -36,7 +36,7 @@ public class CalibrateCV extends LinearOpMode {
             gp2.loop();
 
             if (gp1.wasLeftBumperPressed()) {
-                intake.configureCam(OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE);
+                intake.configureCam(OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE, OpenCVSampleDetector.AFOCUS, OpenCVSampleDetector.FOCUSLENGTH);
             }
             if (gp1.wasRightBumperPressed()) {
                 teamUtil.log("Average HSV: " + ((int)intake.sampleDetector.sampleAvgs.val[0]) + ", " + ((int)intake.sampleDetector.sampleAvgs.val[1]) + ", "+ ((int)intake.sampleDetector.sampleAvgs.val[2]));

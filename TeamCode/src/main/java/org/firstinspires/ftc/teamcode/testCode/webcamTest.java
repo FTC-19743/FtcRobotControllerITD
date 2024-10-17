@@ -12,6 +12,7 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.FocusControl;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.PtzControl;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.WhiteBalanceControl;
 import org.firstinspires.ftc.teamcode.assemblies.Robot;
 import org.firstinspires.ftc.teamcode.libs.Blinkin;
@@ -39,7 +40,7 @@ public class webcamTest extends LinearOpMode {
         VisionPortal portal;
         telemetry.addLine("Ready to start");
 
-        CameraName cam = (CameraName)hardwareMap.get(WebcamName.class, "arducam");
+        CameraName cam = (CameraName)hardwareMap.get(WebcamName.class, "logitechhd");
         CameraCharacteristics chars = cam.getCameraCharacteristics();
         teamUtil.log(cam.toString());
         teamUtil.log("WebCam: "+(cam.isWebcam() ? "true" : "false"));
@@ -108,6 +109,13 @@ public class webcamTest extends LinearOpMode {
                 " U:" + focusControl.isModeSupported(FocusControl.Mode.Unknown));
         teamUtil.log("Focus Mode: " + focusControl.getMode());
         teamUtil.log("Focus Range: " + focusControl.getMinFocusLength() + "-" + focusControl.getMaxFocusLength());
+
+        teamUtil.log("---------------------------------------------------------------");
+        PtzControl ptzControl = portal.getCameraControl(PtzControl.class);
+        teamUtil.log("Zoom Range: " + ptzControl.getMinZoom() + "-" + ptzControl.getMaxZoom());
+        teamUtil.log("Zoom: " + ptzControl.getZoom());
+        teamUtil.log("Zoom Supported: " + ptzControl.setZoom(200));
+
 
 
 
