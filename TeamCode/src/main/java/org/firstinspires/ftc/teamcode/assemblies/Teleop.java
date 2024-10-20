@@ -110,6 +110,7 @@ public class Teleop extends LinearOpMode {
         while (opModeIsActive()){
             driverGamepad.loop();
             armsGamepad.loop();
+            robot.intake.axonSlider.loop(); //TODO take out
 
             if(driverGamepad.wasHomePressed()){
                 endgame=true;
@@ -176,7 +177,7 @@ public class Teleop extends LinearOpMode {
                 //robot.outtake.testWiring();
             }
             if(driverGamepad.wasUpPressed()){
-                robot.intake.goToSample();
+                robot.intake.goToSampleV2();
                 //robot.outtake.testWiring();
             }
             if(driverGamepad.wasLeftPressed()){
@@ -216,6 +217,15 @@ public class Teleop extends LinearOpMode {
             telemetry.addLine("Rect Angle : "+robot.intake.sampleDetector.rectAngle);
             telemetry.addLine("Rect Center X : "+robot.intake.sampleDetector.rectCenterXOffset);
             telemetry.addLine("Rect Center Y : "+robot.intake.sampleDetector.rectCenterYOffset);
+            telemetry.addLine("Axon Position 0 -360: " + robot.intake.axonSlider.getDegrees360());
+            telemetry.addLine("Axon Position All RANGES: " + robot.intake.axonSlider.getPosition());
+
+            teamUtil.log("Axon Position 0-360: " + robot.intake.axonSlider.getDegrees360() + " Axon Position ALL RANGES: " + robot.intake.axonSlider.getPosition() + " Axon Voltage: " + robot.intake.axonSlider.axonPotentiometer.getVoltage());
+
+            telemetry.addLine("Axon Voltage: " + robot.intake.axonSlider.axonPotentiometer.getVoltage());
+            //teamUtil.log("Axon Voltage: " + robot.intake.axonSlider.axonPotentiometer.getVoltage());
+
+
 
 
 
