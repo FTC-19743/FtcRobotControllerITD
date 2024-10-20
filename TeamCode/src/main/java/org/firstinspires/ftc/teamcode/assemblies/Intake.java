@@ -3,6 +3,8 @@ package org.firstinspires.ftc.teamcode.assemblies;
 import android.util.Size;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.hardware.AnalogInput;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -28,12 +30,19 @@ public class Intake {
     HardwareMap hardwareMap;
     Telemetry telemetry;
 
-    public Servo slider;
+
+
+    public Servo slider; //TODO take out
     public Servo flipper;
     public Servo wrist;
     public Servo sweeper;
     public Servo grabber;
+
+
     public DcMotorEx extender;
+    public AxonSlider axonSlider = new AxonSlider();
+
+    AnalogInput sliderPotentiometer;
 
     public OpenCVSampleDetector sampleDetector = new OpenCVSampleDetector();
 
@@ -137,13 +146,14 @@ public class Intake {
     }
 
     public void initialize() {
-        teamUtil.log("Initializing Intake");slider = hardwareMap.get(Servo.class,"slider");
+        teamUtil.log("Initializing Intake");
 
         flipper = hardwareMap.get(Servo.class,"flipper");
         wrist = hardwareMap.get(Servo.class,"wrist");
         sweeper = hardwareMap.get(Servo.class,"sweeper");
         grabber = hardwareMap.get(Servo.class,"grabber");
-        slider = hardwareMap.get(Servo.class,"slider");
+        slider = hardwareMap.get(Servo.class,"slider"); //take out later
+        axonSlider.init(hardwareMap,"slider","sensor");
 
 
         extender = hardwareMap.get(DcMotorEx.class,"extender");
@@ -434,6 +444,71 @@ public class Intake {
         return true;
 
     }
+    public boolean goToSampleV2(){
+        teamUtil.log("GoToSample has started");
+        int extenderLastPosition = extender.getCurrentPosition();
+
+        flipper.setPosition(FLIPPER_READY);
+        grabber.setPosition(GRABBER_READY);
+        sweeper.setPosition(SWEEPER_READY);
+        extender.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        double extenderVelocity = 0; //calculate
+        extender.setVelocity(EXTENDER_VELOCITY);//Tune increment
+        while(!sampleDetector.foundOne.get()&&extender.getCurrentPosition()<EXTENDER_MAX-10){
+            teamUtil.pause(30);
+        }
+        extender.setVelocity(0);//Tune increment
+
+        if(!sampleDetector.foundOne.get()){
+            teamUtil.log("Found One False in DO LOOP");
+        }
+        else{
+            teamUtil.log("Found One True Adjusting X Y DO LOOP");
+            double mmFromCenterX = sampleDetector.rectCenterYOffset.get()*MM_PER_PIX_X;
+            if (Math.abs(mmFromCenterX)>5) {
+                teamUtil.log("MM from Center X" + mmFromCenterX);
+            }
+            double mmFromCenterY = sampleDetector.rectCenterYOffset.get()*MM_PER_PIX_Y;
+
+
+            while(Math.abs(mmFromCenterY)>5||Math.abs(mmFromCenterX)>5){ //tentative values all needs to be tuned
+                axonSlider.loop();
+                double extenderTarget = extender.getCurrentPosition()+(mmFromCenterY*EXTENDER_TIC_PER_MM);
+                //extenderVelocity= extenderTarget*extenderCoefficient;
+
+                double sliderTarget = axonSlider.getPosition()+(mmFromCenterX*SLIDER_TIC_PER_MM);
+                extender.setVelocity(extenderVelocity);
+                //axon set velocity as well
+                mmFromCenterY = sampleDetector.rectCenterYOffset.get()*MM_PER_PIX_Y;
+                mmFromCenterX = sampleDetector.rectCenterXOffset.get()*MM_PER_PIX_X;
+            }
+        }
+
+
+        //extender.setVelocity(0);
+        if(!sampleDetector.foundOne.get()){
+            teamUtil.log("Didnt Find One");
+
+            return false;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+        teamUtil.log("At Block");
+        teamUtil.log("GoToSample has finished");
+        return true;
+
+    }
+
 
     public void testWiring() {
         //wrist.setPosition(WRIST_LOAD);
