@@ -185,7 +185,7 @@ public class Teleop extends LinearOpMode {
                 //robot.outtake.testWiring();
             }
             if(driverGamepad.wasRightPressed()){
-                robot.intake.flipAndRotateToSample();
+                robot.intake.flipAndRotateToSampleAndGrab();
                 //robot.outtake.testWiring();
             }
             if(driverGamepad.wasYPressed()||driverGamepad.wasAPressed()){
@@ -212,24 +212,6 @@ public class Teleop extends LinearOpMode {
                 robot.intake.sampleDetector.nextView();
             }
             robot.outputTelemetry();
-            telemetry.addLine("Current Color: "+ robot.intake.sampleDetector.targetColor);
-            telemetry.addLine("Found One : "+robot.intake.sampleDetector.foundOne);
-            telemetry.addLine("Rect Angle : "+robot.intake.sampleDetector.rectAngle);
-            telemetry.addLine("Rect Center X : "+robot.intake.sampleDetector.rectCenterXOffset);
-            telemetry.addLine("Rect Center Y : "+robot.intake.sampleDetector.rectCenterYOffset);
-            telemetry.addLine("Axon Position 0 -360: " + robot.intake.axonSlider.getDegrees360());
-            telemetry.addLine("Axon Position All RANGES: " + robot.intake.axonSlider.getPosition());
-
-            teamUtil.log("Axon Position 0-360: " + robot.intake.axonSlider.getDegrees360() + " Axon Position ALL RANGES: " + robot.intake.axonSlider.getPosition() + " Axon Voltage: " + robot.intake.axonSlider.axonPotentiometer.getVoltage());
-
-            telemetry.addLine("Axon Voltage: " + robot.intake.axonSlider.axonPotentiometer.getVoltage());
-            //teamUtil.log("Axon Voltage: " + robot.intake.axonSlider.axonPotentiometer.getVoltage());
-
-
-
-
-
-
             telemetry.update();
 
 

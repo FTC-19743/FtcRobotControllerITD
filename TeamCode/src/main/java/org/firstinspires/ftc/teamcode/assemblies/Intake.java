@@ -48,27 +48,32 @@ public class Intake {
 
     public boolean intakeRunning = false;
 
-    static public float SLIDER_UNLOAD = 0.45f;
+    static public float SLIDER_UNLOAD = 300f;
+    static public float SLIDER_SEEK = 330f;//TODO make this value not a complete guess
     static public float SLIDER_FAR_LEFT = 0.24f;
     static public float SLIDER_FAR_RIGHT = 0.69f;
     static public float SLIDER_INCREMENT = 0.001f;
     static public int SLIDER_MM_DEADBAND = 5;
-    static public float SLIDER_MAX_VELOCITY = 0.2f;
-    static public float SLIDER_MIN_VELOCITY = 0;
-    static public float SLIDER_P_COEFFICIENT = .003f;
+    static public float SLIDER_MAX_VELOCITY = 0.5f;
+    static public float SLIDER_MIN_VELOCITY = 0.05f;
+    static public float SLIDER_P_COEFFICIENT = .001f;
 
 
 
     static public float FLIPPER_READY = 0.43f;
     static public float FLIPPER_UNLOAD = 0f;
     static public float FLIPPER_GRAB = 0.785f;
+    static public int FLIPPER_GRAB_PAUSE = 500;
+    static public float FLIPPER_SAFE = .24f;
 
 
 
     static public float WRIST_LOAD = 0.5f;
-    static public float WRIST_UNLOAD = 0.5f; //0 angle
+    static public float WRIST_UNLOAD = 0.84f; //0 angle
     static public float WRIST_MIN = 0.17f; // 0 angle
     static public float WRIST_MAX = 0.84f; //179.99 angle
+    static public float WRIST_MIDDLE = 0.5f;
+    static public int ROTATE_PAUSE = 250;
     //.67 = 135 angle
     //.34 = 45 angle
 
@@ -77,7 +82,8 @@ public class Intake {
     static public float SWEEPER_EXPAND = 0.59f;
     static public float SWEEPER_GRAB = 0.53f; // was .59f
     static public float GRABBER_READY = 0.25f;
-    static public float GRABBER_GRAB = 0.62f;
+    static public float GRABBER_GRAB = 0.63f;
+    static public int GRAB_PAUSE = 250;
     static public int GRAB_DELAY1 = 150;
     static public int GRAB_DELAY2 = 100;
 
@@ -92,28 +98,16 @@ public class Intake {
 
 
     static public int EXTENDER_MAX = 1500; //TODO find this number and use it in movement methods
-    static public int EXTENDER_MAX_VELOCITY = 700; //TODO find this number and use it in movement methods
-    static public int EXTENDER_MIN_VELOCITY = 200; //TODO find this number and use it in movement methods
-    static public int EXTENDER_MM_DEADBAND = 10;
+    static public int EXTENDER_MAX_VELOCITY = 700;
+    static public int EXTENDER_MIN_VELOCITY = 50;
+    static public int EXTENDER_MM_DEADBAND = 5;
     static public int EXTENDER_P_COEFFICIENT = 4;
+    static public int EXTENDER_UNLOAD = 0;
 
-
-
-
-
-
-    final boolean USING_WEBCAM = true;
-    final BuiltinCameraDirection INTERNAL_CAM_DIR = BuiltinCameraDirection.BACK;
     final int ARDU_RESOLUTION_WIDTH = 640;
     final int ARDU_RESOLUTION_HEIGHT = 480;
-
     Size arduSize = new Size(ARDU_RESOLUTION_WIDTH, ARDU_RESOLUTION_HEIGHT);
-
     VisionPortal arduPortal;
-
-
-
-
 
 
     public Intake() {
@@ -169,10 +163,16 @@ public class Intake {
 
         extender = hardwareMap.get(DcMotorEx.class,"extender");
         extender.setDirection(DcMotorEx.Direction.REVERSE);
+        extender.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         teamUtil.log("Intake Initialized");
     }
     public void calibrate() {
+        goToSeek();
+        axonSlider.calibrate(-.3f,1);
+        axonSlider.runToPosition(SLIDER_UNLOAD);
+        goToSafe();
+
         extender.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         teamUtil.log("Calibrating Intake: Running down slowly");
         extender.setPower(-.1);
@@ -189,7 +189,7 @@ public class Intake {
         extender.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         extender.setTargetPosition(extender.getCurrentPosition());
         teamUtil.log("Calibrate Intake Final: Extender: "+extender.getCurrentPosition());
-        extender.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        extender.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
     public void setTargetColor(OpenCVSampleDetector.TargetColor targetColor){
@@ -271,12 +271,15 @@ public class Intake {
 
     }
 
-    public void unload(){
+    public void goToUnload() {
         flipper.setPosition(FLIPPER_READY);
         //slider.setPosition(SLIDER_UNLOAD);
         teamUtil.pause(1000);
         wrist.setPosition(WRIST_UNLOAD);
         flipper.setPosition(FLIPPER_UNLOAD);
+    }
+    public void unload(){
+        goToUnload();
         teamUtil.pause(1000);
         grabber.setPosition(GRABBER_READY);
     }
@@ -288,14 +291,23 @@ public class Intake {
     public void goToSeek(){
         flipper.setPosition(FLIPPER_READY);
         //slider.setPosition(SLIDER_UNLOAD);
-        wrist.setPosition(WRIST_UNLOAD);
-        sweeper.setPosition(SWEEPER_READY);
-        grabber.setPosition(GRABBER_READY);
+        wrist.setPosition(WRIST_MIDDLE);
+        grabberReady();
+    }
+    public void goToSafe(){
+        flipper.setPosition(FLIPPER_SAFE);
+        wrist.setPosition(WRIST_MIDDLE);
+        grabber.setPosition(GRABBER_GRAB);
+        sweeper.setPosition(SWEEPER_GRAB);
     }
 
     public void goToGrab() {
         flipper.setPosition(FLIPPER_GRAB);
         teamUtil.pause(1000);
+    }
+    public void grabberReady() {
+        sweeper.setPosition(SWEEPER_READY);
+        grabber.setPosition(GRABBER_READY);
     }
     public void grab(){
         sweeper.setPosition(SWEEPER_EXPAND);
@@ -309,14 +321,14 @@ public class Intake {
         grabber.setPosition(GRABBER_READY);
     }
 
-    public void flipAndRotateToSample(){
+    public void flipAndRotateToSampleAndGrab(){
         teamUtil.log("FlipAndRotate Has Started");
         rotateToSample(sampleDetector.rectAngle.get());
-        teamUtil.pause(1500);
+        teamUtil.pause(ROTATE_PAUSE);
         flipper.setPosition(FLIPPER_GRAB);
-        teamUtil.pause(500);
+        teamUtil.pause(FLIPPER_GRAB_PAUSE);
         grab();
-        teamUtil.pause(500);
+        teamUtil.pause(GRAB_PAUSE);
         flipper.setPosition(FLIPPER_UNLOAD);
         teamUtil.log("FlipAndRotate Has Finished");
 
@@ -340,13 +352,21 @@ public class Intake {
         }
         teamUtil.log("RotateToSample has finished");
     }
+    public void extendersToUnload(){
+        extender.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        extender.setTargetPosition(EXTENDER_UNLOAD);
+    }
+
     public void goToSampleAndGrab(){
-        goToSampleV2();
-        rotateToSample(sampleDetector.rectAngle.get());
-        teamUtil.pause(1000);
-        flipper.setPosition(FLIPPER_GRAB);
-        //TODO reimplement Grab after testing is finsihed
-        //flipAndRotateToSample(sampleDetector.rectAngle.get());
+        //axonSlider.runToPosition(SLIDER_SEEK);
+        if(goToSampleV2()){
+            flipAndRotateToSampleAndGrab();
+            goToSeek();
+            axonSlider.runToPosition(SLIDER_UNLOAD);
+            extendersToUnload();
+            //TODO NEED TO CONSIDER HOW TO STOW/GO TO UNLOAD AFTER RETRACTING IN ORDER TO NOT HIT THE BAR
+            release();
+        }
     }
     /*
     public boolean goToSample(){
@@ -464,6 +484,7 @@ public class Intake {
         flipper.setPosition(FLIPPER_READY);
         grabber.setPosition(GRABBER_READY);
         sweeper.setPosition(SWEEPER_READY);
+        wrist.setPosition(WRIST_MIDDLE);
         extender.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         double extenderVelocity;
         float sliderVelocity;
@@ -512,7 +533,7 @@ public class Intake {
                     }
                 }
                 extender.setVelocity(extenderVelocity);
-                axonSlider.setPower(sliderVelocity);
+                axonSlider.setAdjustedPower(sliderVelocity);
                 mmFromCenterY = sampleDetector.rectCenterYOffset.get()*MM_PER_PIX_Y;
                 mmFromCenterX = sampleDetector.rectCenterXOffset.get()*MM_PER_PIX_X;
                 if (details) teamUtil.log("MM from Center X: " + mmFromCenterX + " Y: " + mmFromCenterY);
@@ -538,10 +559,13 @@ public class Intake {
         //flipper.setPosition(FLIPPER_READY);
         //slider.setPosition(SLIDER_UNLOAD);
     }
-    public void intakeTelemetry(){
-        telemetry.addLine("Intake Extender Position: " + extender.getCurrentPosition());
+    public void intakeTelemetry() {
+        telemetry.addLine("Current Color: " + sampleDetector.targetColor);
         telemetry.addLine("Found One: " + sampleDetector.foundOne.get()
-                + " Offset: "+sampleDetector.rectCenterXOffset.get()+", "+sampleDetector.rectCenterYOffset.get()
+                + " Offset: " + sampleDetector.rectCenterXOffset.get() + ", " + sampleDetector.rectCenterYOffset.get()
                 + " Angle: " + sampleDetector.rectAngle.get());
+
+        telemetry.addLine("Intake Extender Position: " + extender.getCurrentPosition());
+        telemetry.addLine("Axon Slider Position : " + axonSlider.getPosition() + " (0-360): " + (int)axonSlider.getDegrees360() + " Voltage: " + axonSlider.axonPotentiometer.getVoltage());
     }
 }

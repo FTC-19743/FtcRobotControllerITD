@@ -124,7 +124,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         RED,
         BLUE
     }
-    public TargetColor targetColor = TargetColor.YELLOW;
+    static public TargetColor targetColor = TargetColor.YELLOW;
     public void setTargetColor(TargetColor newTargetColor){
         targetColor = newTargetColor;
     }
