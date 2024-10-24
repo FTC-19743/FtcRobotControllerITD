@@ -49,7 +49,7 @@ public class CalibrateArms extends LinearOpMode {
 
         intake = new Intake();
         intake.initialize();
-        intake.initCV();
+        intake.initCV(true);
         intake.calibrate();
 
         gp1.initilize(true); // Game Pads can be plugged into the computer
@@ -66,7 +66,7 @@ public class CalibrateArms extends LinearOpMode {
             gp2.loop();
 
             if (gp1.wasLeftBumperPressed()) {
-                intake.configureCam(OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE, OpenCVSampleDetector.AFOCUS, OpenCVSampleDetector.FOCUSLENGTH);
+                intake.sampleDetector.configureCam(intake.arduPortal,OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE, OpenCVSampleDetector.AFOCUS, OpenCVSampleDetector.FOCUSLENGTH);
             }
 
             if (AA_Operation==Ops.Intake_Manual_Operation){
@@ -97,16 +97,16 @@ public class CalibrateArms extends LinearOpMode {
 
     public void intakeManualOperation() {
         if (gp1.wasUpPressed()) {
-            intake.goToSeek();
+            intake.goToSeek(1500);
         }
         if (gp1.wasDownPressed()) {
             intake.goToGrab();
         }
         if (gp1.wasLeftPressed()) {
-            intake.goToUnload();
+            intake.goToUnload(2000);
         }
         if (gp1.wasRightPressed()) {
-            intake.flipAndRotateToSampleAndGrab();
+            intake.flipAndRotateToSampleAndGrab(1500);
         }
         if (gp1.gamepad.left_stick_x < -.25) {
             intake.wrist.setPosition(intake.wrist.getPosition()-.01);
@@ -124,8 +124,11 @@ public class CalibrateArms extends LinearOpMode {
         if (gp1.wasXPressed()) {
             intake.grabberReady();
         }
+        if (gp1.wasAPressed()) {
+            intake.goToSampleV2(5000);
+        }
         if(gp1.wasRightBumperPressed()){
-            intake.goToSampleAndGrab();
+            intake.goToSampleAndGrab(5000);
         }
     }
 
@@ -148,7 +151,7 @@ public class CalibrateArms extends LinearOpMode {
         }
 
         if (gp1.wasYPressed()) {
-            intake.axonSlider.runToPosition(Intake.SLIDER_UNLOAD);
+            intake.axonSlider.runToPosition(Intake.SLIDER_UNLOAD, 1500);
         }
         if (gp1.wasAPressed()) {
             intake.axonSlider.calibrate(-0.3f, 1);

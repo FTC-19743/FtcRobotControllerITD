@@ -85,7 +85,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public int yellowLowH = 10, yellowLowS = 100, yellowLowV = 150;
     static public int yellowHighH = 35, yellowHighS = 255, yellowHighV = 255;
     static public int yellowErosionFactor = 20;
-    static public int blueLowH = 90, blueLowS = 120, blueLowV = 10;
+    static public int blueLowH = 90, blueLowS = 120, blueLowV = 30; // low was 10
     static public int blueHighH = 130, blueHighS = 255, blueHighV = 255;
     static public int blueErosionFactor = 20;
     static public int rbyLowH = -1, rbyLowS = 150, rbyLowV = 130;
@@ -379,7 +379,8 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             switch (stageToRenderToViewport) {
                 case HSV: { Utils.matToBitmap(HSVMat, bmp); break; }
                 case BLURRED: { Utils.matToBitmap(blurredMat, bmp); break;}
-                case INVERTED: { Utils.matToBitmap(invertedMat, bmp); break;}
+                //case INVERTED: { Utils.matToBitmap(invertedMat, bmp); break;}
+                case INVERTED: { Utils.matToBitmap(thresholdMat, bmp); break;}
                 case THRESHOLD: { Utils.matToBitmap(thresholdMat, bmp); break;}
                 case ERODED: { Utils.matToBitmap(erodedMat, bmp); break;}
                 case EDGES: { Utils.matToBitmap(edgesMat, bmp); break;}

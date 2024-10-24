@@ -76,10 +76,10 @@ public class Teleop extends LinearOpMode {
         armsGamepad.initilize(false);
         robot = new Robot();
         robot.initialize();
+        robot.initCV(true); // false for competition
         if (!teamUtil.justRanAuto) { // Auto already took care of this, so save time.
             robot.calibrate();
         }
-
         telemetry.addLine("Ready to start");
         telemetry.addLine("ALLIANCE : "+ teamUtil.alliance);
         telemetry.update();
@@ -88,7 +88,7 @@ public class Teleop extends LinearOpMode {
 
 
 
-        robot.drive.setHeading(180);
+        robot.drive.setHeading(0);
         while (!opModeIsActive()) {
             driverGamepad.loop();
             if(driverGamepad.wasRightBumperPressed()||driverGamepad.wasLeftBumperPressed()){
@@ -110,16 +110,14 @@ public class Teleop extends LinearOpMode {
         while (opModeIsActive()){
             driverGamepad.loop();
             armsGamepad.loop();
-            robot.intake.axonSlider.loop(); //TODO take out
 
             if(driverGamepad.wasHomePressed()){
                 endgame=true;
             }
 
-
             ////////// Drive
             if (driverGamepad.gamepad.right_stick_button && driverGamepad.gamepad.left_stick_button) {
-                robot.drive.setHeading(180);
+                robot.drive.setHeading(0);
             }
             /*
             if (teamUtil.alliance == teamUtil.Alliance.RED) { // Make this work for Red and Blue Alliances
@@ -139,19 +137,7 @@ public class Teleop extends LinearOpMode {
             }
 
              */
-            if(driverGamepad.wasDownPressed()){
-                currentTargetColor+=1;
-                if(currentTargetColor>3){
-                    currentTargetColor=1;
-                    robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
 
-                }
-                else if(currentTargetColor==2){
-                    robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
-                }else{
-                    robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
-                }
-            }
             if (teamUtil.alliance == teamUtil.Alliance.RED) { // Make this work for Red and Blue Alliances
                 robot.drive.universalDriveJoystickV2(
                         driverGamepad.gamepad.left_stick_y,
@@ -168,49 +154,6 @@ public class Teleop extends LinearOpMode {
                         robot.drive.getHeading());
             }
 
-            if(armsGamepad.wasUpPressed()){
-                robot.intake.configureCam(OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE, OpenCVSampleDetector.AFOCUS, OpenCVSampleDetector.FOCUSLENGTH);
-            }
-
-            if(driverGamepad.wasAPressed()){
-                robot.intake.testWiring();
-                //robot.outtake.testWiring();
-            }
-            if(driverGamepad.wasUpPressed()){
-                robot.intake.goToSampleV2();
-                //robot.outtake.testWiring();
-            }
-            if(driverGamepad.wasLeftPressed()){
-                robot.intake.goToSampleAndGrab();
-                //robot.outtake.testWiring();
-            }
-            if(driverGamepad.wasRightPressed()){
-                robot.intake.flipAndRotateToSampleAndGrab();
-                //robot.outtake.testWiring();
-            }
-            if(driverGamepad.wasYPressed()||driverGamepad.wasAPressed()){
-                robot.drive.setHeldHeading(robot.fieldSide());
-            }
-            if(driverGamepad.wasXPressed()||driverGamepad.wasBPressed()){
-                robot.drive.setHeldHeading(180);
-            }
-            if(driverGamepad.wasLeftBumperPressed()){
-                robot.intake.grab();
-            }
-            if(driverGamepad.wasRightBumperPressed()){
-                robot.intake.release();
-                teamUtil.pause(1000);
-                robot.intake.sweeper.setPosition(SWEEPER_READY);
-            }
-            if(driverGamepad.wasLeftTriggerPressed()){
-                robot.intake.flipper.setPosition(FLIPPER_GRAB);
-            }
-            if(driverGamepad.wasRightTriggerPressed()){
-                robot.intake.flipper.setPosition(FLIPPER_READY);
-            }
-            if (armsGamepad.wasRightBumperPressed()){
-                robot.intake.sampleDetector.nextView();
-            }
             robot.outputTelemetry();
             telemetry.update();
 

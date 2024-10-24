@@ -41,9 +41,9 @@ public class Robot {
         drive.initalize();
         output.initalize();
         intake.initialize();
-        intake.initCV();
-
-
+    }
+    public void initCV (boolean enableLiveView) {
+        intake.initCV(enableLiveView);
     }
 
     public void outputTelemetry() {
