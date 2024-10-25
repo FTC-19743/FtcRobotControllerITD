@@ -19,6 +19,15 @@ public class TeamGamepad {
     double rightJoystickWasLeft = 0;
     double rightJoystickWasLeftLastTime = 0;
     boolean rightJoystickWasLeftToDo = false;
+
+    double rightJoystickWasUp = 0;
+    double rightJoystickWasUpLastTime = 0;
+    boolean rightJoystickWasUpToDo = false;
+
+    double rightJoystickWasDown = 0;
+    double rightJoystickWasDownLastTime = 0;
+    boolean rightJoystickWasDownToDo = false;
+
     boolean bWasPressed = false;
     boolean bWasPressedLastTime = false;
     boolean bBumpToDo = false;
@@ -93,6 +102,8 @@ public class TeamGamepad {
         rightTriggerBumpToDo = false;
         rightJoystickWasLeftToDo = false;
         rightJoystickWasRightToDo = false;
+        rightJoystickWasUpToDo = false;
+        rightJoystickWasDownToDo = false;
         optionsBumpToDo = false;
         startBumpToDo = false;
         aWasPressedLastTime = false;
@@ -157,6 +168,10 @@ public class TeamGamepad {
         rightTriggerWasPressed = gamepad.right_trigger;
         rightJoystickWasLeftLastTime = rightJoystickWasLeft;
         rightJoystickWasLeft = gamepad.right_stick_x;
+        rightJoystickWasUpLastTime = rightJoystickWasLeft;
+        rightJoystickWasUp = gamepad.right_stick_x;
+        rightJoystickWasDownLastTime = rightJoystickWasLeft;
+        rightJoystickWasDown = gamepad.right_stick_x;
         rightJoystickWasRightLastTime = rightJoystickWasRight;
         rightJoystickWasRight = gamepad.right_stick_x;
         optionsWasPressedLastTime = optionsWasPressed;
@@ -209,6 +224,12 @@ public class TeamGamepad {
         }
         if (rightJoystickWasRight < 0.8 && rightJoystickWasRightLastTime >= 0.8){
             rightJoystickWasRightToDo = true;
+        }
+        if (rightJoystickWasUp < 0.8 && rightJoystickWasUpLastTime >= 0.8){
+            rightJoystickWasUpToDo = true;
+        }
+        if (rightJoystickWasDown > -0.8 && rightJoystickWasDownLastTime <= -0.8){
+            rightJoystickWasDownToDo = true;
         }
         if (optionsWasPressed == false && optionsWasPressedLastTime == true) {
             optionsBumpToDo = true;
@@ -316,6 +337,20 @@ public class TeamGamepad {
         return false;
     }
 
+    public boolean wasRightJoystickFlickedUp(){
+        if(rightJoystickWasUpToDo){
+            rightJoystickWasUpToDo = false;
+            return true;
+        }
+        return false;
+    }
+    public boolean wasRightJoystickFlickedDown(){
+        if(rightJoystickWasDownToDo){
+            rightJoystickWasDownToDo = false;
+            return true;
+        }
+        return false;
+    }
     public boolean wasRightJoystickFlickedLeft(){
         if(rightJoystickWasLeftToDo){
             rightJoystickWasLeftToDo = false;

@@ -14,8 +14,10 @@ public class Outtake {
     public Servo outakewrist;
     public Servo outakearm;
 
-    static public float ARM_UP = 0.13f;
+    static public float ARM_UP = 0.03f;
+    static public float ARM_DOWN = .61f;
     static public float WRIST_GRAB = 0.17f;
+    static public float WRIST_RELEASE = .84f;
 
 
 
@@ -40,5 +42,14 @@ public class Outtake {
 
     public void calibrate(){
         //TODO: IMPLEMENT
+    }
+    public void deployArm(){
+        outakearm.setPosition(ARM_UP);
+        outakewrist.setPosition(WRIST_RELEASE);
+    }
+
+    public void outtakeGrab(){
+        outakearm.setPosition(ARM_DOWN);
+        outakewrist.setPosition(WRIST_GRAB);
     }
 }

@@ -406,6 +406,25 @@ public class Intake {
 
     }
 
+    public void extenderSafeRetractNoWait(long timeOut) {
+        if (moving.get()) { // Intake is already moving in another thread
+            teamUtil.log("WARNING: Attempt to GoToSafeRetract while intake is moving--ignored");
+            return;
+        } else {
+            moving.set(true);
+            teamUtil.log("Launching Thread to goToSafeRetract");
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    goToSafeRetract(timeOut);
+                    extendersToPosition(EXTENDER_UNLOAD,3000);
+                }
+            });
+            thread.start();
+        }
+
+    }
+
     // Go to unload position
     // Centers first then goes back  TODO: // Maybe could be made a bit faster by pulling extenders back as soon as it is safe
     public void goToUnload(long timeOut) {

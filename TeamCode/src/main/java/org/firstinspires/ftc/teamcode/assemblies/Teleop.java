@@ -106,6 +106,7 @@ public class Teleop extends LinearOpMode {
         waitForStart();
 
         int currentTargetColor=1;
+        boolean extenderSliderUnlocked = false;
         robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
         while (opModeIsActive()){
             driverGamepad.loop();
@@ -140,19 +141,65 @@ public class Teleop extends LinearOpMode {
 
             if (teamUtil.alliance == teamUtil.Alliance.RED) { // Make this work for Red and Blue Alliances
                 robot.drive.universalDriveJoystickV2(
-                        driverGamepad.gamepad.left_stick_y,
-                        -driverGamepad.gamepad.left_stick_x,
-                        driverGamepad.gamepad.right_stick_x,
+                        driverGamepad.gamepad.left_stick_x,
+                        -driverGamepad.gamepad.left_stick_y,
+                        driverGamepad.gamepad.right_stick_y,
                         driverGamepad.gamepad.right_trigger > .5,driverGamepad.gamepad.left_trigger > .5,
                         robot.drive.getHeading());
             } else {
                 robot.drive.universalDriveJoystickV2(
-                        -driverGamepad.gamepad.left_stick_y,
-                        driverGamepad.gamepad.left_stick_x,
-                        driverGamepad.gamepad.right_stick_x,
+                        -driverGamepad.gamepad.left_stick_x,
+                        driverGamepad.gamepad.left_stick_y,
+                        driverGamepad.gamepad.right_stick_y,
                         driverGamepad.gamepad.right_trigger > .5, driverGamepad.gamepad.left_trigger > .5,
                         robot.drive.getHeading());
             }
+
+            //ARMS GAMEPAD
+            //Outake
+            if(armsGamepad.wasUpPressed()){
+               robot.outtake.deployArm();
+            }
+            if(armsGamepad.wasDownPressed()){
+                robot.outtake.outtakeGrab();
+            }
+
+            //Intake
+            if(armsGamepad.wasBPressed()){ //Grab Red
+                robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
+                robot.intake.goToSampleAndGrabNoWait(5000); //TODO Tune timeout
+            }
+            if(armsGamepad.wasYPressed()){ //Grab Yellow
+                robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
+                robot.intake.goToSampleAndGrabNoWait(5000); //TODO Tune timeout
+            }
+            if(armsGamepad.wasXPressed()){ //Grab Blue
+                robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
+                robot.intake.goToSampleAndGrabNoWait(5000); //TODO Tune timeout
+            }
+            if(armsGamepad.wasAPressed()){
+                robot.intake.unloadNoWait(3000);
+            }
+            if(armsGamepad.wasRightJoystickFlickedDown()){
+                robot.intake.extenderSafeRetractNoWait(5000);
+                extenderSliderUnlocked=false;
+            }
+            if(armsGamepad.wasRightJoystickFlickedUp()){
+                robot.intake.goToSeek(3000);
+                extenderSliderUnlocked = true;
+            }
+            if(Math.abs(armsGamepad.gamepad.left_stick_y)>.30&&extenderSliderUnlocked){
+                //TODO Y Control over extender
+            }
+            if(Math.abs(armsGamepad.gamepad.left_stick_x)>.30&&extenderSliderUnlocked){
+                //TODO X Control over Slider
+            }
+
+            //OUTPUT
+            if(armsGamepad.wasRightTriggerPressed()){
+                robot.output.dropSampleOutBack();
+            }
+
 
             robot.outputTelemetry();
             telemetry.update();

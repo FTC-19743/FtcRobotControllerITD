@@ -8,6 +8,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.assemblies.Intake;
+import org.firstinspires.ftc.teamcode.assemblies.Output;
+import org.firstinspires.ftc.teamcode.assemblies.Outtake;
 import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
@@ -17,10 +19,14 @@ import org.firstinspires.ftc.teamcode.libs.teamUtil;
 public class CalibrateArms extends LinearOpMode {
 
     Intake intake;
+    Outtake outtake;
+    Output output;
 
     public enum Ops {Intake_Manual_Operation,
         Test_Intake_Speeds,
         Test_Intake_Run_To_Position,
+        Outtake_Manual_Operation,
+        Output_Manual_Operation
         };
     public static Ops AA_Operation = Ops.Intake_Manual_Operation;
 
@@ -34,7 +40,8 @@ public class CalibrateArms extends LinearOpMode {
             case Intake_Manual_Operation : intakeManualOperation();break;
             case Test_Intake_Speeds : testIntakeSpeeds();break;
             case Test_Intake_Run_To_Position : ;break;
-
+            case Outtake_Manual_Operation: outtakeManualOperation();break;
+            case Output_Manual_Operation: outputManualOperation();break;
         }
     }
     @Override
@@ -51,6 +58,14 @@ public class CalibrateArms extends LinearOpMode {
         intake.initialize();
         intake.initCV(true);
         intake.calibrate();
+
+        outtake = new Outtake();
+        outtake.initalize();
+        outtake.calibrate();
+
+        output = new Output();
+        output.initalize();
+        output.calibrate();
 
         gp1.initilize(true); // Game Pads can be plugged into the computer
         gp2.initilize(false);
@@ -75,6 +90,10 @@ public class CalibrateArms extends LinearOpMode {
                 testIntakeSpeeds();
             } else if (AA_Operation==Ops.Test_Intake_Run_To_Position){
                 ;
+            } else if (AA_Operation==Ops.Outtake_Manual_Operation) {
+                outtakeManualOperation();
+            } else if (AA_Operation==Ops.Output_Manual_Operation){
+                outputManualOperation();
             }
 
             // Drawing stuff on the field
@@ -88,7 +107,7 @@ public class CalibrateArms extends LinearOpMode {
             //telemetry.addData("Encoder", 0);
             //telemetry.addData("Current Velocity", 0);
             //telemetry.addData("Motor Velocity", 0);
-
+            output.outputTelemetry();
             intake.intakeTelemetry();
             telemetry.update();
         }
@@ -158,6 +177,35 @@ public class CalibrateArms extends LinearOpMode {
         }
         if (gp1.wasXPressed()){
             intake.calibrate();
+        }
+    }
+    public void outtakeManualOperation(){
+        if(gp1.wasUpPressed()){
+            outtake.outakearm.setPosition(Outtake.ARM_UP);
+        }
+        if(gp1.wasDownPressed()){
+            outtake.outakearm.setPosition(Outtake.ARM_DOWN);
+        }
+        if(gp1.wasYPressed()){
+            outtake.outakewrist.setPosition(Outtake.WRIST_GRAB);
+        }
+        if(gp1.wasAPressed()){
+            outtake.outakewrist.setPosition(Outtake.WRIST_RELEASE);
+        }
+    }
+    public void outputManualOperation(){
+        if(gp1.wasUpPressed()){
+            teamUtil.log("In OutputManualOperation");
+            output.dropSampleOutBack();
+        }
+        if(gp1.wasDownPressed()){
+            output.outputLoad();
+        }
+        if(gp1.wasYPressed()){
+            output.outputHighBucket();
+        }
+        if(gp1.wasAPressed()){
+            output.outputLowBucket();
         }
     }
 }
