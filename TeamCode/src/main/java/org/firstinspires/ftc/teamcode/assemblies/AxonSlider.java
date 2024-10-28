@@ -78,7 +78,7 @@ public class AxonSlider {
     // This method returns when the servo is in the new position
     public void runToPosition (double target, long timeOut) {
         moving.set(true);
-        teamUtil.log("Run to Position Target: " + (int)target);
+        teamUtil.log("Slider Run to Position Target: " + (int)target);
         long timeoutTime = System.currentTimeMillis()+timeOut;
         if (target > RIGHT_LIMIT || target < LEFT_LIMIT) {
             teamUtil.log("ERROR: TARGET OUTSIDE OF RANGE! -- Not Moving");
@@ -101,9 +101,9 @@ public class AxonSlider {
         moving.set(false);
         if (System.currentTimeMillis() > timeoutTime) {
             timedOut.set(true);
-            teamUtil.log("Run to Position TIMED OUT: " + (int)getPosition());
+            teamUtil.log("Slider Run to Position TIMED OUT: " + (int)getPosition());
         } else {
-            teamUtil.log("Run to Position Finished at : " + (int)getPosition());
+            teamUtil.log("Slider Run to Position Finished at : " + (int)getPosition());
         }
     }
 

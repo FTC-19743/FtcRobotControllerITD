@@ -54,7 +54,7 @@ public class Intake {
     static public float FLIPPER_SAFE = .24f;
 
     static public float WRIST_LOAD = 0.5f;
-    static public float WRIST_UNLOAD = 0.84f; //0 angle
+    static public float WRIST_UNLOAD = 0.5f; //0 angle
     static public float WRIST_MIN = 0.17f; // 0 angle
     static public float WRIST_MAX = 0.84f; //179.99 angle
     static public float WRIST_MIDDLE = 0.5f;
@@ -62,10 +62,12 @@ public class Intake {
 
     static public float SWEEPER_READY = 0.330f;
     static public float SWEEPER_EXPAND = 0.59f;
-    static public float SWEEPER_GRAB = 0.53f; // was .59f
+    static public float SWEEPER_GRAB = 0.53f;// was .59f
+    static public float SWEEPER_RELEASE = .9f;
 
     static public float GRABBER_READY = 0.25f;
     static public float GRABBER_GRAB = 0.63f;
+    static public float GRABBER_RELEASE = .63f;
     static public int GRAB_PAUSE = 250;
     static public int GRAB_DELAY1 = 150;
     static public int GRAB_DELAY2 = 100;
@@ -88,6 +90,8 @@ public class Intake {
     static public int EXTENDER_THRESHOLD = 10;
     static public int EXTENDER_UNLOAD = 0;
     static public int EXTENDER_START_SEEK = 100; // TODO Determine this number
+
+    static public int UNLOAD_WAIT_TIME = 1000;
 
     final int ARDU_RESOLUTION_WIDTH = 640;
     final int ARDU_RESOLUTION_HEIGHT = 480;
@@ -287,7 +291,7 @@ public class Intake {
     }
     public boolean goToSampleV2(long timeOut){
         teamUtil.log("GoToSample V2 has started");
-        boolean details = true;
+        boolean details = false;
         flipper.setPosition(FLIPPER_READY);
         grabber.setPosition(GRABBER_READY);
         sweeper.setPosition(SWEEPER_READY);
@@ -304,6 +308,7 @@ public class Intake {
         if(!sampleDetector.foundOne.get()){
             teamUtil.log("Found One False after Search");
             extender.setVelocity(0);
+            return false;
         }
         else{
             teamUtil.log("Found One True Adjusting X Y LOOP");
@@ -470,7 +475,10 @@ public class Intake {
                 @Override
                 public void run() {
                     goToUnload(timeOut);
+                    teamUtil.pause(UNLOAD_WAIT_TIME);
                     release();
+                    teamUtil.pause(250);
+                    goToSafe();
                 }
             });
             thread.start();
@@ -500,8 +508,10 @@ public class Intake {
         sweeper.setPosition(SWEEPER_GRAB);
     }
     public void release() {
-        sweeper.setPosition(SWEEPER_EXPAND);
-        grabber.setPosition(GRABBER_READY);
+        teamUtil.log("Release Called ");
+
+        sweeper.setPosition(SWEEPER_RELEASE);
+        grabber.setPosition(GRABBER_RELEASE);
     }
 
     public void flipAndRotateToSampleAndGrab(long timeOut){
@@ -535,6 +545,7 @@ public class Intake {
         teamUtil.log("RotateToSample has finished");
     }
     public void extendersToPosition(int position, long timeOut){
+        teamUtil.log("extendersToPosition Started: ");
         long timeoutTime = System.currentTimeMillis()+timeOut;
         extender.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         extender.setTargetPosition(position);

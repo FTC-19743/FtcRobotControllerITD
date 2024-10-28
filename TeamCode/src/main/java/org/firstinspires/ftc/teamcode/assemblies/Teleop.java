@@ -76,7 +76,8 @@ public class Teleop extends LinearOpMode {
         armsGamepad.initilize(false);
         robot = new Robot();
         robot.initialize();
-        robot.initCV(true); // false for competition
+        robot.initCV(true);// false for competition
+
         if (!teamUtil.justRanAuto) { // Auto already took care of this, so save time.
             robot.calibrate();
         }
@@ -139,21 +140,13 @@ public class Teleop extends LinearOpMode {
 
              */
 
-            if (teamUtil.alliance == teamUtil.Alliance.RED) { // Make this work for Red and Blue Alliances
-                robot.drive.universalDriveJoystickV2(
-                        driverGamepad.gamepad.left_stick_x,
-                        -driverGamepad.gamepad.left_stick_y,
-                        driverGamepad.gamepad.right_stick_y,
-                        driverGamepad.gamepad.right_trigger > .5,driverGamepad.gamepad.left_trigger > .5,
-                        robot.drive.getHeading());
-            } else {
-                robot.drive.universalDriveJoystickV2(
-                        -driverGamepad.gamepad.left_stick_x,
-                        driverGamepad.gamepad.left_stick_y,
-                        driverGamepad.gamepad.right_stick_y,
-                        driverGamepad.gamepad.right_trigger > .5, driverGamepad.gamepad.left_trigger > .5,
-                        robot.drive.getHeading());
-            }
+            robot.drive.universalDriveJoystickV2(
+                    driverGamepad.gamepad.left_stick_x,
+                    driverGamepad.gamepad.left_stick_y,
+                    driverGamepad.gamepad.right_stick_x,
+                    driverGamepad.gamepad.right_trigger > .5,driverGamepad.gamepad.left_trigger > .5,
+                    robot.drive.getHeading());
+
 
             //ARMS GAMEPAD
             //Outake
@@ -162,6 +155,9 @@ public class Teleop extends LinearOpMode {
             }
             if(armsGamepad.wasDownPressed()){
                 robot.outtake.outtakeGrab();
+            }
+            if(armsGamepad.wasLeftPressed()){
+                robot.outtake.outtakeRest();
             }
 
             //Intake
@@ -185,7 +181,7 @@ public class Teleop extends LinearOpMode {
                 extenderSliderUnlocked=false;
             }
             if(armsGamepad.wasRightJoystickFlickedUp()){
-                robot.intake.goToSeek(3000);
+                robot.intake.goToSeekNoWait(3000);
                 extenderSliderUnlocked = true;
             }
             if(Math.abs(armsGamepad.gamepad.left_stick_y)>.30&&extenderSliderUnlocked){
@@ -198,6 +194,13 @@ public class Teleop extends LinearOpMode {
             //OUTPUT
             if(armsGamepad.wasRightTriggerPressed()){
                 robot.output.dropSampleOutBack();
+            }
+
+            if(armsGamepad.wasLeftTriggerPressed()){
+                robot.output.outputHighBucket();
+            }
+            if(armsGamepad.wasLeftBumperPressed()){
+                robot.output.outputLoadNoWait(4000);
             }
 
 

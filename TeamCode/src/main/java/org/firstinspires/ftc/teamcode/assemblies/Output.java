@@ -25,12 +25,13 @@ public class Output {
     public DcMotorEx lift;
     public Servo bucket;
 
+    public AtomicBoolean outputMoving = new AtomicBoolean(false);
     public boolean details;
 
     static public int LIFT_MAX = 3070; //TODO find this number and use it in methods
     static public int LIFT_MAX_VELOCITY = 2000;
     static public int LIFT_MIN_VELOCITY = 200;
-    static public int LIFT_DOWN = 0;
+    static public int LIFT_DOWN = 2;
     static public int LIFT_TOP_BUCKET = 3070; // TODO Determine this number
     static public int LIFT_MIDDLE_BUCKET = 1700; // TODO Determine this number
 
@@ -77,24 +78,50 @@ public class Output {
         bucket.setPosition(BUCKET_DEPLOY);
         teamUtil.log("DropSampleOutBack Completed");
     }
-    public void outputLoad(){
-        lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    public void outputLoad(long timeout){
+        outputMoving.set(true);
         bucket.setPosition(BUCKET_RELOAD);
+        teamUtil.log("Go To Load: Running to Bottom");
         lift.setTargetPosition(LIFT_DOWN);
-        lift.setVelocity(1000);
-        teamUtil.log("outputLoad Completed");
-        //TODO get rid of Aylas bad lift code
+        lift.setVelocity(LIFT_MAX_VELOCITY);
+        long timeOutTime2 = System.currentTimeMillis() + timeout;
+        while (teamUtil.keepGoing(timeOutTime2)&&lift.getCurrentPosition() > LIFT_DOWN+10) {
+        }
+        lift.setVelocity(0);
+        outputMoving.set(false);
+
     }
+
+    public void outputLoadNoWait(long timeout){
+        if(outputMoving.get()){
+            teamUtil.log("WARNING: Attempt to outputLoad while output is moving--ignored");
+        }
+        else{
+            outputMoving.set(true);
+            teamUtil.log("Launching Thread to outputLoadNoWait");
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    outputLoad(timeout);
+                }
+            });
+            thread.start();
+        }
+
+    }
+
+
     public void outputLowBucket(){
         lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         lift.setTargetPosition(LIFT_MIDDLE_BUCKET);
-        lift.setVelocity(1000);
-        //TODO get rid of Aylas bad lift code
+        lift.setVelocity(LIFT_MAX_VELOCITY);
+        teamUtil.log("outputLowBucket Completed");
+
     }
     public void outputHighBucket(){
         lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         lift.setTargetPosition(LIFT_TOP_BUCKET);
-        lift.setVelocity(1000);
-        //TODO get rid of Aylas bad lift code
+        lift.setVelocity(LIFT_MAX_VELOCITY);
+        teamUtil.log("outputHighBucket Completed");
     }
 }

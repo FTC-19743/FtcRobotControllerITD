@@ -199,7 +199,7 @@ public class CalibrateArms extends LinearOpMode {
             output.dropSampleOutBack();
         }
         if(gp1.wasDownPressed()){
-            output.outputLoad();
+            output.outputLoad(4000);
         }
         if(gp1.wasYPressed()){
             output.outputHighBucket();

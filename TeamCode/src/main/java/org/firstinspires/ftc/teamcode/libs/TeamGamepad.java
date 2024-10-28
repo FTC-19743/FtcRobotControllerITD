@@ -168,10 +168,10 @@ public class TeamGamepad {
         rightTriggerWasPressed = gamepad.right_trigger;
         rightJoystickWasLeftLastTime = rightJoystickWasLeft;
         rightJoystickWasLeft = gamepad.right_stick_x;
-        rightJoystickWasUpLastTime = rightJoystickWasLeft;
-        rightJoystickWasUp = gamepad.right_stick_x;
-        rightJoystickWasDownLastTime = rightJoystickWasLeft;
-        rightJoystickWasDown = gamepad.right_stick_x;
+        rightJoystickWasUpLastTime = rightJoystickWasUp;
+        rightJoystickWasUp = gamepad.right_stick_y;
+        rightJoystickWasDownLastTime = rightJoystickWasDown;
+        rightJoystickWasDown = gamepad.right_stick_y;
         rightJoystickWasRightLastTime = rightJoystickWasRight;
         rightJoystickWasRight = gamepad.right_stick_x;
         optionsWasPressedLastTime = optionsWasPressed;
@@ -225,11 +225,11 @@ public class TeamGamepad {
         if (rightJoystickWasRight < 0.8 && rightJoystickWasRightLastTime >= 0.8){
             rightJoystickWasRightToDo = true;
         }
-        if (rightJoystickWasUp < 0.8 && rightJoystickWasUpLastTime >= 0.8){
-            rightJoystickWasUpToDo = true;
-        }
-        if (rightJoystickWasDown > -0.8 && rightJoystickWasDownLastTime <= -0.8){
+        if (rightJoystickWasDown < 0.8 && rightJoystickWasDownLastTime >= 0.8){
             rightJoystickWasDownToDo = true;
+        }
+        if (rightJoystickWasUp > -0.8 && rightJoystickWasUpLastTime <= -0.8){
+            rightJoystickWasUpToDo = true;
         }
         if (optionsWasPressed == false && optionsWasPressedLastTime == true) {
             optionsBumpToDo = true;

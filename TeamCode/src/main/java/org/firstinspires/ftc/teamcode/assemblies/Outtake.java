@@ -15,9 +15,11 @@ public class Outtake {
     public Servo outakearm;
 
     static public float ARM_UP = 0.03f;
-    static public float ARM_DOWN = .61f;
+    static public float ARM_DOWN = .62f;
     static public float WRIST_GRAB = 0.17f;
     static public float WRIST_RELEASE = .84f;
+    static public float ARM_REST = .1f;
+    static public float WRIST_REST = 0.5f;
 
 
 
@@ -51,5 +53,10 @@ public class Outtake {
     public void outtakeGrab(){
         outakearm.setPosition(ARM_DOWN);
         outakewrist.setPosition(WRIST_GRAB);
+    }
+
+    public void outtakeRest(){
+        outakearm.setPosition(ARM_REST);
+        outakewrist.setPosition(WRIST_REST);
     }
 }
