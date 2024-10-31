@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.assemblies;
 
+import static androidx.core.math.MathUtils.clamp;
+
 import android.util.Size;
 
 import com.acmerobotics.dashboard.config.Config;
@@ -39,6 +41,7 @@ public class Intake {
 
     public AtomicBoolean moving = new AtomicBoolean(false);
     public AtomicBoolean timedOut = new AtomicBoolean(false);
+    public AtomicBoolean FlipperInUnload = new AtomicBoolean(false);
 
     static public float SLIDER_UNLOAD = 300f; // TODO Recalibrate
     static public float SLIDER_READY = 330f;//TODO Recalibrate
@@ -90,6 +93,10 @@ public class Intake {
     static public int EXTENDER_THRESHOLD = 10;
     static public int EXTENDER_UNLOAD = 0;
     static public int EXTENDER_START_SEEK = 100; // TODO Determine this number
+    static public int EXTENDER_CRAWL_INCREMENT = 30;
+    static public int EXTENDER_FAST_INCREMENT = 100;
+    static public int EXTENDER_MIN = 100;
+
 
     static public int UNLOAD_WAIT_TIME = 1000;
 
@@ -160,6 +167,8 @@ public class Intake {
 
         // Get Grabber into safe position
         flipper.setPosition(FLIPPER_READY);
+        FlipperInUnload.set(false);
+
         wrist.setPosition(WRIST_MIDDLE);
         grabberReady();
 
@@ -215,6 +224,8 @@ public class Intake {
         long timeoutTime = System.currentTimeMillis()+timeOut;
 
         flipper.setPosition(FLIPPER_READY);
+        FlipperInUnload.set(false);
+
         wrist.setPosition(WRIST_MIDDLE);
         grabberReady();
         axonSlider.runToPosition(SLIDER_READY, timeOut);
@@ -251,6 +262,8 @@ public class Intake {
         timedOut.set(false);
         long timeoutTime = System.currentTimeMillis()+timeOut;
         flipper.setPosition(FLIPPER_READY);
+        FlipperInUnload.set(false);
+
         wrist.setPosition(WRIST_MIDDLE);
         grabberReady();
         axonSlider.runToPosition(SLIDER_READY,timeOut);
@@ -293,6 +306,8 @@ public class Intake {
         teamUtil.log("GoToSample V2 has started");
         boolean details = false;
         flipper.setPosition(FLIPPER_READY);
+        FlipperInUnload.set(false);
+
         grabber.setPosition(GRABBER_READY);
         sweeper.setPosition(SWEEPER_READY);
         wrist.setPosition(WRIST_MIDDLE);
@@ -387,6 +402,8 @@ public class Intake {
         moving.set(true);
         timedOut.set(false);
         flipper.setPosition(FLIPPER_READY);
+        FlipperInUnload.set(false);
+
         wrist.setPosition(WRIST_MIDDLE);
         axonSlider.runToPosition(SLIDER_UNLOAD, timeOut);
         timedOut.set(axonSlider.timedOut.get());
@@ -443,6 +460,7 @@ public class Intake {
             return;
         }
         flipper.setPosition(FLIPPER_UNLOAD);
+        FlipperInUnload.set(true);
         wrist.setPosition(WRIST_UNLOAD);
         extendersToPosition(EXTENDER_UNLOAD,timeoutTime-System.currentTimeMillis());
         moving.set(false);
@@ -488,12 +506,14 @@ public class Intake {
 
     public void goToSafe(){
         flipper.setPosition(FLIPPER_SAFE);
+        FlipperInUnload.set(false);
         wrist.setPosition(WRIST_MIDDLE);
         grabber.setPosition(GRABBER_GRAB);
         sweeper.setPosition(SWEEPER_GRAB);
     }
     public void goToGrab() {
         flipper.setPosition(FLIPPER_GRAB);
+        FlipperInUnload.set(false);
         teamUtil.pause(1000);
     }
     public void grabberReady() {
@@ -520,6 +540,7 @@ public class Intake {
         rotateToSample(sampleDetector.rectAngle.get());
         teamUtil.pause(ROTATE_PAUSE);
         flipper.setPosition(FLIPPER_GRAB);
+        FlipperInUnload.set(false);
         teamUtil.pause(FLIPPER_GRAB_PAUSE);
         grab();
         teamUtil.pause(GRAB_PAUSE);
@@ -561,7 +582,33 @@ public class Intake {
         }
     }
 
+    public void manualY(double joystickValue){
+        if (moving.get()) { // Output system is already moving in a long running operation
+            teamUtil.log("WARNING: Attempt to move elevator while intake system is moving--ignored");
+        } else {
+            if(Math.abs(joystickValue) < 0.85){
+                if(joystickValue<0){
+                    teamUtil.log("Extender Manual: " + (EXTENDER_CRAWL_INCREMENT));
 
+                    extender.setTargetPosition((int) (clamp(extender.getCurrentPosition() + EXTENDER_CRAWL_INCREMENT, EXTENDER_MIN, EXTENDER_MAX)));
+                }else{
+                    teamUtil.log("Elev Manual: " + (-EXTENDER_CRAWL_INCREMENT));
+                    extender.setTargetPosition((int) (clamp(extender.getCurrentPosition() - EXTENDER_CRAWL_INCREMENT, EXTENDER_MIN, EXTENDER_MAX)));
+                }
+            }
+            else{
+                if(joystickValue<0){
+                    teamUtil.log("Elev Manual: " + (EXTENDER_FAST_INCREMENT));
+                    extender.setTargetPosition((int) (clamp(extender.getCurrentPosition() + EXTENDER_FAST_INCREMENT, EXTENDER_MIN, EXTENDER_MAX)));
+                }else{
+                    teamUtil.log("Elev Manual: " + (-EXTENDER_FAST_INCREMENT));
+                    extender.setTargetPosition((int) (clamp(extender.getCurrentPosition() - EXTENDER_FAST_INCREMENT, EXTENDER_MIN, EXTENDER_MAX)));
+
+                }
+            }
+
+        }
+    }
 
     public void testWiring() {
         //wrist.setPosition(WRIST_LOAD);

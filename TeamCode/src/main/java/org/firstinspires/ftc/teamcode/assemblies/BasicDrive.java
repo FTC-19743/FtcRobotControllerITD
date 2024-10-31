@@ -108,8 +108,9 @@ public class BasicDrive {
         bl = hardwareMap.get(DcMotorEx.class, "blm");
         br = hardwareMap.get(DcMotorEx.class, "brm");
 
-        //forwardEncoder = hardwareMap.get(DcMotorEx.class, "leftForwardEncoder");
-        //strafeEncoder = hardwareMap.get(DcMotorEx.class, "strafeEncoder");
+        //TODO Initialize Correctly
+        forwardEncoder = hardwareMap.get(DcMotorEx.class, "leftForwardEncoder");
+        strafeEncoder = hardwareMap.get(DcMotorEx.class, "strafeEncoder");
 
 
         fl.setDirection(DcMotor.Direction.REVERSE);

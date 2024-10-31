@@ -185,7 +185,7 @@ public class Teleop extends LinearOpMode {
                 extenderSliderUnlocked = true;
             }
             if(Math.abs(armsGamepad.gamepad.left_stick_y)>.30&&extenderSliderUnlocked){
-                //TODO Y Control over extender
+                robot.intake.manualY(armsGamepad.gamepad.left_stick_y);
             }
             if(Math.abs(armsGamepad.gamepad.left_stick_x)>.30&&extenderSliderUnlocked){
                 //TODO X Control over Slider
@@ -201,6 +201,12 @@ public class Teleop extends LinearOpMode {
             }
             if(armsGamepad.wasLeftBumperPressed()){
                 robot.output.outputLoadNoWait(4000);
+            }
+            //OUTPUT
+            if(driverGamepad.wasUpPressed()){
+                robot.hang.extendHangNoWait(4000);
+            }if(driverGamepad.wasDownPressed()){
+                robot.hang.engageHangNoWait(4000);
             }
 
 

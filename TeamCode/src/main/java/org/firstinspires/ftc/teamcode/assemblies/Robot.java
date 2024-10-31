@@ -16,6 +16,8 @@ public class Robot {
     public Output output;
     public Outtake outtake;
     public Intake intake;
+    public Hang hang;
+
 
     //public Intake intake;
     //public Output output;
@@ -32,6 +34,8 @@ public class Robot {
         outtake = new Outtake();
         intake = new Intake();
         output = new Output();
+        hang = new Hang();
+        teamUtil.robot = this;
 
 
     }
@@ -41,6 +45,7 @@ public class Robot {
         drive.initalize();
         output.initalize();
         intake.initialize();
+        hang.initalize();
     }
     public void initCV (boolean enableLiveView) {
         intake.initCV(enableLiveView);
@@ -49,12 +54,15 @@ public class Robot {
     public void outputTelemetry() {
         drive.driveMotorTelemetry();
         intake.intakeTelemetry();
+        hang.outputTelemetry();
+        output.outputTelemetry();
     }
 
     public void calibrate() {
         output.calibrate();
         outtake.calibrate();
         intake.calibrate();
+        hang.calibrate();
     }
 
     public int fieldSide() { // helper method that returns heading out towards the field

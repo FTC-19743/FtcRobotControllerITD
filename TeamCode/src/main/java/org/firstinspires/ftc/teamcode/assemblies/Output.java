@@ -24,8 +24,10 @@ public class Output {
     Telemetry telemetry;
     public DcMotorEx lift;
     public Servo bucket;
-
+    public Intake intake;
     public AtomicBoolean outputMoving = new AtomicBoolean(false);
+    public AtomicBoolean outputLiftAtBottom = new AtomicBoolean(true);
+
     public boolean details;
 
     static public int LIFT_MAX = 3070; //TODO find this number and use it in methods
@@ -35,7 +37,9 @@ public class Output {
     static public int LIFT_TOP_BUCKET = 3070; // TODO Determine this number
     static public int LIFT_MIDDLE_BUCKET = 1700; // TODO Determine this number
 
-    static public float BUCKET_DEPLOY = 0.38f;
+    static public float BUCKET_DEPLOY_AT_BOTTOM = 0.42f;
+    static public float BUCKET_DEPLOY_AT_TOP = 0.44f;
+
     static public float BUCKET_RELOAD = 0.7f;
 
 
@@ -50,6 +54,7 @@ public class Output {
         teamUtil.log("Initializing Output");
         lift = hardwareMap.get(DcMotorEx.class,"lift");
         bucket = hardwareMap.get(Servo.class,"bucket");
+
         lift.setDirection(DcMotor.Direction.REVERSE);
         teamUtil.log("Intake Output");
     }
@@ -68,6 +73,7 @@ public class Output {
         lift.setTargetPosition(lift.getCurrentPosition());
         lift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         teamUtil.log("Calibrate Intake Final: Extender: "+lift.getCurrentPosition());
+        outputLiftAtBottom.set(true);
     }
 
     public void outputTelemetry(){
@@ -75,20 +81,34 @@ public class Output {
     }
 
     public void dropSampleOutBack(){
-        bucket.setPosition(BUCKET_DEPLOY);
+        if(outputLiftAtBottom.get()){
+            bucket.setPosition(BUCKET_DEPLOY_AT_BOTTOM);
+
+        }else{
+            bucket.setPosition(BUCKET_DEPLOY_AT_TOP);
+
+        }
         teamUtil.log("DropSampleOutBack Completed");
     }
     public void outputLoad(long timeout){
-        outputMoving.set(true);
-        bucket.setPosition(BUCKET_RELOAD);
-        teamUtil.log("Go To Load: Running to Bottom");
-        lift.setTargetPosition(LIFT_DOWN);
-        lift.setVelocity(LIFT_MAX_VELOCITY);
-        long timeOutTime2 = System.currentTimeMillis() + timeout;
-        while (teamUtil.keepGoing(timeOutTime2)&&lift.getCurrentPosition() > LIFT_DOWN+10) {
+        intake = teamUtil.robot.intake;
+        if(intake.FlipperInUnload.get()){
+            teamUtil.log("Couldn't run Output Load Because Flipper In Unload");
         }
-        lift.setVelocity(0);
-        outputMoving.set(false);
+        else{
+            outputMoving.set(true);
+            bucket.setPosition(BUCKET_RELOAD);
+            teamUtil.log("Go To Load: Running to Bottom");
+            lift.setTargetPosition(LIFT_DOWN);
+            lift.setVelocity(LIFT_MAX_VELOCITY);
+            long timeOutTime2 = System.currentTimeMillis() + timeout;
+            while (teamUtil.keepGoing(timeOutTime2)&&lift.getCurrentPosition() > LIFT_DOWN+10) {
+            }
+            lift.setVelocity(0);
+            outputMoving.set(false);
+            outputLiftAtBottom.set(true);
+        }
+
 
     }
 
@@ -112,16 +132,33 @@ public class Output {
 
 
     public void outputLowBucket(){
-        lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        lift.setTargetPosition(LIFT_MIDDLE_BUCKET);
-        lift.setVelocity(LIFT_MAX_VELOCITY);
-        teamUtil.log("outputLowBucket Completed");
+        intake = teamUtil.robot.intake;
+
+        if(intake.FlipperInUnload.get()){
+            teamUtil.log("Couldn't Put Output Low Bucket");
+        }else{
+            lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            lift.setTargetPosition(LIFT_MIDDLE_BUCKET);
+            lift.setVelocity(LIFT_MAX_VELOCITY);
+            teamUtil.log("outputLowBucket Completed");
+            outputLiftAtBottom.set(false);
+        }
+
 
     }
     public void outputHighBucket(){
-        lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        lift.setTargetPosition(LIFT_TOP_BUCKET);
-        lift.setVelocity(LIFT_MAX_VELOCITY);
-        teamUtil.log("outputHighBucket Completed");
+        intake = teamUtil.robot.intake;
+
+        if(intake.FlipperInUnload.get()){
+            teamUtil.log("Couldn't Put Output High Bucket");
+        }else{
+            lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            lift.setTargetPosition(LIFT_TOP_BUCKET);
+            lift.setVelocity(LIFT_MAX_VELOCITY);
+            teamUtil.log("outputHighBucket Completed");
+            outputLiftAtBottom.set(false);
+        }
+
+
     }
 }
