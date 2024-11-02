@@ -7,6 +7,7 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.teamcode.assemblies.Hang;
 import org.firstinspires.ftc.teamcode.assemblies.Intake;
 import org.firstinspires.ftc.teamcode.assemblies.Output;
 import org.firstinspires.ftc.teamcode.assemblies.Outtake;
@@ -21,12 +22,15 @@ public class CalibrateArms extends LinearOpMode {
     Intake intake;
     Outtake outtake;
     Output output;
+    Hang hang;
+    boolean hangCalibrated = false;
 
     public enum Ops {Intake_Manual_Operation,
         Test_Intake_Speeds,
         Test_Intake_Run_To_Position,
         Outtake_Manual_Operation,
-        Output_Manual_Operation
+        Output_Manual_Operation,
+        Hang_Manual_Operation
         };
     public static Ops AA_Operation = Ops.Intake_Manual_Operation;
 
@@ -42,6 +46,7 @@ public class CalibrateArms extends LinearOpMode {
             case Test_Intake_Run_To_Position : ;break;
             case Outtake_Manual_Operation: outtakeManualOperation();break;
             case Output_Manual_Operation: outputManualOperation();break;
+            case Hang_Manual_Operation: hangManualOperation();break;
         }
     }
     @Override
@@ -66,6 +71,10 @@ public class CalibrateArms extends LinearOpMode {
         output = new Output();
         output.initalize();
         output.calibrate();
+
+        hang = new Hang();
+        hang.initalize();
+        hangCalibrated = false;
 
         gp1.initilize(true); // Game Pads can be plugged into the computer
         gp2.initilize(false);
@@ -94,6 +103,8 @@ public class CalibrateArms extends LinearOpMode {
                 outtakeManualOperation();
             } else if (AA_Operation==Ops.Output_Manual_Operation){
                 outputManualOperation();
+            } else if (AA_Operation==Ops.Hang_Manual_Operation){
+                hangManualOperation();
             }
 
             // Drawing stuff on the field
@@ -109,6 +120,7 @@ public class CalibrateArms extends LinearOpMode {
             //telemetry.addData("Motor Velocity", 0);
             output.outputTelemetry();
             intake.intakeTelemetry();
+            hang.outputTelemetry();
             telemetry.update();
         }
 
@@ -203,6 +215,21 @@ public class CalibrateArms extends LinearOpMode {
         }
         if(gp1.wasYPressed()){
             output.outputHighBucket();
+        }
+        if(gp1.wasAPressed()){
+            output.outputLowBucket();
+        }
+    }
+    public void hangManualOperation(){
+        if(gp1.wasXPressed()){
+            hang.calibrate();
+            hangCalibrated = true;
+        }
+        if(gp1.wasYPressed() && hangCalibrated){
+            hang.extendHang(5000);
+        }
+        if(gp1.wasBPressed() && hangCalibrated){
+            hang.engageHang(5000);
         }
         if(gp1.wasAPressed()){
             output.outputLowBucket();

@@ -28,9 +28,9 @@ public class Hang {
     public AtomicBoolean hangMoving = new AtomicBoolean(false);
     public boolean details;
 
-    public static int HANG_EXTEND = 1616; //tentative change to real val
-    public static int HANG_ENGAGE = 568; //tentative change to real val
-    public static int HANG_VELOCITY = 100; //tentative change to real val
+    public static int HANG_EXTEND = 3100;
+    public static int HANG_ENGAGE = 1100;
+    public static int HANG_VELOCITY = 3000;
 
 
     public Hang() {
@@ -63,8 +63,7 @@ public class Hang {
     }
 
     public void outputTelemetry(){
-        teamUtil.log("Hang Current Position: " +hang.getCurrentPosition());
-
+        telemetry.addLine("Hang Current Position: " +hang.getCurrentPosition());
     }
 
     public void extendHang(long timeout){
