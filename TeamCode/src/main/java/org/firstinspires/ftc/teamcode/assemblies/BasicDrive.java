@@ -58,7 +58,7 @@ public class BasicDrive {
 
 
     static public double COUNTS_PER_MOTOR_REV = 537.7;    // GoBilda 5202 312 RPM
-    static public double COUNTS_PER_CENTIMETER = 11.675; // 435s with 104mm wheels
+    static public double COUNTS_PER_CENTIMETER = 12.972; // 435s with 104mm wheels
     static public double COUNTS_PER_CENTIMETER_312 = 17.923; // Used with 312 RPM
     static public double TICS_PER_CM_STRAFE_ENCODER = 198.9436789f; // TODO
     static public double TICS_PER_CM_STRAIGHT_ENCODER = 198.9436789f; // TODO
@@ -66,12 +66,12 @@ public class BasicDrive {
     public double TILE_CENTER_TO_CENTER = 60.325; // tile width in Cms
 
     static public double MIN_START_VELOCITY = 300; //TODO (Current value works OK, but maybe could be more aggressive)
-    static public double MIN_END_VELOCITY = 250; //TODO (Current value works OK, but maybe could be more aggressive)
-    static public double MAX_ACCELERATION = 22; //TODO (Current value works OK, but maybe could be more aggressive)
-    static public double MAX_DECELERATION = 1.0; //TODO (Current value works OK, but maybe could be more aggressive)
+    static public double MIN_END_VELOCITY = 90; //TODO (Current value works OK, but maybe could be more aggressive)
+    static public double MAX_ACCELERATION = 50;
+    static public double MAX_DECELERATION = 1.65;
 
-    static public double MAX_STRAIGHT_ACCELERATION = 50; //TODO
-    static public double MAX_STRAIGHT_DECELERATION = 1; //TODO
+    static public double MAX_STRAIGHT_ACCELERATION = 20; //TODO
+    static public double MAX_STRAIGHT_DECELERATION = 1.87; //TODO
     static public double MIN_STRAFE_START_VELOCITY = 800; //TODO
     static public double MIN_STRAFE_END_VELOCITY = 400; //TODO
     static public double MAX_STRAFE_DECELERATION = .15; //TODO
@@ -522,7 +522,7 @@ public class BasicDrive {
                 teamUtil.log("Went below or was min end velocity");
             }
         }
-        lastVelocity = endVelocity;
+        lastVelocity = Math.max(endVelocity,MIN_START_VELOCITY);
         teamUtil.log("MoveCM--Finished");
 
     }
@@ -1016,7 +1016,7 @@ public class BasicDrive {
             return false;
         }
         setBulkReadOff();
-        lastVelocity = endVelocity;
+        lastVelocity = Math.max(endVelocity,MIN_START_VELOCITY);
         teamUtil.log("driveStraightToTargetWithStrafeEncoderValue--Finished.  Current Forward Pos:" + odo.getPosX());
         return true;
     }
@@ -1034,29 +1034,33 @@ public class BasicDrive {
         details = details;
         long startTime = System.currentTimeMillis();
         long timeoutTime = startTime+timeout;
-
+        odo.update();
         if (details) teamUtil.log("Starting Forward Pos: "+ odo.getPosY());
         if (details) teamUtil.log("Starting Strafe Pos: "+ odo.getPosX());
 
         double velocityChangeNeededAccel;
         double velocityChangeNeededDecel;
         double driveHeading;
-        double startEncoder = odo.getPosX();
+        odo.update();
+
+        double startEncoder = odo.getPosY();
         boolean goingUp;
         if(strafeTarget-startEncoder >=0){
-            driveHeading = adjustAngle(robotHeading-90);
+            driveHeading = adjustAngle(robotHeading+90);
             goingUp = true;
         }else{
-            driveHeading = adjustAngle(robotHeading+90);
+            driveHeading = adjustAngle(robotHeading-90);
             goingUp=false;
         }
 
-        float headingFactor = goingUp? -1 : 1; // reverse correction for going backwards
+        float headingFactor = goingUp? 1 : -1; // reverse correction for going backwards
 
         double requestedEndVelocity = endVelocity;
         if (endVelocity < MIN_END_VELOCITY) {
             endVelocity = MIN_END_VELOCITY;
         }
+
+
 
         if (lastVelocity == 0) {
             velocityChangeNeededAccel = maxVelocity - MIN_START_VELOCITY;
@@ -1085,24 +1089,27 @@ public class BasicDrive {
             teamUtil.log("Acceleration distance: " + accelerationDistance);
             teamUtil.log("Deceleration distance: " + decelerationDistance);
         }
-        distanceRemaining = Math.abs(strafeTarget - odo.getPosX());
+        odo.update();
+
+        distanceRemaining = Math.abs(strafeTarget - odo.getPosY());
 
         setBulkReadAuto();
         boolean actionDone = false;
-        int currentPos;
+        double currentPos;
 
         //-------Acceleration Phase
         double currentVelocity;
         double adjustedDriveHeading;
         while ((distanceRemaining > (totalTics-accelerationDistance))&&teamUtil.keepGoing(timeoutTime)) {
-            currentPos = strafeEncoder.getCurrentPosition();
+            odo.update();
+            currentPos = odo.getPosY();
             distanceRemaining = (!goingUp) ? currentPos-strafeTarget : strafeTarget - currentPos;
             if (lastVelocity == 0) {
                 currentVelocity = MAX_STRAFE_ACCELERATION * (Math.max(0,totalTics-distanceRemaining)) + MIN_START_VELOCITY;
             } else {
                 currentVelocity = MAX_STRAFE_ACCELERATION * (Math.max(0,totalTics-distanceRemaining)) + lastVelocity;
             }
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((forwardEncoder.getCurrentPosition() - straightTarget)* STRAFE_HEADING_DECLINATION, -STRAFE_MAX_DECLINATION, STRAFE_MAX_DECLINATION) * headingFactor;
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((odo.getPosX() - straightTarget)* STRAFE_HEADING_DECLINATION, -STRAFE_MAX_DECLINATION, STRAFE_MAX_DECLINATION) * headingFactor;
             if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
@@ -1130,9 +1137,11 @@ public class BasicDrive {
 
         //-------Cruise Phase
         while ((distanceRemaining > decelerationDistance)&&teamUtil.keepGoing(timeoutTime)) {
-            currentPos = strafeEncoder.getCurrentPosition();
+            odo.update();
+
+            currentPos = odo.getPosY();
             distanceRemaining = (!goingUp) ? currentPos-strafeTarget : strafeTarget - currentPos;
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((forwardEncoder.getCurrentPosition() - straightTarget)* STRAFE_HEADING_DECLINATION, -STRAFE_MAX_DECLINATION, STRAFE_MAX_DECLINATION) * headingFactor;            if (details) {
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((odo.getPosX() - straightTarget)* STRAFE_HEADING_DECLINATION, -STRAFE_MAX_DECLINATION, STRAFE_MAX_DECLINATION) * headingFactor;            if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
             if (details) teamUtil.log("Cruising at Velocity: "+ maxVelocity + " Tics Remaining: " + distanceRemaining);
@@ -1155,10 +1164,12 @@ public class BasicDrive {
 
         //-------Deceleration Phase
         while ((distanceRemaining > 0)&&teamUtil.keepGoing(timeoutTime)) {
-            currentPos = strafeEncoder.getCurrentPosition();
+            odo.update();
+
+            currentPos = odo.getPosY();
             distanceRemaining = (!goingUp) ? currentPos-strafeTarget : strafeTarget - currentPos;
             currentVelocity = MAX_STRAIGHT_DECELERATION * distanceRemaining + endVelocity;
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((forwardEncoder.getCurrentPosition() - straightTarget)* STRAFE_HEADING_DECLINATION, -STRAFE_MAX_DECLINATION, STRAFE_MAX_DECLINATION) * headingFactor;            if (details) {
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((odo.getPosX() - straightTarget)* STRAFE_HEADING_DECLINATION, -STRAFE_MAX_DECLINATION, STRAFE_MAX_DECLINATION) * headingFactor;            if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
 
@@ -1184,8 +1195,8 @@ public class BasicDrive {
 
         }
         setBulkReadOff();
-        lastVelocity = endVelocity;
-        teamUtil.log("strafeHoldingStraightEncoder--Finished.  Current Strafe Encoder:" + strafeEncoder.getCurrentPosition());
+        lastVelocity = Math.max(endVelocity,MIN_START_VELOCITY);
+        teamUtil.log("strafeHoldingStraightEncoder--Finished.  Current Strafe Encoder:" + odo.getPosY());
         return true;
     }
 

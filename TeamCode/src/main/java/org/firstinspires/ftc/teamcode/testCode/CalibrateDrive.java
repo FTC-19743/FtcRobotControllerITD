@@ -223,27 +223,27 @@ public class CalibrateDrive extends LinearOpMode {
             drive.straightHoldingStrafeEncoder(drive.MAX_VELOCITY, forwardTarget,startStrafe,0,0,null,0,3000);
         }
         if (gamepad1.dpad_down) {
-            if (true) return; // TODO Not implemented for Pinpoint yet (see UP above for example)
             drive.setHeading(0);
-            long startForward = drive.forwardEncoder.getCurrentPosition();
-            long forwardTarget = (long) (startForward - drive.TICS_PER_CM_STRAIGHT_ENCODER*testDistance);
-            long startStrafe = drive.strafeEncoder.getCurrentPosition();
+            drive.loop();
+            double startForward = drive.odo.getPosX();
+            double forwardTarget = (long) (startForward - testDistance);
+            double startStrafe = drive.odo.getPosY();
             drive.straightHoldingStrafeEncoder(drive.MAX_VELOCITY, forwardTarget,startStrafe,0,0,null,0,3000);
         }
         if (gamepad1.dpad_right) {
-            if (true) return; // TODO Not implemented for Pinpoint yet (see UP above for example)
             drive.setHeading(0);
-            long startStrafe = drive.strafeEncoder.getCurrentPosition();
-            long strafeTarget = (long) (startStrafe + drive.TICS_PER_CM_STRAFE_ENCODER*testDistance);
-            long startForward = drive.forwardEncoder.getCurrentPosition();
+            drive.loop();
+            double startStrafe = drive.odo.getPosY();
+            double strafeTarget = (long) (startStrafe - testDistance);
+            double startForward = drive.odo.getPosX();
             drive.strafeHoldingStraightEncoder(drive.MAX_VELOCITY, strafeTarget,startForward,0,0,null,0,3000);
         }
         if (gamepad1.dpad_left) {
-            if (true) return; // TODO Not implemented for Pinpoint yet (see UP above for example)
             drive.setHeading(0);
-            long startStrafe = drive.strafeEncoder.getCurrentPosition();
-            long strafeTarget = (long) (startStrafe - drive.TICS_PER_CM_STRAFE_ENCODER*testDistance);
-            long startForward = drive.forwardEncoder.getCurrentPosition();
+            drive.loop();
+            double startStrafe = drive.odo.getPosY();
+            double strafeTarget = (long) (startStrafe + testDistance);
+            double startForward = drive.odo.getPosX();
             drive.strafeHoldingStraightEncoder(drive.MAX_VELOCITY, strafeTarget,startForward,0,0,null,0,3000);
         }
     }
