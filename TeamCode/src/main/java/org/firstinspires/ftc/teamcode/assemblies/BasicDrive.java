@@ -70,8 +70,8 @@ public class BasicDrive {
     static public double MAX_ACCELERATION = 22; //TODO (Current value works OK, but maybe could be more aggressive)
     static public double MAX_DECELERATION = 1.0; //TODO (Current value works OK, but maybe could be more aggressive)
 
-    static public double MAX_STRAIGHT_ACCELERATION = 1.0; //TODO
-    static public double MAX_STRAIGHT_DECELERATION = 0.02; //TODO
+    static public double MAX_STRAIGHT_ACCELERATION = 50; //TODO
+    static public double MAX_STRAIGHT_DECELERATION = 1; //TODO
     static public double MIN_STRAFE_START_VELOCITY = 800; //TODO
     static public double MIN_STRAFE_END_VELOCITY = 400; //TODO
     static public double MAX_STRAFE_DECELERATION = .15; //TODO
