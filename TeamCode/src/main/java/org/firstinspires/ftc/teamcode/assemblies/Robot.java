@@ -59,10 +59,13 @@ public class Robot {
     }
 
     public void calibrate() {
+        outtake.firstCalibrate();
+
         output.calibrate();
-        outtake.calibrate();
         intake.calibrate();
         hang.calibrate();
+        outtake.secondCalibrate();
+
     }
 
     public int fieldSide() { // helper method that returns heading out towards the field

@@ -87,6 +87,7 @@ public class CalibrateDrive extends LinearOpMode {
         while (opModeIsActive()) {
             gp1.loop();
             gp2.loop();
+            drive.loop(); // keep odometry data up to date
             drive.driveMotorTelemetry();
 
             // Left bumper toggles Alliance
@@ -100,6 +101,9 @@ public class CalibrateDrive extends LinearOpMode {
             // Right bumper resets Heading
             if (gp1.wasRightBumperPressed()) {
                 drive.setHeading(0);
+            }
+            if (gp1.wasRightTriggerPressed()) {
+                drive.setRobotPosition(0,0, 0);
             }
 
             // X makes the selected action happen
@@ -132,7 +136,7 @@ public class CalibrateDrive extends LinearOpMode {
 
 
             telemetry.update();
-            sleep(20);
+            //sleep(20);
         }
     }
 
@@ -149,14 +153,17 @@ public class CalibrateDrive extends LinearOpMode {
     }
 
     public void moveNoAccelerateNoHeadingControl () {
-        drive.driveMotorsHeadings(HEADING, drive.getHeading(), testVelocity);
+        //drive.driveMotorsHeadings(HEADING, drive.getHeading(), testVelocity);
+        drive.driveMotorsHeadings(HEADING, drive.getHeadingODO(), testVelocity);
         teamUtil.pause(SECONDS*1000);
         drive.stopMotors();
     }
 
     public void moveNoAccelerateWithHeadingControl () {
         long doneTime = System.currentTimeMillis() + (int)(SECONDS*1000);
-        double heldHeading = drive.getHeading();
+        //double heldHeading = drive.getHeading();
+        double heldHeading = drive.getHeadingODO();
+
         while (System.currentTimeMillis() < doneTime) {
             drive.driveMotorsHeadings(HEADING, heldHeading, testVelocity);
         }
@@ -209,12 +216,14 @@ public class CalibrateDrive extends LinearOpMode {
     public void testHoldingTarget() {
         if (gamepad1.dpad_up) {
             drive.setHeading(0);
-            long startForward = drive.forwardEncoder.getCurrentPosition();
-            long forwardTarget = (long) (startForward + drive.TICS_PER_CM_STRAIGHT_ENCODER*testDistance);
-            long startStrafe = drive.strafeEncoder.getCurrentPosition();
+            drive.loop();
+            double startForward = drive.odo.getPosX();
+            double forwardTarget = (long) (startForward + testDistance);
+            double startStrafe = drive.odo.getPosY();
             drive.straightHoldingStrafeEncoder(drive.MAX_VELOCITY, forwardTarget,startStrafe,0,0,null,0,3000);
         }
         if (gamepad1.dpad_down) {
+            if (true) return; // TODO Not implemented for Pinpoint yet (see UP above for example)
             drive.setHeading(0);
             long startForward = drive.forwardEncoder.getCurrentPosition();
             long forwardTarget = (long) (startForward - drive.TICS_PER_CM_STRAIGHT_ENCODER*testDistance);
@@ -222,6 +231,7 @@ public class CalibrateDrive extends LinearOpMode {
             drive.straightHoldingStrafeEncoder(drive.MAX_VELOCITY, forwardTarget,startStrafe,0,0,null,0,3000);
         }
         if (gamepad1.dpad_right) {
+            if (true) return; // TODO Not implemented for Pinpoint yet (see UP above for example)
             drive.setHeading(0);
             long startStrafe = drive.strafeEncoder.getCurrentPosition();
             long strafeTarget = (long) (startStrafe + drive.TICS_PER_CM_STRAFE_ENCODER*testDistance);
@@ -229,6 +239,7 @@ public class CalibrateDrive extends LinearOpMode {
             drive.strafeHoldingStraightEncoder(drive.MAX_VELOCITY, strafeTarget,startForward,0,0,null,0,3000);
         }
         if (gamepad1.dpad_left) {
+            if (true) return; // TODO Not implemented for Pinpoint yet (see UP above for example)
             drive.setHeading(0);
             long startStrafe = drive.strafeEncoder.getCurrentPosition();
             long strafeTarget = (long) (startStrafe - drive.TICS_PER_CM_STRAFE_ENCODER*testDistance);

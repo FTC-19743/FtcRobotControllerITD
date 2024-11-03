@@ -29,7 +29,7 @@ public class Hang {
     public boolean details;
 
     public static int HANG_EXTEND = 3100;
-    public static int HANG_ENGAGE = 1100;
+    public static int HANG_ENGAGE = 800;
     public static int HANG_VELOCITY = 3000;
 
 
@@ -47,7 +47,7 @@ public class Hang {
     }
     public void calibrate(){
         hang.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        hang.setPower(-.2); //TODO Make sure power sign is correct
+        hang.setPower(-.07); //TODO: MAKE SURE POWER IS CORRECT
         int lastHangPosition = hang.getCurrentPosition();
         teamUtil.pause(250);
         while (hang.getCurrentPosition() != lastHangPosition) {

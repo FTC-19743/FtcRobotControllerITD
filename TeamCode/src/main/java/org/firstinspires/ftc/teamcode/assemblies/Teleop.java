@@ -1,9 +1,5 @@
 package org.firstinspires.ftc.teamcode.assemblies;
 
-import static org.firstinspires.ftc.teamcode.assemblies.Intake.FLIPPER_GRAB;
-import static org.firstinspires.ftc.teamcode.assemblies.Intake.FLIPPER_READY;
-import static org.firstinspires.ftc.teamcode.assemblies.Intake.SWEEPER_READY;
-
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -23,6 +19,8 @@ public class Teleop extends LinearOpMode {
     TeamGamepad driverGamepad;
     TeamGamepad armsGamepad;
     boolean endgame = false;
+    double EXTENDER_Y_DEADBAND = 0.3;
+
 
 
 
@@ -184,16 +182,16 @@ public class Teleop extends LinearOpMode {
                 robot.intake.goToSeekNoWait(3000);
                 extenderSliderUnlocked = true;
             }
-            if(Math.abs(armsGamepad.gamepad.left_stick_y)>.30&&extenderSliderUnlocked){
+            if(Math.abs(armsGamepad.gamepad.left_stick_y)>EXTENDER_Y_DEADBAND&&extenderSliderUnlocked){
                 robot.intake.manualY(armsGamepad.gamepad.left_stick_y);
             }
-            if(Math.abs(armsGamepad.gamepad.left_stick_x)>.30&&extenderSliderUnlocked){
-                //TODO X Control over Slider
+            if(extenderSliderUnlocked){
+                robot.intake.manualX(armsGamepad.gamepad.left_stick_x);
             }
 
             //OUTPUT
             if(armsGamepad.wasRightTriggerPressed()){
-                robot.output.dropSampleOutBack();
+                robot.output.dropSampleOutBackNoWait();
             }
 
             if(armsGamepad.wasLeftTriggerPressed()){

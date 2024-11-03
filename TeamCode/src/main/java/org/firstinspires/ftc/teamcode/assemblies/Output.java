@@ -25,6 +25,7 @@ public class Output {
     public DcMotorEx lift;
     public Servo bucket;
     public Intake intake;
+    public Outtake outtake;
     public AtomicBoolean outputMoving = new AtomicBoolean(false);
     public AtomicBoolean outputLiftAtBottom = new AtomicBoolean(true);
 
@@ -41,6 +42,8 @@ public class Output {
     static public float BUCKET_DEPLOY_AT_TOP = 0.44f;
 
     static public float BUCKET_RELOAD = 0.7f;
+
+    static public int DROP_SAMPLE_TIME = 2000;
 
 
 
@@ -59,6 +62,8 @@ public class Output {
         teamUtil.log("Intake Output");
     }
     public void calibrate(){
+        bucket.setPosition(BUCKET_RELOAD);
+
         lift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         lift.setPower(-.2);
         int lastExtenderPosition = lift.getCurrentPosition();
@@ -81,19 +86,44 @@ public class Output {
     }
 
     public void dropSampleOutBack(){
+        outputMoving.set(true);
         if(outputLiftAtBottom.get()){
             bucket.setPosition(BUCKET_DEPLOY_AT_BOTTOM);
+
 
         }else{
             bucket.setPosition(BUCKET_DEPLOY_AT_TOP);
 
         }
+        teamUtil.pause(DROP_SAMPLE_TIME);
+        bucket.setPosition(BUCKET_RELOAD);
+        outputMoving.set(false);
         teamUtil.log("DropSampleOutBack Completed");
+    }
+
+
+    public void dropSampleOutBackNoWait(){
+        if(outputMoving.get()){
+            teamUtil.log("WARNING: Attempt to dropSampleOutBackNoWait while output is moving--ignored");
+        }
+        else{
+            outputMoving.set(true);
+            teamUtil.log("Launching Thread to dropSampleOutBackNoWait");
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    dropSampleOutBack();
+                }
+            });
+            thread.start();
+        }
     }
     public void outputLoad(long timeout){
         intake = teamUtil.robot.intake;
-        if(intake.FlipperInUnload.get()){
-            teamUtil.log("Couldn't run Output Load Because Flipper In Unload");
+        outtake = teamUtil.robot.outtake;
+
+        if(intake.FlipperInUnload.get()||outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_SAFE-0.1){
+            teamUtil.log("Couldn't run Output Load Because Stuff is in the way");
         }
         else{
             outputMoving.set(true);
@@ -133,30 +163,36 @@ public class Output {
 
     public void outputLowBucket(){
         intake = teamUtil.robot.intake;
+        outtake = teamUtil.robot.outtake;
 
-        if(intake.FlipperInUnload.get()){
+        if(intake.FlipperInUnload.get()||outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_SAFE-0.1){
             teamUtil.log("Couldn't Put Output Low Bucket");
         }else{
+            outputMoving.set(true);
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             lift.setTargetPosition(LIFT_MIDDLE_BUCKET);
             lift.setVelocity(LIFT_MAX_VELOCITY);
             teamUtil.log("outputLowBucket Completed");
             outputLiftAtBottom.set(false);
+            outputMoving.set(false);
         }
 
 
     }
     public void outputHighBucket(){
         intake = teamUtil.robot.intake;
+        outtake = teamUtil.robot.outtake;
 
-        if(intake.FlipperInUnload.get()){
+        if(intake.FlipperInUnload.get()||outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_SAFE-0.1){
             teamUtil.log("Couldn't Put Output High Bucket");
         }else{
+            outputMoving.set(true);
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             lift.setTargetPosition(LIFT_TOP_BUCKET);
             lift.setVelocity(LIFT_MAX_VELOCITY);
             teamUtil.log("outputHighBucket Completed");
             outputLiftAtBottom.set(false);
+            outputMoving.set(false);
         }
 
 

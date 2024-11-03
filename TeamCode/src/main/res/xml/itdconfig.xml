@@ -31,7 +31,9 @@
             <goBILDA5202SeriesMotor name="flm" port="1" />
             <goBILDA5202SeriesMotor name="brm" port="2" />
             <goBILDA5202SeriesMotor name="blm" port="3" />
-            <AnalogInput name = "axonPotentiometer" port ="0"/>
+            <AnalogInput name = "sliderPotentiometer" port ="0"/>
+            <AnalogInput name = "outakePotentiometer" port ="2"/>
+
 
             <LynxEmbeddedIMU name="imu" port="0" bus="0" />
             <goBILDAPinpoint name="pinpoint" port="0" bus="1" />

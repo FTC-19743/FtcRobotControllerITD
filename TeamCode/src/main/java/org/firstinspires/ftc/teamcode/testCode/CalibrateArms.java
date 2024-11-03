@@ -7,6 +7,7 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.teamcode.assemblies.AxonSlider;
 import org.firstinspires.ftc.teamcode.assemblies.Hang;
 import org.firstinspires.ftc.teamcode.assemblies.Intake;
 import org.firstinspires.ftc.teamcode.assemblies.Output;
@@ -66,11 +67,12 @@ public class CalibrateArms extends LinearOpMode {
 
         outtake = new Outtake();
         outtake.initalize();
-        outtake.calibrate();
+        outtake.outakeTelemetry();
 
         output = new Output();
         output.initalize();
         output.calibrate();
+
 
         hang = new Hang();
         hang.initalize();
@@ -118,6 +120,7 @@ public class CalibrateArms extends LinearOpMode {
             //telemetry.addData("Encoder", 0);
             //telemetry.addData("Current Velocity", 0);
             //telemetry.addData("Motor Velocity", 0);
+            outtake.outakeTelemetry();
             output.outputTelemetry();
             intake.intakeTelemetry();
             hang.outputTelemetry();
@@ -182,7 +185,10 @@ public class CalibrateArms extends LinearOpMode {
         }
 
         if (gp1.wasYPressed()) {
-            intake.axonSlider.runToPosition(Intake.SLIDER_UNLOAD, 1500);
+            intake.axonSlider.runToPosition(AxonSlider.SLIDER_UNLOAD, 1500);
+        }
+        if (gp1.wasBPressed()) {
+            intake.axonSlider.runToPosition(AxonSlider.SLIDER_READY, 1500);
         }
         if (gp1.wasAPressed()) {
             intake.axonSlider.calibrate(-0.3f, 1);

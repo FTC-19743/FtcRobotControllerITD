@@ -58,7 +58,7 @@ For support, contact tech@gobilda.com
 -Ethan Doak
  */
 
-@TeleOp(name="goBILDA® PinPoint Odometry Example", group="Linear OpMode")
+@TeleOp(name="goBILDA® PinPoint Odometry Example", group="Test Code")
 //@Disabled
 
 public class PinpointTest extends LinearOpMode {
@@ -84,7 +84,7 @@ public class PinpointTest extends LinearOpMode {
         the tracking point the Y (strafe) odometry pod is. forward of center is a positive number,
         backwards is a negative number.
          */
-        odo.setOffsets(-67, -281); //these are tuned for 3110-0002-0001 Product Insight #1
+        odo.setOffsets(192, -64); //Center of bot
 
         /*
         Set the kind of pods used by your robot. If you're using goBILDA odometry pods, select either
@@ -101,7 +101,7 @@ public class PinpointTest extends LinearOpMode {
         increase when you move the robot forward. And the Y (strafe) pod should increase when
         you move the robot to the left.
          */
-        odo.setEncoderDirections(Pinpoint.EncoderDirection.FORWARD, Pinpoint.EncoderDirection.FORWARD);
+        odo.setEncoderDirections(Pinpoint.EncoderDirection.REVERSED, Pinpoint.EncoderDirection.REVERSED);
 
 
         /*
@@ -169,15 +169,11 @@ public class PinpointTest extends LinearOpMode {
             gets the current Position (x & y in mm, and heading in degrees) of the robot, and prints it.
              */
             Pose2D pos = odo.getPosition();
-            String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
-            telemetry.addData("Position", data);
 
             /*
             gets the current Velocity (x & y in mm/sec and heading in degrees/sec) and prints it.
              */
             Pose2D vel = odo.getVelocity();
-            String velocity = String.format(Locale.US,"{XVel: %.3f, YVel: %.3f, HVel: %.3f}", vel.getX(DistanceUnit.MM), vel.getY(DistanceUnit.MM), vel.getHeading(AngleUnit.DEGREES));
-            telemetry.addData("Velocity", velocity);
 
 
             /*
@@ -190,15 +186,19 @@ public class PinpointTest extends LinearOpMode {
             FAULT_Y_POD_NOT_DETECTED - The device does not detect a Y pod plugged in
             */
             telemetry.addData("Status", odo.getDeviceStatus());
-
             telemetry.addData("Pinpoint Frequency", odo.getFrequency()); //prints/gets the current refresh rate of the Pinpoint
-
             telemetry.addData("REV Hub Frequency: ", frequency); //prints the control system refresh rate
+
+            String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
+            telemetry.addData("Position", data);
+            String velocity = String.format(Locale.US,"{XVel: %.3f, YVel: %.3f, HVel: %.3f}", vel.getX(DistanceUnit.MM), vel.getY(DistanceUnit.MM), vel.getHeading(AngleUnit.DEGREES));
+            telemetry.addData("Velocity", velocity);
+
             telemetry.addLine("ODO ENCODER X VAL: " + odo.getEncoderX());
             telemetry.addLine("ODO ENCODER Y VAL: " + odo.getEncoderY());
 
             telemetry.addLine("ODO POS X VAL: " + odo.getPosX());
-            telemetry.addLine("ODO ENCODER Y VAL: " + odo.getPosX());
+            telemetry.addLine("ODO POS Y VAL: " + odo.getPosY());
 
 
 

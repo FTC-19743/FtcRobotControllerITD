@@ -17,14 +17,19 @@ public class AxonSlider {
     public AtomicBoolean timedOut = new AtomicBoolean(false);
     public boolean details = false;
 
-    public int RIGHT_LIMIT = 661; //tentative
-    public int LEFT_LIMIT = -89; //tentative
+    public int RIGHT_LIMIT = 0; //tentative
+    public int LEFT_LIMIT = 0; //tentative
+    static public float SLIDER_UNLOAD = 0; // TODO Recalibrate
+    static public float SLIDER_READY = 0;//TODO Recalibrate
 
     public static int RTP_DEADBAND_DEGREES = 3;
     public static float RTP_P_COEFFICIENT = .001f;
     public static float RTP_MIN_VELOCITY = .1f;
     public static float RTP_MAX_VELOCITY = .5f;
     public static float POWER_ADJUSTEMENT = -.01f;
+    public static float MANUAL_SLIDER_INCREMENT;
+    double SLIDER_X_DEADBAND = 0.5;
+    public boolean CALIBRATED = false;
 
     public int axonRotations = 0; // The number of full rotations postive or negative the servo has traveled from its center range
     private double lastDegrees360; // the rotational angle of the servo in degrees last time we checked
@@ -40,6 +45,7 @@ public class AxonSlider {
     // Flipper must be in a safe position for travel to the far right side
     // Leaves the slider on the far left
     public void calibrate (float power, int rotations) {
+        CALIBRATED = false;
         teamUtil.log("Calibrating Intake Slider");
         axon.setPower(power);
         int lastPosition = getPosition();
@@ -51,7 +57,20 @@ public class AxonSlider {
         }
         axon.setPower(0);
         teamUtil.log("Calibrate Intake Slider Done");
+
         axonRotations = rotations;
+        teamUtil.log("Calibrate POS: " + getPosition());
+        teamUtil.pause(250);
+        RIGHT_LIMIT = getPosition();
+        LEFT_LIMIT = getPosition()-739;
+        SLIDER_READY = getPosition()-375;
+        SLIDER_UNLOAD = getPosition()-321;
+        teamUtil.log("RIGHT LIMIT: " + RIGHT_LIMIT);
+        teamUtil.log("LEFT LIMIT: " + LEFT_LIMIT);
+        teamUtil.log("SLIDER READY: " + SLIDER_READY);
+        teamUtil.log("SLIDER UNLOAD: " + SLIDER_UNLOAD);
+
+        CALIBRATED = true;
     }
 
     // Return the computed absolute position of the servo by using the number
@@ -121,6 +140,34 @@ public class AxonSlider {
                 }
             });
             thread.start();
+        }
+    }
+
+    public void manualSliderControl(double joystick) {
+        if(Math.abs(joystick)>SLIDER_X_DEADBAND){
+            double power = Math.abs(joystick)-0.5; //TODO MAke linear
+            loop();
+
+            if(joystick<0){
+                if (Math.abs(getPosition()-LEFT_LIMIT)<40) {
+                    setAdjustedPower(0);
+                }
+                else{
+                    setAdjustedPower((float)power); //TODO Know Signs
+                }
+            }else if (joystick>0){
+                if (Math.abs(getPosition()-RIGHT_LIMIT)<40){
+                    setAdjustedPower(0);
+                }else{
+                    setAdjustedPower(-(float)power);
+                }
+            }else{
+                setAdjustedPower(0);
+            }
+
+        }
+        else{
+            setAdjustedPower(0);
         }
     }
 
