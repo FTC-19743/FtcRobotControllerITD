@@ -187,8 +187,12 @@ public class CalibrateDrive extends LinearOpMode {
 
     public void testMoveCMs() {
         if (gp1.gamepad.dpad_up) {
+            /*
             drive.setHeading(0);
             drive.moveCm(testVelocity, testDistance, 0, 0,0);
+             */
+            drive.moveCm(BasicDrive.MAX_VELOCITY,35,135,315,0);
+
         } else if (gp1.gamepad.dpad_down) {
             drive.setHeading(0);
             drive.moveCm(testVelocity, testDistance, 180, 0,0);
@@ -252,9 +256,7 @@ public class CalibrateDrive extends LinearOpMode {
         //TBD  Set up some button presses to move the robot to some X,Y values?
 
         if (gamepad1.dpad_up){
-            drive.forwardEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            drive.forwardEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            drive.moveTo(testVelocity,botX,botY,0,null,0,0);
+            drive.moveTo(testVelocity,botX,botY,0,0,null,0,5000);
         }
     }
 

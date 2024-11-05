@@ -47,8 +47,18 @@ public class Hang {
     }
     public void calibrate(){
         hang.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        hang.setPower(-.07); //TODO: MAKE SURE POWER IS CORRECT
+        hang.setPower(-.3); // go fast first time
         int lastHangPosition = hang.getCurrentPosition();
+        teamUtil.pause(250);
+        while (hang.getCurrentPosition() != lastHangPosition) {
+            lastHangPosition = hang.getCurrentPosition();
+            if (details) teamUtil.log("Calibrate Hang: " + hang.getCurrentPosition());
+            teamUtil.pause(50);
+        }
+        hang.setPower(0);
+        teamUtil.pause(1000);
+        hang.setPower(-.07); //Go slow second time so it doesn't bounce
+        lastHangPosition = hang.getCurrentPosition();
         teamUtil.pause(250);
         while (hang.getCurrentPosition() != lastHangPosition) {
             lastHangPosition = hang.getCurrentPosition();

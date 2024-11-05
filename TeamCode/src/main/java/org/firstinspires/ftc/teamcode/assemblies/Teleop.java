@@ -119,24 +119,6 @@ public class Teleop extends LinearOpMode {
             if (driverGamepad.gamepad.right_stick_button && driverGamepad.gamepad.left_stick_button) {
                 robot.drive.setHeading(0);
             }
-            /*
-            if (teamUtil.alliance == teamUtil.Alliance.RED) { // Make this work for Red and Blue Alliances
-                robot.drive.universalDriveJoystick(
-                        driverGamepad.gamepad.left_stick_y,
-                        -driverGamepad.gamepad.left_stick_x,
-                        driverGamepad.gamepad.right_stick_x,
-                        driverGamepad.gamepad.right_trigger > .5,
-                        robot.drive.getHeading());
-            } else {
-                robot.drive.universalDriveJoystick(
-                        -driverGamepad.gamepad.left_stick_y,
-                        driverGamepad.gamepad.left_stick_x,
-                        driverGamepad.gamepad.right_stick_x,
-                        driverGamepad.gamepad.right_trigger > .5,
-                        robot.drive.getHeading());
-            }
-
-             */
 
             robot.drive.universalDriveJoystickV2(
                     driverGamepad.gamepad.left_stick_x,

@@ -23,7 +23,7 @@ public class testAutoPaths extends LinearOpMode {
     TeamGamepad driverGamepad;
     TeamGamepad armsGamepad;
     boolean useArms = false;
-    boolean liveStream = true;
+    public static boolean liveStream = true;
 
 
     public long startTime;
@@ -52,7 +52,9 @@ public class testAutoPaths extends LinearOpMode {
         telemetry.addLine("Initializing CV.  Please wait.");
         telemetry.update();
         robot.initialize();
+        robot.initCV(liveStream);
         robot.calibrate();
+
 
 
         telemetry.addLine("Ready to start");
@@ -90,19 +92,16 @@ public class testAutoPaths extends LinearOpMode {
 
 
             if(driverGamepad.wasLeftPressed()) {
-
-
+                robot.resetRobot();
             }
             if(driverGamepad.wasUpPressed()) {
                robot.autoV1(driverGamepad.wasUpPressed(),1000);
 
             }
             if(driverGamepad.wasDownPressed()) {
-                robot.outtake.secondCalibrate();
 
             }
             if(driverGamepad.wasRightPressed()) {
-
 
             }
             if(driverGamepad.wasXPressed()) {

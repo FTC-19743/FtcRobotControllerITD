@@ -43,7 +43,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     Rect obscureRect = new Rect(0,300,WIDTH,HEIGHT-300);
     Rect cropRect = new Rect(0, 0, WIDTH, HEIGHT);
 
-    static public int TARGET_X = 320;
+    static public int TARGET_X = 334;
     static public int TARGET_Y = 160;
     static public int AREA_THRESHOLD = 2000;
 

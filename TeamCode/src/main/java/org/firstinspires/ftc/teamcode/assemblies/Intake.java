@@ -62,7 +62,7 @@ public class Intake {
     static public float WRIST_MIDDLE = 0.5f;
     static public int ROTATE_PAUSE = 250;
 
-    static public float SWEEPER_READY = 0.330f;
+    static public float SWEEPER_READY = 0.35f;
     static public float SWEEPER_EXPAND = 0.59f;
     static public float SWEEPER_GRAB = 0.53f;// was .59f
     static public float SWEEPER_RELEASE = .9f;
@@ -87,6 +87,7 @@ public class Intake {
     static public int EXTENDER_MAX_VELOCITY = 700;
     static public int EXTENDER_MAX_RETRACT_VELOCITY = 1500;
     static public int EXTENDER_MIN_VELOCITY = 50;
+    static public int EXTENDER_HOLD_RETRACT_VELOCITY = 100;
     static public int EXTENDER_MM_DEADBAND = 5;
     static public int EXTENDER_P_COEFFICIENT = 4;
     static public int EXTENDER_THRESHOLD = 10;
@@ -189,10 +190,11 @@ public class Intake {
             teamUtil.pause(50);
         }
         extender.setPower(0);
-        extender.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-        extender.setTargetPosition(extender.getCurrentPosition());
-        extender.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-
+        teamUtil.pause(500); // let it "relax" just a bit
+        extender.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER); // make that our zero position
+        extender.setTargetPosition(EXTENDER_UNLOAD);
+        extender.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+        extender.setVelocity(EXTENDER_HOLD_RETRACT_VELOCITY);
 
         teamUtil.log("Calibrate Intake Final: Extender: "+extender.getCurrentPosition());
     }
@@ -479,6 +481,11 @@ public class Intake {
         FlipperInUnload.set(true);
         wrist.setPosition(WRIST_UNLOAD);
         extendersToPosition(EXTENDER_UNLOAD,timeoutTime-System.currentTimeMillis());
+        extender.setVelocity(EXTENDER_HOLD_RETRACT_VELOCITY);
+        teamUtil.pause(UNLOAD_WAIT_TIME);
+        release();
+        teamUtil.pause(250);
+        goToSafe();
         moving.set(false);
         teamUtil.log("goToUnload--Finished");
     }

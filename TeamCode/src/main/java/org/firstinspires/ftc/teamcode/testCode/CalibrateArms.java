@@ -31,7 +31,8 @@ public class CalibrateArms extends LinearOpMode {
         Test_Intake_Run_To_Position,
         Outtake_Manual_Operation,
         Output_Manual_Operation,
-        Hang_Manual_Operation
+        Hang_Manual_Operation,
+        Intake_Fine_Manual_Operation
         };
     public static Ops AA_Operation = Ops.Intake_Manual_Operation;
 
@@ -48,6 +49,8 @@ public class CalibrateArms extends LinearOpMode {
             case Outtake_Manual_Operation: outtakeManualOperation();break;
             case Output_Manual_Operation: outputManualOperation();break;
             case Hang_Manual_Operation: hangManualOperation();break;
+            case Intake_Fine_Manual_Operation: intakeFineManualOperation();break;
+
         }
     }
     @Override
@@ -107,6 +110,8 @@ public class CalibrateArms extends LinearOpMode {
                 outputManualOperation();
             } else if (AA_Operation==Ops.Hang_Manual_Operation){
                 hangManualOperation();
+            } else if (AA_Operation==Ops.Intake_Fine_Manual_Operation) {
+                intakeFineManualOperation();
             }
 
             // Drawing stuff on the field
@@ -127,6 +132,23 @@ public class CalibrateArms extends LinearOpMode {
             telemetry.update();
         }
 
+    }
+
+    public void intakeFineManualOperation() {
+        if (gp1.wasUpPressed()) {
+            intake.goToSampleV2(5000);
+        } if(gp1.wasLeftPressed()){
+            intake.flipper.setPosition(Intake.FLIPPER_SEEK);
+        }if(gp1.wasRightPressed()){
+            intake.flipper.setPosition(Intake.FLIPPER_GRAB);
+        }if(gp1.wasDownPressed()){
+            intake.rotateToSample(intake.sampleDetector.rectAngle.get());
+        }
+        if(gp1.wasYPressed()){
+            intake.grab();
+        }if(gp1.wasAPressed()){
+            intake.grabberReady();
+        }
     }
 
     public void intakeManualOperation() {
