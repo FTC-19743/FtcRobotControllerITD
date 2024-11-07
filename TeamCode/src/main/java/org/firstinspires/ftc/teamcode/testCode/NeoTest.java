@@ -35,11 +35,11 @@ public class NeoTest extends OpMode {
             // Signal yellow pixel
             neopixels.fill(Color.rgb(255, 240, 64));
             neopixels.show();
-        } else {
+        } //else {
             // Lights off
-            neopixels.fill(0);
-            neopixels.show();
-        }
+          //  neopixels.fill(0);
+          //  neopixels.show();
+        //}
     }
 
 }
