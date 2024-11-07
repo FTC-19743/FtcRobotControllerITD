@@ -68,7 +68,7 @@ public class Intake {
     static public float SWEEPER_RELEASE = .9f;
 
     static public float GRABBER_READY = 0.25f;
-    static public float GRABBER_GRAB = 0.63f;
+    static public float GRABBER_GRAB = 0.64f;
     static public float GRABBER_RELEASE = .63f;
     static public int GRAB_PAUSE = 250;
     static public int GRAB_DELAY1 = 150;
@@ -92,13 +92,14 @@ public class Intake {
     static public int EXTENDER_P_COEFFICIENT = 4;
     static public int EXTENDER_THRESHOLD = 10;
     static public int EXTENDER_UNLOAD = 0;
-    static public int EXTENDER_START_SEEK = 100; // TODO Determine this number
+    static public int EXTENDER_START_SEEK = 300; // TODO Determine this number
     static public int EXTENDER_CRAWL_INCREMENT = 30;
     static public int EXTENDER_FAST_INCREMENT = 100;
     static public int EXTENDER_MIN = 100;
 
 
-    static public int UNLOAD_WAIT_TIME = 1000;
+    static public int UNLOAD_WAIT_TIME = 0;
+    static public int RELEASE_WAIT_TIME = 250;
 
     final int ARDU_RESOLUTION_WIDTH = 640;
     final int ARDU_RESOLUTION_HEIGHT = 480;
@@ -484,7 +485,7 @@ public class Intake {
         extender.setVelocity(EXTENDER_HOLD_RETRACT_VELOCITY);
         teamUtil.pause(UNLOAD_WAIT_TIME);
         release();
-        teamUtil.pause(250);
+        teamUtil.pause(RELEASE_WAIT_TIME);
         goToSafe();
         moving.set(false);
         teamUtil.log("goToUnload--Finished");

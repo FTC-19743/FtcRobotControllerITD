@@ -79,7 +79,7 @@ public class BasicDrive {
 
     static public double MAX_VELOCITY = 2200; // Calibrated 11/2/24
     static public double MAX_VELOCITY_STRAFE = 1750; // Calibrated 11/2/24
-    static public double ROTATION_ADJUST_FACTOR = 0.04;
+    static public double ROTATION_ADJUST_FACTOR = 0.02;
     static public double SIDE_VECTOR_COEFFICIENT = .92;
     static public double FORWARD_VECTOR_COEFFICIENT = 1.08;
     static public double SPIN_DECEL_THRESHOLD_DEGREES = 120; // Calibrated 11/2/24 (could be more aggresive?)
@@ -155,10 +155,10 @@ public class BasicDrive {
         telemetry.addData("Motors ", "flm:%d frm:%d blm:%d brm:%d",
                 fl.getCurrentPosition(), fr.getCurrentPosition(), bl.getCurrentPosition(), br.getCurrentPosition());
         Pose2D pos = odo.getPosition();
-        String data = String.format(Locale.US, "X: %.3f, Y: %.3f, H: %.3f", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
+        String data = String.format(Locale.US, "X: %.0f, Y: %.0f, H: %.1f", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
         telemetry.addData("ODO Position ", data);
         Pose2D vel = odo.getVelocity();
-        String velocity = String.format(Locale.US,"X: %.3f, YVel: %.3f, HVel: %.3f", vel.getX(DistanceUnit.MM), vel.getY(DistanceUnit.MM), vel.getHeading(AngleUnit.DEGREES));
+        String velocity = String.format(Locale.US,"X: %.1f, YVel: %.1f, HVel: %.1f", vel.getX(DistanceUnit.MM), vel.getY(DistanceUnit.MM), vel.getHeading(AngleUnit.DEGREES));
         telemetry.addData("ODO Velocity ", velocity);
         telemetry.addData("Headings: CH IMU: ", "%.1f  ODO: %.1f", getHeading(), getHeadingODO());
     }
@@ -1209,7 +1209,7 @@ public class BasicDrive {
         return true;
     }
 
-    public void moveTo(double maxVelocity, double strafeTarget, double straightTarget, int robotHeading, double endVelocity,ActionCallback action, double actionTarget, long timeout){
+    public void moveTo(double maxVelocity, double strafeTarget, double straightTarget, double robotHeading, double endVelocity,ActionCallback action, double actionTarget, long timeout){
 
         //TODO THIS CODE SHALL NOT BE USED UNTIL THE ANGLE PROBLEM IS FIXED
         details = true;
@@ -1224,37 +1224,45 @@ public class BasicDrive {
         else{
             lastVelocity=endVelocity;
         }
+        double angle = 0;
+        double driveHeading;
         while(!withinThreshold&&teamUtil.keepGoing(timeoutTime)) {
             odo.update();
             double straightChange = straightTarget - odo.getPosX();
             double strafeChange = strafeTarget - odo.getPosY();
-            double angle = 0;
-            double driveHeading;
 
             if(strafeChange==0){
                 driveHeading = straightChange>0? 0:180;
-            }
-            else{
+            } else if (straightChange==0) {
+                driveHeading = strafeChange>0? 90:270;
+            }else {
                 angle = Math.toDegrees(Math.atan(straightChange / strafeChange));
-                if(strafeChange>0){
-                    driveHeading =adjustAngle(angle);
-                }
-                else{
-                    driveHeading =adjustAngle(angle+180);
+                if (straightChange > 0) {
+                    if (strafeChange > 0) {
+                        driveHeading=90-angle;
+                    } else {
+                        driveHeading=270-angle;
+                    }
+                } else {
+                    if (strafeChange > 0) {
+                        driveHeading=90-angle;
+                    } else {
+                        driveHeading=270-angle;
+                    }
                 }
             }
-
 
             double remainingDistance = Math.sqrt(straightChange * straightChange + strafeChange * strafeChange);
 
             double velocity = Math.min(MOVE_TO_COEFFICIENT * remainingDistance+endVelocity, maxVelocity);
 
-            //driveMotorsHeadingsFR(driveHeading, robotHeading, velocity);
-            if (remainingDistance < MOVE_TO_THRESHOLD) {
+            driveMotorsHeadingsFR(driveHeading, robotHeading, velocity);
+            if (remainingDistance <= MOVE_TO_THRESHOLD) { // TODO, if this overshoots the threshold it will bounce back.  Is that what we want?
                 withinThreshold = true;
             }
             if (details) {
-                teamUtil.log("Unadjusted Angle: " + angle + " Drive Heading: " + driveHeading + " Robot Heading: " + robotHeading + " Velocity: " + velocity + " Remaining Distance " + remainingDistance + " Strafe Change: " + strafeChange + " Straight Change: " + straightChange);
+                teamUtil.log(String.format("Raw Angle %.1f DH: %.1f RH: %.1f Vel: %.0f Distance: %.0f X: %.0f Y %.0f", angle, driveHeading, robotHeading, velocity, remainingDistance, strafeChange, straightChange));
+                // teamUtil.log("Raw Angle: " + angle + " DH: " + driveHeading + " RH: " + robotHeading + " Vel: " + velocity + " Distance " + remainingDistance + " X: " + strafeChange + " Y: " + straightChange);
             }
         }
         if(lastVelocity<=MIN_END_VELOCITY){

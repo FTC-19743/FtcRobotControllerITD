@@ -95,8 +95,9 @@ public class testAutoPaths extends LinearOpMode {
                 robot.resetRobot();
             }
             if(driverGamepad.wasUpPressed()) {
+                long startTime = System.currentTimeMillis();
                robot.autoV1(driverGamepad.wasUpPressed(),1000);
-
+               elapsedTime = System.currentTimeMillis()-startTime;
             }
             if(driverGamepad.wasDownPressed()) {
 

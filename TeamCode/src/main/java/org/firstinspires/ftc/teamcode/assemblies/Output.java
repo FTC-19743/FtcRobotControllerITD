@@ -40,10 +40,12 @@ public class Output {
 
     static public float BUCKET_DEPLOY_AT_BOTTOM = 0.42f;
     static public float BUCKET_DEPLOY_AT_TOP = 0.44f;
+    static public float BUCKET_SAFE = .82f;
 
     static public float BUCKET_RELOAD = 0.7f;
 
-    static public int DROP_SAMPLE_TIME = 2000;
+    static public int DROP_SAMPLE_TIME = 1000;
+    static public int BUCKET_LOAD_PAUSE = 1000;
 
 
 
@@ -96,7 +98,12 @@ public class Output {
 
         }
         teamUtil.pause(DROP_SAMPLE_TIME);
-        bucket.setPosition(BUCKET_RELOAD);
+        if(outputLiftAtBottom.get()){
+            bucket.setPosition(BUCKET_RELOAD);
+        }
+        else{
+            bucket.setPosition(BUCKET_SAFE);
+        }
         outputMoving.set(false);
         teamUtil.log("DropSampleOutBack Completed");
     }
@@ -127,7 +134,8 @@ public class Output {
         }
         else{
             outputMoving.set(true);
-            bucket.setPosition(BUCKET_RELOAD);
+            bucket.setPosition(BUCKET_SAFE);
+            teamUtil.pause(BUCKET_LOAD_PAUSE);
             teamUtil.log("Go To Load: Running to Bottom");
             lift.setTargetPosition(LIFT_DOWN);
             lift.setVelocity(LIFT_MAX_VELOCITY);
@@ -135,6 +143,7 @@ public class Output {
             while (teamUtil.keepGoing(timeOutTime2)&&lift.getCurrentPosition() > LIFT_DOWN+10) {
             }
             lift.setVelocity(0);
+            bucket.setPosition(BUCKET_RELOAD);
             outputMoving.set(false);
             outputLiftAtBottom.set(true);
         }
@@ -187,6 +196,7 @@ public class Output {
             teamUtil.log("Couldn't Put Output High Bucket");
         }else{
             outputMoving.set(true);
+            bucket.setPosition(BUCKET_SAFE);
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             lift.setTargetPosition(LIFT_TOP_BUCKET);
             lift.setVelocity(LIFT_MAX_VELOCITY);

@@ -108,6 +108,7 @@ public class CalibrateDrive extends LinearOpMode {
 
             // X makes the selected action happen
             if (gp1.wasXPressed()) {
+                telemetry.addLine("Do Action");
                 doAction();
             }
             if (AAOP==Ops.Test_Spins){
@@ -257,6 +258,12 @@ public class CalibrateDrive extends LinearOpMode {
 
         if (gamepad1.dpad_up){
             drive.moveTo(testVelocity,botX,botY,0,0,null,0,5000);
+        }
+        if (gamepad1.x) {
+            drive.setRobotPosition(0,0,0);
+            drive.moveTo(testVelocity,400,400,45,0,null,0,5000);
+            drive.moveTo(testVelocity,400,0,90,0,null,0,5000);
+            drive.moveTo(testVelocity,0,0,0,0,null,0,5000);
         }
     }
 

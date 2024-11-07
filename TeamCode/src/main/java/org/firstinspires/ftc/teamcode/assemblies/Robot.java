@@ -23,14 +23,18 @@ public class Robot {
 
     static public int A01_PLACE_SPECIMEN_X = 732;
     public static int A02_PLACE_SPECIMEN_Y = -50;
-    static public int A03_STRAFE_TO_SAMPLES_X = 512;
-    static public int A04_Y_SAMPLE_1_TARGET = 851;
-    static public int A05_MOVE_CM_TO_BUCKET = 43;
-    static public int A06_DRIVEHEADING_TO_TURN_TO_BUCKET = 150;
-    static public int A07_ROBOTHEADING_TO_TURN_TO_BUCKET = 323;
-    static public int A08_DRIVEHEADING_TO_TURN_TO_SAMPLE = 0;
-    static public int A09_ROBOTHEADING_TO_TURN_TO_SAMPLE = 0;
-    static public int A010_MOVE_CM_TO_BUCKET = 43;
+    static public int A03_MOVE_TO_SAMPLE_Y = 873;
+    static public int A04_MOVE_TO_SAMPLE_X = 603;
+    static public int A05_MOVE_TO_BUCKET_Y = 1084;
+    static public int A06_MOVE_TO_BUCKET_X = 119;
+    static public int A07_ROBOTHEADING_TO_TURN_TO_BUCKET = 315;
+    static public int A08_MOVE_TO_SAMPLE_Y = 1145;
+    static public int A09_MOVE_TO_SAMPLE_X = 603;
+    static public int A10_MOVE_TO_SAFE_OUTPUT_LOAD_POSITION_X = A06_MOVE_TO_BUCKET_X+50;
+    static public int A11_MOVE_TO_SAFE_OUTPUT_LOAD_POSITION_Y = A05_MOVE_TO_BUCKET_Y-50;
+    static public float A12_SPECIMEN_MOTOR_POWER = .3f;
+
+
 
 
 
@@ -127,7 +131,7 @@ public class Robot {
 
         // Get close to submersible then mechanically align
         drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, A01_PLACE_SPECIMEN_X,A02_PLACE_SPECIMEN_Y,0,BasicDrive.MIN_END_VELOCITY+1,null,0,4000);
-        drive.setMotorPower(0.1);
+        drive.setMotorPower(A12_SPECIMEN_MOTOR_POWER);
         teamUtil.pause(500);
 
         if (!placeSpecimen(2000)) {
@@ -138,29 +142,28 @@ public class Robot {
         if (!keepGoing()) return false;
 
         // Move over to first yellow sample
-        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, A03_STRAFE_TO_SAMPLES_X,0,0,500,null,0,4000);
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, A04_MOVE_TO_SAMPLE_X,0,0,500,null,0,4000);
         outtake.outtakeRest();
-        drive.strafeHoldingStraightEncoder(BasicDrive.MAX_VELOCITY_STRAFE,A04_Y_SAMPLE_1_TARGET, A03_STRAFE_TO_SAMPLES_X,0,0,null,0,4000);
+        intake.goToSeekNoWait(2000);
+        drive.moveTo(BasicDrive.MAX_VELOCITY,A03_MOVE_TO_SAMPLE_Y,A04_MOVE_TO_SAMPLE_X, 0,0, null,0, 5000);
         intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
         if(!intake.goToSampleAndGrab(5000)){
             teamUtil.log("FAILED to intake sample.  Giving up");
             return false;
         }
-        intake.goToUnload(3000);
-        output.outputHighBucket();
-        teamUtil.pause(2000);
-        if (!keepGoing()) return false;
 
-        drive.moveCm(BasicDrive.MAX_VELOCITY,A05_MOVE_CM_TO_BUCKET,A06_DRIVEHEADING_TO_TURN_TO_BUCKET,A07_ROBOTHEADING_TO_TURN_TO_BUCKET,0);
-        output.dropSampleOutBack();
-        drive.moveCm(BasicDrive.MAX_VELOCITY,A010_MOVE_CM_TO_BUCKET,A08_DRIVEHEADING_TO_TURN_TO_SAMPLE,A09_ROBOTHEADING_TO_TURN_TO_SAMPLE,0);
-        output.outputLoad(4000);
+
+        dropSampleInHighBucket();
+        intake.goToSeekNoWait(2000);
+        drive.moveTo(BasicDrive.MAX_VELOCITY, A08_MOVE_TO_SAMPLE_Y, A04_MOVE_TO_SAMPLE_X,0,0, null,0, 5000);
+
         if(!intake.goToSampleAndGrab(5000)){
             teamUtil.log("FAILED to intake sample.  Giving up");
             return false;
         }
-        intake.goToUnload(3000);
 
+        dropSampleInHighBucket();
+        drive.stopMotors();
 
         return true;
     }
@@ -174,6 +177,34 @@ public class Robot {
         intake.extendersToPosition(Intake.EXTENDER_UNLOAD,4000);
     }
 
+    public void sampleInBucketAndDeploy(){
+        intake.goToUnload(3000);
+        output.outputHighBucket();
+    }
+
+    public void sampleInBucketAndDeployNoWait(){
+        teamUtil.log("Launching Thread to outputLoadNoWait");
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                sampleInBucketAndDeploy();
+            }
+        });
+        thread.start();
+    }
+
+    public void dropSampleInHighBucket(){
+        //THIS ASSUMES THAT ROBOT WILL MOVE AFTER THIS METHOD IS CALLED
+        sampleInBucketAndDeployNoWait();
+
+        drive.moveTo(BasicDrive.MAX_VELOCITY,A05_MOVE_TO_BUCKET_Y,A06_MOVE_TO_BUCKET_X,A07_ROBOTHEADING_TO_TURN_TO_BUCKET,0, null,0, 5000);
+        while(output.lift.getCurrentPosition()<(Output.LIFT_TOP_BUCKET-10)){
+            teamUtil.pause(50);
+        }
+        output.dropSampleOutBack();
+        output.outputLoadNoWait(4000);
+        drive.moveTo(BasicDrive.MAX_VELOCITY, A11_MOVE_TO_SAFE_OUTPUT_LOAD_POSITION_Y, A10_MOVE_TO_SAFE_OUTPUT_LOAD_POSITION_X, A07_ROBOTHEADING_TO_TURN_TO_BUCKET, 300,null,0, 2000);
+    }
 
     public int fieldSide() { // helper method that returns heading out towards the field
         return teamUtil.alliance == RED ? 90 : 270;
