@@ -14,14 +14,11 @@ import org.firstinspires.ftc.teamcode.libs.teamUtil;
 public class Teleop extends LinearOpMode {
 
     Robot robot;
-
     Blinkin blinkin;
     TeamGamepad driverGamepad;
     TeamGamepad armsGamepad;
     boolean endgame = false;
     double EXTENDER_Y_DEADBAND = 0.3;
-
-
 
 
     // Internal state
@@ -74,17 +71,14 @@ public class Teleop extends LinearOpMode {
         armsGamepad.initilize(false);
         robot = new Robot();
         robot.initialize();
-        robot.initCV(true);// false for competition
+        robot.initCV(true);// TODO: false for competition
 
-        if (!teamUtil.justRanAuto) { // Auto already took care of this, so save time.
+        if (!teamUtil.justRanAuto) { // Auto already took care of this, so save time and don't move anything!
             robot.calibrate();
         }
         telemetry.addLine("Ready to start");
         telemetry.addLine("ALLIANCE : "+ teamUtil.alliance);
         telemetry.update();
-
-
-
 
 
         robot.drive.setHeading(0);
@@ -104,7 +98,6 @@ public class Teleop extends LinearOpMode {
 
         waitForStart();
 
-        int currentTargetColor=1;
         boolean extenderSliderUnlocked = false;
         robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
         while (opModeIsActive()){

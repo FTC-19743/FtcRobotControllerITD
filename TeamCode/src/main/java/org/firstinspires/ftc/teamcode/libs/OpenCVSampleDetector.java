@@ -379,8 +379,14 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             switch (stageToRenderToViewport) {
                 case HSV: { Utils.matToBitmap(HSVMat, bmp); break; }
                 case BLURRED: { Utils.matToBitmap(blurredMat, bmp); break;}
-                //case INVERTED: { Utils.matToBitmap(invertedMat, bmp); break;}
-                case INVERTED: { Utils.matToBitmap(thresholdMat, bmp); break;}
+                case INVERTED: {
+                    if (targetColor == TargetColor.RED) {
+                        Utils.matToBitmap(invertedMat, bmp);
+                    } else {
+                        Utils.matToBitmap(thresholdMat, bmp);
+                    }
+                    break;
+                }
                 case THRESHOLD: { Utils.matToBitmap(thresholdMat, bmp); break;}
                 case ERODED: { Utils.matToBitmap(erodedMat, bmp); break;}
                 case EDGES: { Utils.matToBitmap(edgesMat, bmp); break;}

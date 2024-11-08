@@ -31,7 +31,7 @@ public class AxonSlider {
     double SLIDER_X_DEADBAND = 0.5;
     public boolean CALIBRATED = false;
 
-    public int axonRotations = 0; // The number of full rotations postive or negative the servo has traveled from its center range
+    public static int axonRotations = 0; // The number of full rotations postive or negative the servo has traveled from its center range
     private double lastDegrees360; // the rotational angle of the servo in degrees last time we checked
 
     public void init(HardwareMap hardwareMap, String servoName, String sensorName){

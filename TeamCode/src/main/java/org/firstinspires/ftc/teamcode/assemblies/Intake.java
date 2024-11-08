@@ -157,8 +157,9 @@ public class Intake {
             telemetry.update();
         }
         sampleDetector.configureCam(arduPortal, true, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE, OpenCVSampleDetector.AFOCUS, OpenCVSampleDetector.FOCUSLENGTH);
-
+        // TODO: Do we need a pause here?
         sampleDetector.configureCam(arduPortal, OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE, OpenCVSampleDetector.AFOCUS, OpenCVSampleDetector.FOCUSLENGTH);
+        // TODO: Turn off sampleDetector processing
         teamUtil.log("Initializing CV in Intake - Finished");
     }
 
@@ -315,7 +316,9 @@ public class Intake {
     }
     public boolean goToSampleV2(long timeOut){
         teamUtil.log("GoToSample V2 has started");
+        // TODO This is not using the timeOut parameter!
         boolean details = false;
+        //TODO Turn on processing pipeline
         flipper.setPosition(FLIPPER_SEEK);
         FlipperInSeek.set(true);
 
@@ -328,7 +331,7 @@ public class Intake {
         double extenderVelocity;
         float sliderVelocity;
         extender.setVelocity(EXTENDER_MAX_VELOCITY);//Tune increment
-        while(!sampleDetector.foundOne.get()&&extender.getCurrentPosition()<EXTENDER_MAX-10){
+        while(!sampleDetector.foundOne.get()&&extender.getCurrentPosition()<EXTENDER_MAX-10){ // TODO: Need to check for timeout here
             teamUtil.pause(30);
         }
 
@@ -337,17 +340,14 @@ public class Intake {
             teamUtil.log("Found One False after Search");
             extender.setVelocity(0);
             moving.set(false);
+            // TODO Turn off sampleDetector Processor
             return false;
         }
         else{
             teamUtil.log("Found One True Adjusting X Y LOOP");
             double mmFromCenterX = sampleDetector.rectCenterXOffset.get()*MM_PER_PIX_X;
             double mmFromCenterY = sampleDetector.rectCenterYOffset.get()*MM_PER_PIX_Y;
-
-
-
-
-            while(Math.abs(mmFromCenterY)>EXTENDER_MM_DEADBAND||Math.abs(mmFromCenterX)>SLIDER_MM_DEADBAND){ //tentative values all needs to be tuned
+            while(Math.abs(mmFromCenterY)>EXTENDER_MM_DEADBAND||Math.abs(mmFromCenterX)>SLIDER_MM_DEADBAND){ // TODO: Need to check for timeout here
                 axonSlider.loop();
                 if(Math.abs(mmFromCenterY)<=EXTENDER_MM_DEADBAND){
                     extenderVelocity=0;
@@ -363,6 +363,7 @@ public class Intake {
                     axonSlider.setPower(0);
                     teamUtil.log("Target slider position is beyond mechanical range. Failing out.");
                     moving.set(false);
+                    // TODO Turn off sampleDetector Processor
                     return false;
                 }
 
@@ -386,12 +387,11 @@ public class Intake {
             extender.setVelocity(0);
             axonSlider.setPower(0);
         }
-
-        teamUtil.log("At Block");
-        teamUtil.log("GoToSample has finished");
+        // TODO Turn off sampleDetector Processor
+        teamUtil.log("GoToSample has finished--At Block");
         return true;
-
     }
+
     public void goToSampleAndGrabNoWait(long timeOut) {
         if (moving.get()) { // Intake is already moving in another thread
             teamUtil.log("WARNING: Attempt to goToSampleAndGrab while intake is moving--ignored");
