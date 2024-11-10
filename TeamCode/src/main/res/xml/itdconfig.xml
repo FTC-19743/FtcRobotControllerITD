@@ -15,7 +15,9 @@
             <Servo name="outakewrist" port="0" />
             <Servo name="flipper" port="1" />
             <ContinuousRotationServo name="slider" port="2" />
+            <RevBlinkinLedDriver name="blinkin" port="3"/>
             <Servo name="outakearm" port="5" />
+
 
 
 

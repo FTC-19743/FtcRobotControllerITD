@@ -17,17 +17,19 @@ public class Outtake {
     AnalogInput outakePotentiometer;
 
 
-    static public float ARM_UP = 0.04f;
-    static public float ARM_DOWN = .62f;
+    static public float ARM_UP = 0.2f;
+    static public float ARM_DOWN = .78f;
     static public float WRIST_GRAB = 0.17f;
     static public float WRIST_RELEASE = .84f;
-    static public float ARM_REST = .1f;
+    static public float ARM_REST = .26f;
+    static public float ARM_ENGAGE = 0;
     static public float WRIST_REST = 0.5f;
-    static public double POTENTIOMETER_SAFE = 2.85;
-    static public double POTENTIOMETER_RELEASE = 3.03;
-    static public double POTENTIOMETER_ATTACH = 3.2;
-    static public double POTENTIOMETER_GRAB = 1.3;
-    static public float ARM_START = 0.69f;
+    static public double POTENTIOMETER_SAFE = 2.38;
+    static public double POTENTIOMETER_RELEASE = 2.566;
+    static public double POTENTIOMETER_ATTACH = 3.15;
+    static public double POTENTIOMETER_GRAB = .83;
+    static public float ARM_START = 0.85f;
+    static public float ARM_LEVEL_ONE_ASCENT = 0.13f;
 
 
 
@@ -78,6 +80,11 @@ public class Outtake {
 
     public void outtakeRest(){
         outakearm.setPosition(ARM_REST);
+        outakewrist.setPosition(WRIST_REST);
+    }
+
+    public void setArmLevelOneAscent(){
+        outakearm.setPosition(ARM_LEVEL_ONE_ASCENT);
         outakewrist.setPosition(WRIST_REST);
     }
 

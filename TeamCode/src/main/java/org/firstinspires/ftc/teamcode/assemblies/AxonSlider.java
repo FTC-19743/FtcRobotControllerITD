@@ -15,10 +15,10 @@ public class AxonSlider {
     AnalogInput axonPotentiometer;
     AtomicBoolean moving = new AtomicBoolean(false);
     public AtomicBoolean timedOut = new AtomicBoolean(false);
-    public boolean details = false;
+    public boolean details = true;
 
-    public int RIGHT_LIMIT = 0; //tentative
-    public int LEFT_LIMIT = 0; //tentative
+    public static int RIGHT_LIMIT = 0; //tentative
+    public static int LEFT_LIMIT = 0; //tentative
     static public float SLIDER_UNLOAD = 0; // TODO Recalibrate
     static public float SLIDER_READY = 0;//TODO Recalibrate
 
@@ -61,6 +61,8 @@ public class AxonSlider {
         axonRotations = rotations;
         teamUtil.log("Calibrate POS: " + getPosition());
         teamUtil.pause(250);
+        lastDegrees360 = getDegrees360();
+
         RIGHT_LIMIT = getPosition();
         LEFT_LIMIT = getPosition()-739;
         SLIDER_READY = getPosition()-375;
@@ -153,7 +155,7 @@ public class AxonSlider {
                     setAdjustedPower(0);
                 }
                 else{
-                    setAdjustedPower((float)power); //TODO Know Signs
+                    setAdjustedPower((float)power);
                 }
             }else if (joystick>0){
                 if (Math.abs(getPosition()-RIGHT_LIMIT)<40){

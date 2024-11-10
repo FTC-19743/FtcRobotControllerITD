@@ -97,6 +97,9 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
     private int sampleX = TARGET_X;
     private int sampleY = TARGET_Y;
+    public static int FOUND_ONE_RIGHT_THRESHOLD = 580;
+    public static int FOUND_ONE_LEFT_THRESHOLD = 60;
+
     static public int SAMPLE_SIZE = 1;
     //public double[] samplePixel = new double[3];
     Rect sampleRect;
@@ -355,7 +358,13 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
 
          */
-        foundOne.set(true);
+        if(rotatedRect[closestAreaSelectionNum].center.x<FOUND_ONE_LEFT_THRESHOLD||rotatedRect[closestAreaSelectionNum].center.x>FOUND_ONE_RIGHT_THRESHOLD){
+            teamUtil.log("OPEN CV SAMPLE DETECTOR FOUND BLOCK BUT CENTER X VALUE WAS OUTSIDE USEABLE RANGE");
+            foundOne.set(false);
+        }
+        else{
+            foundOne.set(true);
+        }
         rectCenterYOffset.set(-1 * ((int) rotatedRect[closestAreaSelectionNum].center.y - TARGET_Y));
         rectCenterXOffset.set((int) rotatedRect[closestAreaSelectionNum].center.x - TARGET_X);
         rectAngle.set((int) realAngle);

@@ -1,5 +1,9 @@
 package org.firstinspires.ftc.teamcode.libs;
+import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
+
+import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -18,7 +22,7 @@ public class teamUtil {
     public enum Side {WING, SCORE}
     public static Side SIDE = Side.WING;
 
-    public static Blinkin theBlinkin =null;
+    public static Blinkin theBlinkin = null;
 
     public static boolean finishedGoToLoad = true;
 

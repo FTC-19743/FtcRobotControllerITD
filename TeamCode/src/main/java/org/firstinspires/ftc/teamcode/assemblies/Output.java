@@ -39,7 +39,7 @@ public class Output {
     static public int LIFT_MIDDLE_BUCKET = 1700; // TODO Determine this number
 
     static public float BUCKET_DEPLOY_AT_BOTTOM = 0.42f;
-    static public float BUCKET_DEPLOY_AT_TOP = 0.44f;
+    static public float BUCKET_DEPLOY_AT_TOP = 0.41f;
     static public float BUCKET_SAFE = .82f;
 
     static public float BUCKET_RELOAD = 0.7f;
@@ -193,7 +193,12 @@ public class Output {
         outtake = teamUtil.robot.outtake;
 
         if(intake.FlipperInUnload.get()||outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_SAFE-0.1){
-            teamUtil.log("Couldn't Put Output High Bucket");
+            if(intake.FlipperInUnload.get()){
+                teamUtil.log("Couldn't Put Output High Bucket Cause of Flipper");
+            }
+            else{
+                teamUtil.log("Outtake Was in the Way Couldn't Go to High Bucket");
+            }
         }else{
             outputMoving.set(true);
             bucket.setPosition(BUCKET_SAFE);

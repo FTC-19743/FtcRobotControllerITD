@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.testCode;
 
 import static org.firstinspires.ftc.teamcode.libs.teamUtil.Alliance.RED;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -12,7 +13,7 @@ import org.firstinspires.ftc.teamcode.libs.Blinkin;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 
-
+@Config
 @TeleOp(name = "testAutoPaths", group = "LinearOpMode")
 public class testAutoPaths extends LinearOpMode {
 
@@ -24,6 +25,8 @@ public class testAutoPaths extends LinearOpMode {
     TeamGamepad armsGamepad;
     boolean useArms = false;
     public static boolean liveStream = true;
+    public static int BLOCKS = 2;
+    public static boolean ASCENT = true;
 
 
     public long startTime;
@@ -96,7 +99,7 @@ public class testAutoPaths extends LinearOpMode {
             }
             if(driverGamepad.wasUpPressed()) {
                 long startTime = System.currentTimeMillis();
-               robot.autoV1(driverGamepad.wasUpPressed(),1000);
+               robot.autoV1(BLOCKS,ASCENT);
                elapsedTime = System.currentTimeMillis()-startTime;
             }
             if(driverGamepad.wasDownPressed()) {
@@ -129,11 +132,11 @@ public class testAutoPaths extends LinearOpMode {
 
 
 
+            robot.drive.odo.update();
 
-
+            robot.drive.driveMotorTelemetry();
             telemetry.addLine("Running Tests " );
             telemetry.addLine("Last Auto Elapsed Time: " + elapsedTime);
-
             telemetry.update();
         }
     }
