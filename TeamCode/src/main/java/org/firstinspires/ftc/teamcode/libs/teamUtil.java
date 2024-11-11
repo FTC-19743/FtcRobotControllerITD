@@ -35,8 +35,8 @@ public class teamUtil {
         theOpMode = opMode;
         telemetry = theOpMode.telemetry;
         inInitialization = true;
-//        theBlinkin = new Blinkin(opMode.hardwareMap, opMode.telemetry);
-//        theBlinkin.init();
+        theBlinkin = new Blinkin(opMode.hardwareMap, opMode.telemetry);
+        theBlinkin.init();
     }
 
 
