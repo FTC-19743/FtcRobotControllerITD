@@ -227,32 +227,32 @@ public class CalibrateDrive extends LinearOpMode {
             drive.loop();
             double startForward = drive.odo.getPosX();
             double forwardTarget = (long) (startForward + testDistance);
-            double startStrafe = drive.odo.getPosY();
-            drive.straightHoldingStrafeEncoder(drive.MAX_VELOCITY, forwardTarget,startStrafe,0,0,null,0,3000);
+            double startStrafe = drive.odo.getPosY()+botY;
+            drive.straightHoldingStrafeEncoder(testVelocity, forwardTarget,startStrafe,0,0,null,0,3000);
         }
         if (gamepad1.dpad_down) {
             drive.setHeading(0);
             drive.loop();
             double startForward = drive.odo.getPosX();
             double forwardTarget = (long) (startForward - testDistance);
-            double startStrafe = drive.odo.getPosY();
-            drive.straightHoldingStrafeEncoder(drive.MAX_VELOCITY, forwardTarget,startStrafe,0,0,null,0,3000);
+            double startStrafe = drive.odo.getPosY()+botY;
+            drive.straightHoldingStrafeEncoder(testVelocity, forwardTarget,startStrafe,0,0,null,0,3000);
         }
         if (gamepad1.dpad_right) {
             drive.setHeading(0);
             drive.loop();
             double startStrafe = drive.odo.getPosY();
             double strafeTarget = (long) (startStrafe - testDistance);
-            double startForward = drive.odo.getPosX();
-            drive.strafeHoldingStraightEncoder(drive.MAX_VELOCITY, strafeTarget,startForward,0,0,null,0,3000);
+            double startForward = drive.odo.getPosX()+botX;
+            drive.strafeHoldingStraightEncoder(testVelocity, strafeTarget,startForward,0,0,null,0,3000);
         }
         if (gamepad1.dpad_left) {
             drive.setHeading(0);
             drive.loop();
             double startStrafe = drive.odo.getPosY();
             double strafeTarget = (long) (startStrafe + testDistance);
-            double startForward = drive.odo.getPosX();
-            drive.strafeHoldingStraightEncoder(drive.MAX_VELOCITY, strafeTarget,startForward,0,0,null,0,3000);
+            double startForward = drive.odo.getPosX()+botX;
+            drive.strafeHoldingStraightEncoder(testVelocity, strafeTarget,startForward,0,0,null,0,3000);
         }
     }
 
@@ -260,7 +260,7 @@ public class CalibrateDrive extends LinearOpMode {
         //TBD  Set up some button presses to move the robot to some X,Y values?
 
         if (gamepad1.dpad_up){
-            drive.moveTo(testVelocity,botX,botY,0,0,null,0,5000);
+            drive.moveTo(testVelocity,botY,botX,0,0,null,0,5000);
         }
         if (gamepad1.dpad_left){
             drive.moveTo(testVelocity,botY,botX,0,testEndVelocity,null,0,false,5000);
@@ -279,12 +279,10 @@ public class CalibrateDrive extends LinearOpMode {
         }
         if (gamepad1.y) {
             drive.setRobotPosition(0,0,0);
-            //First move to gets robot over to side in order get to submersible fast enough
-            drive.moveTo(BasicDrive.MAX_VELOCITY, Robot.B02_PLACE_SPECIMEN_Y,Robot.B02_PLACE_SPECIMEN_Y,0,Robot.B10_END_VELOCITY_SPECIMEN,null,0,5000);
-            drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, Robot.B01_PLACE_SPECIMEN_X, Robot.B02_PLACE_SPECIMEN_Y, 0, Robot.B03_END_VELOCITY_SPECIMEN, null, 0,3000);
-            drive.setMotorPower(Robot.B04_SPECIMEN_MOTOR_POWER);
-            teamUtil.pause(Robot.B05_SPECIMEN_PAUSE);
-            drive.stopMotors();
+            drive.moveTo(testVelocity, 0,1000,0,2000,null,0, false,5000);
+            drive.strafeToTarget(90,0,2000, 100,2000);
+            drive.moveTo(testVelocity, 180,200,0,testEndVelocity,null,0,false,5000);
+            drive.moveTo(testVelocity, 180,1000,0,0,null,0, true,5000);
         }
     }
 

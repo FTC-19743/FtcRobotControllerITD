@@ -103,6 +103,7 @@ public class testAutoPaths extends LinearOpMode {
                elapsedTime = System.currentTimeMillis()-startTime;
             }
             if(driverGamepad.wasDownPressed()) {
+                robot.testLinkedMovements();
             }
             if(driverGamepad.wasRightPressed()) {
 

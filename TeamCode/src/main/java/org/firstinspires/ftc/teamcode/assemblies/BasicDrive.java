@@ -72,8 +72,8 @@ public class BasicDrive {
 
     static public double MAX_STRAIGHT_ACCELERATION = 20; //TODO
     static public double MAX_STRAIGHT_DECELERATION = 1.87; //TODO
-    static public double MIN_STRAFE_START_VELOCITY = 800; //TODO
-    static public double MIN_STRAFE_END_VELOCITY = 400; //TODO
+    static public double MIN_STRAFE_START_VELOCITY = 500; //TODO
+    static public double MIN_STRAFE_END_VELOCITY = 200; //TODO
     static public double MAX_STRAFE_DECELERATION = .15; //TODO
     static public double MAX_STRAFE_ACCELERATION = 2; // TODO
 
@@ -88,9 +88,9 @@ public class BasicDrive {
     static public double SPIN_CRAWL_DEGREES = 10; // Calibrated 11/2/24 (could be more aggresive?)
     static public boolean details = true;
     public double CMS_PER_INCH = 2.54;
-    static public float STRAIGHT_HEADING_DECLINATION = .09f; // convert strafe encoder error into heading declination
+    static public float STRAIGHT_HEADING_DECLINATION = 1f; // convert strafe encoder error into heading declination
     static public float STRAIGHT_MAX_DECLINATION = 27f; // don't veer off of straight more than this number of degrees
-    static public float STRAFE_HEADING_DECLINATION = .09f; // convert strafe encoder error into heading declination
+    static public float STRAFE_HEADING_DECLINATION = .5f; // convert strafe encoder error into heading declination
     static public float STRAFE_MAX_DECLINATION = 27f; // don't veer off of straight more than this number of degrees
 
     static public double MOVE_TO_COEFFICIENT = 2;
@@ -548,34 +548,8 @@ public class BasicDrive {
 
     /************************************************************************************************************/
     // OLD Methods to drive based on odometry pods
-    /*
-    public boolean strafeToEncoder(double driveHeading, double robotHeading, double velocity, double targetEncoderValue, long timeout) {
-        // strafe to a strafe encoder value
-        long timeOutTime = System.currentTimeMillis() + timeout;
-        teamUtil.log("strafeToEncoder: Current: " + strafeEncoder.getCurrentPosition() + " Target: " + targetEncoderValue);
-        float driftCms = 1;
-        double realTarget = targetEncoderValue + (driveHeading < 180? -1:1)*driftCms*TICS_PER_CM_STRAFE_ENCODER;
-        if (driveHeading<180) {
-            while (strafeEncoder.getCurrentPosition() < realTarget && teamUtil.keepGoing(timeOutTime)) {
-                driveMotorsHeadingsFR(driveHeading, robotHeading, velocity);
-            }
-        }
-        else{
-            while (strafeEncoder.getCurrentPosition() > realTarget && teamUtil.keepGoing(timeOutTime)) {
-                driveMotorsHeadingsFR(driveHeading, robotHeading, velocity);
-            }
-        }
-        lastVelocity=velocity;
-        if (System.currentTimeMillis() > timeOutTime) {
-            teamUtil.log("strafeToEncoder - TIMED OUT!");
-            return false;
-        } else {
-            teamUtil.log("strafeToEncoder - FINISHED : Current: " + strafeEncoder.getCurrentPosition());
-            return true;
-        }
-    }
 
-
+/*
     public boolean strafeToEncoderWithDecel(double driveHeading, double robotHeading, double velocity, double targetEncoderValue, double endVelocity, double decelK, long timeout) {
         long timeOutTime = System.currentTimeMillis() + timeout;
         teamUtil.log("strafeToEncoder: Current: " + strafeEncoder.getCurrentPosition() + " Target: " + targetEncoderValue);
@@ -610,7 +584,6 @@ public class BasicDrive {
             return true;
         }
     }
-     */
 
     public void straightToTarget(double maxVelocity, double forwardTarget, double driveHeading, double robotHeading, double endVelocity, long timeout) {
         teamUtil.log("ERROR: straightToTarget not updated for PinPoint yet"); // TODO
@@ -862,10 +835,38 @@ public class BasicDrive {
         teamUtil.log("strafeToTarget--Finished.  Current Strafe Encoder:" + strafeEncoder.getCurrentPosition());
 
     }
+     */
 
     /************************************************************************************************************/
     /************************************************************************************************************/
-    // New Methods to drive based on odometry pods
+    // New Methods to drive based on Odometry Computer (PinPoint)
+
+    public boolean strafeToTarget(double driveHeading, double robotHeading, double velocity, double strafeTarget, long timeout) {
+        // strafe to a strafe encoder value
+        long timeOutTime = System.currentTimeMillis() + timeout;
+        odo.update();
+        teamUtil.log("strafeToTarget: Current: " + odo.getPosY() + " Target: " + strafeTarget);
+        if (driveHeading<180) {
+            while (odo.getPosY() < strafeTarget && teamUtil.keepGoing(timeOutTime)) {
+                odo.update();
+                driveMotorsHeadingsFR(driveHeading, robotHeading, velocity);
+            }
+        }
+        else{
+            while (odo.getPosY() > strafeTarget && teamUtil.keepGoing(timeOutTime)) {
+                odo.update();
+                driveMotorsHeadingsFR(driveHeading, robotHeading, velocity);
+            }
+        }
+        lastVelocity=velocity;
+        if (System.currentTimeMillis() > timeOutTime) {
+            teamUtil.log("strafeToTarget - TIMED OUT!");
+            return false;
+        } else {
+            teamUtil.log("strafeToTarget - FINISHED : Current: " + odo.getPosY());
+            return true;
+        }
+    }
 
     // Drive straight forward or backward while attempting to hold the strafe encoder at a specific value
     // Robot heading should be 0,90,180, or 270.  Drive Heading will be determined by the target
@@ -947,6 +948,11 @@ public class BasicDrive {
         while ((distanceRemaining > (totalTics-accelerationDistance))&&teamUtil.keepGoing(timeoutTime)) {
             odo.update();
             currentPos = odo.getPosX();
+            if (Double.isNaN(currentPos)) {
+                teamUtil.log("Pinpoint returned Nan!");
+                stopMotors();
+                return false;
+            }
             distanceRemaining = (!goingUp) ? currentPos-straightTarget : straightTarget - currentPos;
             if (lastVelocity == 0) {
                 currentVelocity = MAX_STRAIGHT_ACCELERATION * (Math.max(0,totalTics-distanceRemaining)) + MIN_START_VELOCITY;
@@ -980,6 +986,11 @@ public class BasicDrive {
         while ((distanceRemaining > decelerationDistance)&&teamUtil.keepGoing(timeoutTime)) {
             odo.update();
             currentPos = odo.getPosX();
+            if (Double.isNaN(currentPos)) {
+                teamUtil.log("Pinpoint returned Nan!");
+                stopMotors();
+                return false;
+            }
             distanceRemaining = (!goingUp) ? currentPos-straightTarget : straightTarget - currentPos;
             adjustedDriveHeading = driveHeading + MathUtils.clamp((odo.getPosY() - strafeTarget)* STRAIGHT_HEADING_DECLINATION, -STRAIGHT_MAX_DECLINATION, STRAIGHT_MAX_DECLINATION) * headingFactor;
             if (details) {
@@ -1007,6 +1018,11 @@ public class BasicDrive {
         while ((distanceRemaining > 0)&&teamUtil.keepGoing(timeoutTime)) {
             odo.update();
             currentPos = odo.getPosX();
+            if (Double.isNaN(currentPos)) {
+                teamUtil.log("Pinpoint returned Nan!");
+                stopMotors();
+                return false;
+            }
             distanceRemaining = (!goingUp) ? currentPos-straightTarget : straightTarget - currentPos;
             currentVelocity = MAX_STRAIGHT_DECELERATION * distanceRemaining + endVelocity;
             adjustedDriveHeading = driveHeading + MathUtils.clamp((odo.getPosY() - strafeTarget)* STRAIGHT_HEADING_DECLINATION, -STRAIGHT_MAX_DECLINATION, STRAIGHT_MAX_DECLINATION) * headingFactor;
@@ -1074,14 +1090,14 @@ public class BasicDrive {
         float headingFactor = goingUp? 1 : -1; // reverse correction for going backwards
 
         double requestedEndVelocity = endVelocity;
-        if (endVelocity < MIN_END_VELOCITY) {
-            endVelocity = MIN_END_VELOCITY;
+        if (endVelocity < MIN_STRAFE_END_VELOCITY) {
+            endVelocity = MIN_STRAFE_END_VELOCITY;
         }
 
 
 
         if (lastVelocity == 0) {
-            velocityChangeNeededAccel = maxVelocity - MIN_START_VELOCITY;
+            velocityChangeNeededAccel = maxVelocity - MIN_STRAFE_START_VELOCITY;
         } else {
             velocityChangeNeededAccel = maxVelocity - lastVelocity;
         }
@@ -1123,7 +1139,7 @@ public class BasicDrive {
             currentPos = odo.getPosY();
             distanceRemaining = (!goingUp) ? currentPos-strafeTarget : strafeTarget - currentPos;
             if (lastVelocity == 0) {
-                currentVelocity = MAX_STRAFE_ACCELERATION * (Math.max(0,totalTics-distanceRemaining)) + MIN_START_VELOCITY;
+                currentVelocity = MAX_STRAFE_ACCELERATION * (Math.max(0,totalTics-distanceRemaining)) + MIN_STRAFE_START_VELOCITY;
             } else {
                 currentVelocity = MAX_STRAFE_ACCELERATION * (Math.max(0,totalTics-distanceRemaining)) + lastVelocity;
             }
@@ -1149,8 +1165,6 @@ public class BasicDrive {
             teamUtil.log("TIMEOUT Triggered After Acceleration Phase");
             stopMotors();
             return false;
-
-
         }
 
         //-------Cruise Phase
@@ -1159,7 +1173,8 @@ public class BasicDrive {
 
             currentPos = odo.getPosY();
             distanceRemaining = (!goingUp) ? currentPos-strafeTarget : strafeTarget - currentPos;
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((odo.getPosX() - straightTarget)* STRAFE_HEADING_DECLINATION, -STRAFE_MAX_DECLINATION, STRAFE_MAX_DECLINATION) * headingFactor;            if (details) {
+            adjustedDriveHeading = driveHeading + MathUtils.clamp((odo.getPosX() - straightTarget)* STRAFE_HEADING_DECLINATION, -STRAFE_MAX_DECLINATION, STRAFE_MAX_DECLINATION) * headingFactor;
+            if (details) {
                 teamUtil.log("dh: " + adjustedDriveHeading);
             }
             if (details) teamUtil.log("Cruising at Velocity: "+ maxVelocity + " Tics Remaining: " + distanceRemaining);
@@ -1213,7 +1228,7 @@ public class BasicDrive {
 
         }
         setBulkReadOff();
-        lastVelocity = Math.max(endVelocity,MIN_START_VELOCITY);
+        lastVelocity = Math.max(endVelocity,MIN_STRAFE_START_VELOCITY);
         teamUtil.log("strafeHoldingStraightEncoder--Finished.  Current Strafe Encoder:" + odo.getPosY());
         return true;
     }
@@ -1223,6 +1238,7 @@ public class BasicDrive {
     }
 
     public void moveTo(double maxVelocity, double strafeTarget, double straightTarget, double robotHeading, double endVelocity,ActionCallback action, double actionTarget, boolean endInDeadband, long timeout){
+        teamUtil.log("MoveTo StrafeTarget: " + strafeTarget +  " Straight target: " + straightTarget + " robotH: " + robotHeading + " MaxV: " + maxVelocity + " EndV: " + endVelocity + " EndInDeadband: " + endInDeadband);
 
         //TODO THIS CODE SHALL NOT BE USED UNTIL THE ANGLE PROBLEM IS FIXED
         details = true;
@@ -1230,6 +1246,10 @@ public class BasicDrive {
         odo.update();
         long timeoutTime = System.currentTimeMillis()+timeout;
         boolean withinThreshold = false;
+        boolean strafeTargetAchieved = false;
+        boolean straightTargetAchieved = false;
+        boolean strafeIncreasing = (strafeTarget - odo.getPosY() > 0);
+        boolean straightIncreasing = (straightTarget - odo.getPosX() > 0);
         if(endVelocity<MIN_END_VELOCITY){
             endVelocity=MIN_END_VELOCITY;
             lastVelocity=0;
@@ -1269,11 +1289,15 @@ public class BasicDrive {
 
             double velocity = Math.min(MOVE_TO_COEFFICIENT * remainingDistance+endVelocity, maxVelocity);
 
-            if(endInDeadband){
-                if (remainingDistance <= MOVE_TO_THRESHOLD) { // TODO, if this overshoots the threshold it will bounce back.  Is that what we want?
+            if(endInDeadband){ // We must be at or near the target
+                if (remainingDistance <= MOVE_TO_THRESHOLD) {
                     withinThreshold = true;
                 }
-            }else{
+            }else{ // We just need to exceed the targets in both dimensions once
+                strafeTargetAchieved = strafeTargetAchieved || strafeIncreasing ? odo.getPosY() > strafeTarget - MOVE_TO_THRESHOLD : odo.getPosY() < strafeTarget + MOVE_TO_THRESHOLD;
+                straightTargetAchieved = straightTargetAchieved || straightIncreasing ? odo.getPosX() > straightTarget - MOVE_TO_THRESHOLD : odo.getPosX() < straightTarget + MOVE_TO_THRESHOLD;
+                withinThreshold = strafeTargetAchieved && straightTargetAchieved;
+                /*
                 if(driveHeading>=0&&driveHeading<90){
                     if((strafeChange<MOVE_TO_THRESHOLD)&&(straightChange<MOVE_TO_THRESHOLD)){
                         withinThreshold=true;
@@ -1291,6 +1315,7 @@ public class BasicDrive {
                         withinThreshold=true;
                     }
                 }
+                 */
             }
             driveMotorsHeadingsFR(driveHeading, robotHeading, velocity);
 
@@ -1300,9 +1325,11 @@ public class BasicDrive {
                 // teamUtil.log("Raw Angle: " + angle + " DH: " + driveHeading + " RH: " + robotHeading + " Vel: " + velocity + " Distance " + remainingDistance + " X: " + strafeChange + " Y: " + straightChange);
             }
         }
+        // TODO Make lastVelocity accurate
         if(lastVelocity<=MIN_END_VELOCITY){
             stopMotors();
         }
+
         teamUtil.log("MoveTo FINISHED");
     }
 

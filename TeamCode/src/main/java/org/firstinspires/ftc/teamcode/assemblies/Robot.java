@@ -49,6 +49,7 @@ public class Robot {
 
     static public int B01_PLACE_SPECIMEN_X = 760;
     public static int B02_PLACE_SPECIMEN_Y = 120;
+    public static int B02a_TRANSITION_VELOCITY = 500;
     static public int B03_END_VELOCITY_SPECIMEN = 200;
     static public float B04_SPECIMEN_MOTOR_POWER = 0.3f;
     static public int B05_SPECIMEN_PAUSE = 250;
@@ -64,7 +65,26 @@ public class Robot {
     public static float B13_SPECIMENDROP_MOTOR_POWER = 0.1f;
 
 
-
+    public static int C0a_FAST_STRAFE_ADJUST = 250;
+    public static int C0a_FAST_STRAIGHT_ADJUST1 = 100;
+    public static int C0a_FAST_STRAIGHT_ADJUST2 = 200;
+    public static int C0a_FAST_REVERSE_ADJUST = 50;
+    public static int C0a_SLOW_STRAFE_ADJUST = 50;
+    static public int C01_PLACE_SPECIMEN_X = 760;
+    public static int C02_PLACE_SPECIMEN_Y = 120;
+    public static int C03_TRANSITION_VELOCITY_CHILL = 500;
+    static public int C04_END_VELOCITY_SPECIMEN = 400;
+    static public int C05_SPECIMEN_PAUSE = 250;
+    static public int C06_CLEAR_SUB_X = 600;
+    static public int C07_CLEAR_SUB_Y = -660;
+    public static int C08_TRANSITION_VELOCITY_FAST = 1500;
+    static public int C09_CLEAR_SAMPLE_X = 1100;
+    static public int C10_SAMPLE_1_Y = -900;
+    static public int C10_SAMPLE_Y_ADJUST = 50;
+    static public int C11_DROP_SAMPLE_X = 250;
+    public static int C12_TRANSITION_VELOCITY_REVERSE = 1000;
+    static public int C13_SAMPLE_2_Y = C10_SAMPLE_1_Y-230;
+    static public int C14_SAMPLE_3_Y = C13_SAMPLE_2_Y-170;
 
 
 
@@ -259,6 +279,46 @@ public class Robot {
 
 
         return true;
+    }
+
+    public void testLinkedMovements() {
+        drive.setRobotPosition(0,0,0);
+        long startTime = System.currentTimeMillis();
+        //Drive to the submersible while moving a bit to the left
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C01_PLACE_SPECIMEN_X, C02_PLACE_SPECIMEN_Y,0,C04_END_VELOCITY_SPECIMEN,null,0,4000);
+        teamUtil.pause(C05_SPECIMEN_PAUSE); // give it time to click in
+
+        // Back up to clear sub
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C06_CLEAR_SUB_X, C02_PLACE_SPECIMEN_Y,0,C03_TRANSITION_VELOCITY_CHILL,null,0,4000);
+
+        // strafe over to clear sub on other side
+        drive.strafeHoldingStraightEncoder(BasicDrive.MAX_VELOCITY, C07_CLEAR_SUB_Y+C0a_FAST_STRAFE_ADJUST, C06_CLEAR_SUB_X, 0, C08_TRANSITION_VELOCITY_FAST,null, 0, 2000);
+
+        // drive past samples
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C09_CLEAR_SAMPLE_X- C0a_FAST_STRAIGHT_ADJUST1, C07_CLEAR_SUB_Y,0,C08_TRANSITION_VELOCITY_FAST,null,0,4000);
+
+        // strafe to sample 1
+        drive.strafeHoldingStraightEncoder(BasicDrive.MAX_VELOCITY, C10_SAMPLE_1_Y+C10_SAMPLE_Y_ADJUST, C09_CLEAR_SAMPLE_X, 0, C08_TRANSITION_VELOCITY_FAST,null, 0, 2000);
+
+        // push first sample to observation zone
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C11_DROP_SAMPLE_X+C0a_FAST_REVERSE_ADJUST, C10_SAMPLE_1_Y,0,C12_TRANSITION_VELOCITY_REVERSE,null,0,4000);
+
+        // head back out to get second sample
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C09_CLEAR_SAMPLE_X- C0a_FAST_STRAIGHT_ADJUST2, C10_SAMPLE_1_Y,0,C08_TRANSITION_VELOCITY_FAST,null,0,4000);
+        drive.strafeToTarget(270,0,C08_TRANSITION_VELOCITY_FAST, C13_SAMPLE_2_Y+C10_SAMPLE_Y_ADJUST,2000);
+
+        // push second sample to observation zone
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C11_DROP_SAMPLE_X+C0a_FAST_REVERSE_ADJUST, C13_SAMPLE_2_Y,0,C12_TRANSITION_VELOCITY_REVERSE,null,0,4000);
+
+        // head back out for 3rd sample
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C09_CLEAR_SAMPLE_X- C0a_FAST_STRAIGHT_ADJUST2, C13_SAMPLE_2_Y,0,C08_TRANSITION_VELOCITY_FAST,null,0,4000);
+        drive.strafeToTarget(270,0,C08_TRANSITION_VELOCITY_FAST, C14_SAMPLE_3_Y+C10_SAMPLE_Y_ADJUST,2000);
+
+        // push 3rd sample to observation zone
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C11_DROP_SAMPLE_X+C0a_FAST_REVERSE_ADJUST, C14_SAMPLE_3_Y,0,C12_TRANSITION_VELOCITY_REVERSE,null,0,4000);
+
+        drive.stopMotors(); // temp
+
     }
 
     public boolean autoV1Specimen(int blocks,boolean ascent){
