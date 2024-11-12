@@ -125,6 +125,19 @@ public class Teleop extends LinearOpMode {
                     driverGamepad.gamepad.right_trigger > .5,driverGamepad.gamepad.left_trigger > .5,
                     robot.drive.getHeading());
 
+            if(driverGamepad.wasYPressed()){
+                robot.drive.setHeldHeading(0);
+            }
+            if(driverGamepad.wasAPressed()){
+                robot.drive.setHeldHeading(315);
+            }
+            if(driverGamepad.wasXPressed()){
+                robot.drive.setHeldHeading(90);
+            }
+            if(driverGamepad.wasBPressed()){
+                robot.drive.setHeldHeading(270);
+            }
+
 
             //ARMS GAMEPAD
             //Outake
@@ -133,48 +146,51 @@ public class Teleop extends LinearOpMode {
             }
             if(armsGamepad.wasDownPressed()){
                 robot.outtake.outtakeGrab();
+                robot.output.dropSampleOutBackNoWait();
             }
             if(armsGamepad.wasLeftPressed()){
                 robot.outtake.outtakeRest();
             }
 
             if(!robot.intake.autoSeeking.get()) {
-                if (armsGamepad.wasBPressed()) { //Grab Red
-                    robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
-                    robot.intake.goToSampleAndGrabNoWait(5000); //TODO Tune timeout
-                }
-                if (armsGamepad.wasYPressed()) { //Grab Yellow
-                    robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
-                    robot.intake.goToSampleAndGrabNoWait(5000); //TODO Tune timeout
-                }
-                if (armsGamepad.wasXPressed()) { //Grab Blue
-                    robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
-                    robot.intake.goToSampleAndGrabNoWait(5000); //TODO Tune timeout
-                }
+
                 if (armsGamepad.wasAPressed()) {
                     if(robot.intake.extender.getCurrentPosition()<20){
-                        robot.intake.unload();
+                        robot.intake.unloadNoWait(5000);
                     }
 
                 }
                 if (armsGamepad.wasRightJoystickFlickedDown()) {
                     if((robot.drive.getHeadingODO()>45&&robot.drive.getHeadingODO()<135)||(robot.drive.getHeadingODO()>225&&robot.drive.getHeadingODO()<315)){
-                        robot.intake.unloadNoWait(3000);
+                        robot.intake.goToUnloadNoWait(3000);
                     }else{
                         robot.intake.extenderSafeRetractNoWait(5000);
                     }
                     extenderSliderUnlocked = false;
                 }
-                if (armsGamepad.wasRightJoystickFlickedUp()) {
+                if (driverGamepad.wasLeftTriggerPressed()) {
                     robot.intake.goToSeekNoWait(3000);
                     extenderSliderUnlocked = true;
-                }
+                } //ABOVE WAS ARMS GAMEPAD RIGHT FLICK UP
                 if (extenderSliderUnlocked) {
 
                     if (Math.abs(armsGamepad.gamepad.left_stick_y) > EXTENDER_Y_DEADBAND) {
                         robot.intake.manualY(armsGamepad.gamepad.left_stick_y);
                     }
                     robot.intake.manualX(armsGamepad.gamepad.left_stick_x);
+
+                    if (armsGamepad.wasBPressed()) { //Grab Red
+                        robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
+                        robot.intake.goToSampleAndGrabNoWait(5000); //TODO Tune timeout
+                    }
+                    if (armsGamepad.wasYPressed()) { //Grab Yellow
+                        robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
+                        robot.intake.goToSampleAndGrabNoWait(5000); //TODO Tune timeout
+                    }
+                    if (armsGamepad.wasXPressed()) { //Grab Blue
+                        robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
+                        robot.intake.goToSampleAndGrabNoWait(5000); //TODO Tune timeout
+                    }
                 }
             }
             //OUTPUT

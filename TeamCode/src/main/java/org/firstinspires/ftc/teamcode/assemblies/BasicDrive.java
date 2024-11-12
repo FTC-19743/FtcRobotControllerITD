@@ -88,13 +88,22 @@ public class BasicDrive {
     static public double SPIN_CRAWL_DEGREES = 10; // Calibrated 11/2/24 (could be more aggresive?)
     static public boolean details = true;
     public double CMS_PER_INCH = 2.54;
-    static float STRAIGHT_HEADING_DECLINATION = .09f; // convert strafe encoder error into heading declination
-    static float STRAIGHT_MAX_DECLINATION = 27f; // don't veer off of straight more than this number of degrees
-    static float STRAFE_HEADING_DECLINATION = .09f; // convert strafe encoder error into heading declination
-    static float STRAFE_MAX_DECLINATION = 27f; // don't veer off of straight more than this number of degrees
+    static public float STRAIGHT_HEADING_DECLINATION = .09f; // convert strafe encoder error into heading declination
+    static public float STRAIGHT_MAX_DECLINATION = 27f; // don't veer off of straight more than this number of degrees
+    static public float STRAFE_HEADING_DECLINATION = .09f; // convert strafe encoder error into heading declination
+    static public float STRAFE_MAX_DECLINATION = 27f; // don't veer off of straight more than this number of degrees
 
     static public double MOVE_TO_COEFFICIENT = 2;
     static public double MOVE_TO_THRESHOLD = 10;
+
+    public static float DEADBAND = 0.1f;
+    public static float SLOPE = 1.6f;
+    public static float FASTSLOPE = 3.6f;
+    public static float SLOWSPEED = .1f;
+    public static float STRAFESLOWSPEED = 0.25f;
+    public static float MAXROTATIONFACTOR = 0.8f;
+    public static float ROTATION_ADJUST_HELD_HEADING = 0.05f;
+
 
     /************************************************************************************************************/
     // Initialization
@@ -1210,6 +1219,10 @@ public class BasicDrive {
     }
 
     public void moveTo(double maxVelocity, double strafeTarget, double straightTarget, double robotHeading, double endVelocity,ActionCallback action, double actionTarget, long timeout){
+        moveTo(maxVelocity,strafeTarget,straightTarget,robotHeading,endVelocity,action,actionTarget,true,timeout);
+    }
+
+    public void moveTo(double maxVelocity, double strafeTarget, double straightTarget, double robotHeading, double endVelocity,ActionCallback action, double actionTarget, boolean endInDeadband, long timeout){
 
         //TODO THIS CODE SHALL NOT BE USED UNTIL THE ANGLE PROBLEM IS FIXED
         details = true;
@@ -1256,10 +1269,32 @@ public class BasicDrive {
 
             double velocity = Math.min(MOVE_TO_COEFFICIENT * remainingDistance+endVelocity, maxVelocity);
 
-            driveMotorsHeadingsFR(driveHeading, robotHeading, velocity);
-            if (remainingDistance <= MOVE_TO_THRESHOLD) { // TODO, if this overshoots the threshold it will bounce back.  Is that what we want?
-                withinThreshold = true;
+            if(endInDeadband){
+                if (remainingDistance <= MOVE_TO_THRESHOLD) { // TODO, if this overshoots the threshold it will bounce back.  Is that what we want?
+                    withinThreshold = true;
+                }
+            }else{
+                if(driveHeading>=0&&driveHeading<90){
+                    if((strafeChange<MOVE_TO_THRESHOLD)&&(straightChange<MOVE_TO_THRESHOLD)){
+                        withinThreshold=true;
+                    }
+                }else if(driveHeading<270&&driveHeading>=180){
+                    if((strafeChange>-MOVE_TO_THRESHOLD)&&(straightChange>-MOVE_TO_THRESHOLD)){
+                        withinThreshold=true;
+                    }
+                }else if(driveHeading<=360&&driveHeading>=270){
+                    if((strafeChange>-MOVE_TO_THRESHOLD)&&(straightChange<MOVE_TO_THRESHOLD)){
+                        withinThreshold=true;
+                    }
+                }else{
+                    if((strafeChange<MOVE_TO_THRESHOLD)&&(straightChange>-MOVE_TO_THRESHOLD)){
+                        withinThreshold=true;
+                    }
+                }
             }
+            driveMotorsHeadingsFR(driveHeading, robotHeading, velocity);
+
+
             if (details) {
                 teamUtil.log(String.format("Raw Angle %.1f DH: %.1f RH: %.1f Vel: %.0f Distance: %.0f X: %.0f Y %.0f", angle, driveHeading, robotHeading, velocity, remainingDistance, strafeChange, straightChange));
                 // teamUtil.log("Raw Angle: " + angle + " DH: " + driveHeading + " RH: " + robotHeading + " Vel: " + velocity + " Distance " + remainingDistance + " X: " + strafeChange + " Y: " + straightChange);
@@ -1404,12 +1439,15 @@ public class BasicDrive {
     public void driveJoyStick(float leftJoyStickX, float leftJoyStickY, float rightJoyStickX, boolean isFast) {
         // returns values to drive to the main loop
         boolean details = true;
-
+        //Old Declarations
+        /*
         float DEADBAND = 0.1f;
         float SLOPE = 1.6f;
         float FASTSLOPE = 3.6f;
         float SLOWSPEED = .1f;
         float STRAFESLOWSPEED = 0.25f;
+
+         */
         //float SLOPE = 1 / (1 - DEADBAND); // linear from edge of dead band to full power  TODO: Should this be a curve?
 
         float POWERFACTOR = 1; // MAKE LESS THAN 0 to cap upperlimit of power
@@ -1461,7 +1499,9 @@ public class BasicDrive {
             }
         }
 
-        final float MAXROTATIONFACTOR = 0.8f;
+        //final float MAXROTATIONFACTOR = 0.8f; (old code for factor)
+        //MAXROTATIONFACTOR = 0.8f;
+
         if (Math.abs(rightJoyStickX) > DEADBAND) { // driver is turning the robot
             rotationAdjustment = (float) (rightJoyStickX * 0.525 * scaleAmount);
             holdingHeading = false;
@@ -1470,7 +1510,7 @@ public class BasicDrive {
                 heldHeading = getHeadingODO();
                 holdingHeading = true;
             }
-            rotationAdjustment = (float) getHeadingError(heldHeading) * -1f * .05f; // auto rotate to held heading
+            rotationAdjustment = (float) getHeadingError(heldHeading) * -1f * ROTATION_ADJUST_HELD_HEADING; // auto rotate to held heading
             rotationAdjustment = rotationAdjustment * Math.min(Math.max(Math.abs(leftX), Math.abs(leftY)), 0.7f); // make it proportional to speed
             rotationAdjustment = MathUtils.clamp(rotationAdjustment, -MAXROTATIONFACTOR,MAXROTATIONFACTOR ); // clip rotation so it doesn't obliterate translation
         }
@@ -1580,7 +1620,7 @@ public class BasicDrive {
             }
             // old code
             //rotationAdjustment = (float) getHeadingError(heldHeading) * -1f * .05f; // auto rotate to held heading
-            rotationAdjustment = (float) getHeadingError(heldHeading) * -1f * .001f; // auto rotate to held heading
+            rotationAdjustment = (float) getHeadingError(heldHeading) * -1f * ROTATION_ADJUST_HELD_HEADING; // auto rotate to held heading
             rotationAdjustment = rotationAdjustment * Math.min(Math.max(Math.abs(leftX), Math.abs(leftY)), 0.7f); // make it proportional to speed
             rotationAdjustment = MathUtils.clamp(rotationAdjustment, -MAXROTATIONFACTOR,MAXROTATIONFACTOR ); // clip rotation so it doesn't obliterate translation
         }

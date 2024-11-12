@@ -24,6 +24,7 @@ public class CalibrateArms extends LinearOpMode {
     Outtake outtake;
     Output output;
     Hang hang;
+    AxonSlider axonSlider;
     boolean hangCalibrated = false;
 
     public enum Ops {Intake_Manual_Operation,
@@ -76,6 +77,7 @@ public class CalibrateArms extends LinearOpMode {
         output.initalize();
         output.calibrate();
 
+        axonSlider = new AxonSlider();
 
         hang = new Hang();
         hang.initalize();
@@ -186,6 +188,16 @@ public class CalibrateArms extends LinearOpMode {
         if(gp1.wasRightBumperPressed()){
             intake.goToSampleAndGrab(5000);
         }
+//        if(gp1.wasLeftTriggerPressed()){
+//            intake.axonSlider.runToPosition(AxonSlider.RIGHT_LIMIT, 6000);
+//            intake.axonSlider.setPower(1);
+//            teamUtil.pause(500);
+//            intake.axonSlider.setPower(0);
+//            teamUtil.log("slider potentiometer: " + axonSlider.getPosition());
+//            teamUtil.pause(2000);
+//            teamUtil.log("slider potentiometer: " + axonSlider.getPosition());
+//        }
+
     }
 
     public void testIntakeSpeeds() {

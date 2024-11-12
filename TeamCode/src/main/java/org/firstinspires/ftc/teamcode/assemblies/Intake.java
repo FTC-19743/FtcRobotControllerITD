@@ -14,6 +14,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCharacteristics;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.teamcode.libs.Blinkin;
 import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 import org.firstinspires.ftc.vision.VisionPortal;
@@ -24,6 +25,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Intake {
     HardwareMap hardwareMap;
     Telemetry telemetry;
+
+    Blinkin blinkin;
 
     public Servo flipper;
     public Servo wrist;
@@ -90,7 +93,7 @@ public class Intake {
     static public int EXTENDER_MAX_VELOCITY = 700;
     static public int EXTENDER_MAX_RETRACT_VELOCITY = 1500;
     static public int EXTENDER_MIN_VELOCITY = 50;
-    static public int EXTENDER_HOLD_RETRACT_VELOCITY = 100;
+    static public int EXTENDER_HOLD_RETRACT_VELOCITY = 200;
     static public int EXTENDER_MM_DEADBAND = 5;
     static public int EXTENDER_P_COEFFICIENT = 4;
     static public int EXTENDER_THRESHOLD = 10;
@@ -99,8 +102,10 @@ public class Intake {
     static public int EXTENDER_CRAWL_INCREMENT = 30;
     static public int EXTENDER_FAST_INCREMENT = 100;
     static public int EXTENDER_MIN = 100;
+    static public int EXTENDER_TOLERANCE_RETRACT = 15;
 
-    static public int GO_TO_UNLOAD_WAIT_TIME = 1000;
+
+    static public int GO_TO_UNLOAD_WAIT_TIME = 0;
     static public int UNLOAD_WAIT_TIME = 734;
     static public int RELEASE_WAIT_TIME = 250;
 
@@ -114,6 +119,7 @@ public class Intake {
         teamUtil.log("Constructing Intake");
         hardwareMap = teamUtil.theOpMode.hardwareMap;
         telemetry = teamUtil.theOpMode.telemetry;
+        //blinkin = new Blinkin(hardwareMap,telemetry);
     }
 
     public void initialize() {
@@ -126,6 +132,7 @@ public class Intake {
         axonSlider.init(hardwareMap,"slider","sliderPotentiometer");
 
         extender = hardwareMap.get(DcMotorEx.class,"extender");
+        teamUtil.log("extender tolerance " + extender.getTargetPositionTolerance());
         extender.setDirection(DcMotorEx.Direction.REVERSE);
         extender.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
@@ -196,7 +203,8 @@ public class Intake {
         }
         extender.setPower(0);
         teamUtil.pause(500); // let it "relax" just a bit
-        extender.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER); // make that our zero position
+        extender.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        extender.setTargetPositionTolerance(EXTENDER_TOLERANCE_RETRACT);// make that our zero position
         extender.setTargetPosition(EXTENDER_UNLOAD);
         extender.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
         extender.setVelocity(EXTENDER_HOLD_RETRACT_VELOCITY);
@@ -341,13 +349,13 @@ public class Intake {
         float sliderVelocity;
         extender.setVelocity(EXTENDER_MAX_VELOCITY);//Tune increment
         if(OpenCVSampleDetector.targetColor== OpenCVSampleDetector.TargetColor.BLUE){
-            //teamUtil.theBlinkin.setSignal(Blinkin.Signals.BLUE_PATH_1);
+            teamUtil.theBlinkin.setSignal(Blinkin.Signals.BLUE_PATH_1);
         }
         else if(OpenCVSampleDetector.targetColor== OpenCVSampleDetector.TargetColor.RED){
-            //teamUtil.theBlinkin.setSignal(Blinkin.Signals.RED);
+            teamUtil.theBlinkin.setSignal(Blinkin.Signals.RED);
         }
         else{
-            //teamUtil.theBlinkin.setSignal((Blinkin.Signals.YELLOW));
+            teamUtil.theBlinkin.setSignal((Blinkin.Signals.YELLOW));
         }
         while(!sampleDetector.foundOne.get()&&extender.getCurrentPosition()<EXTENDER_MAX-10){ // TODO: Need to check for timeout here
             teamUtil.pause(30);
@@ -358,7 +366,7 @@ public class Intake {
             teamUtil.log("Found One False after Search");
             extender.setVelocity(0);
             moving.set(false);
-            //teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
+            teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
             stopCVPipeline();
             return false;
         }
@@ -382,7 +390,7 @@ public class Intake {
                     axonSlider.setPower(0);
                     teamUtil.log("Target slider position is beyond mechanical range. Failing out.");
                     moving.set(false);
-                    //teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
+                    teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
                     stopCVPipeline();
                     return false;
                 }
@@ -410,7 +418,7 @@ public class Intake {
                 teamUtil.log("GoToSample has Timed Out");
                 moving.set(false);
 
-                //teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
+                teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
                 stopCVPipeline();
                 return false;
             }
@@ -419,7 +427,7 @@ public class Intake {
         stopCVPipeline();
         moving.set(false);
 
-        //teamUtil.theBlinkin.setSignal(Blinkin.Signals.DARK_GREEN);
+        teamUtil.theBlinkin.setSignal(Blinkin.Signals.DARK_GREEN);
         teamUtil.log("GoToSample has finished--At Block");
         return true;
     }
@@ -560,7 +568,8 @@ public class Intake {
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    goToUnload(timeOut);
+                    unload();
+                    moving.set(false);
 
                 }
             });

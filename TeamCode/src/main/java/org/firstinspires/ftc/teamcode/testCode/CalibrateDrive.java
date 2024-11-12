@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.teamcode.assemblies.BasicDrive;
+import org.firstinspires.ftc.teamcode.assemblies.Robot;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 
@@ -20,6 +21,8 @@ public class CalibrateDrive extends LinearOpMode {
 
     BasicDrive drive;
     public static int testVelocity = 1000;
+    public static int testEndVelocity = 0;
+
     public static int testDistance = 100;
     public static double HEADING = 0;
     public static int SECONDS = 3;
@@ -259,11 +262,29 @@ public class CalibrateDrive extends LinearOpMode {
         if (gamepad1.dpad_up){
             drive.moveTo(testVelocity,botX,botY,0,0,null,0,5000);
         }
+        if (gamepad1.dpad_left){
+            drive.moveTo(testVelocity,botY,botX,0,testEndVelocity,null,0,false,5000);
+        }
+        if (gamepad1.dpad_right){
+            drive.moveTo(testVelocity,botY,botX,0,testEndVelocity,null,0,false,5000);
+            drive.setMotorPower(0.3);
+            teamUtil.pause(500);
+            drive.stopMotors();
+        }
         if (gamepad1.x) {
             drive.setRobotPosition(0,0,0);
             drive.moveTo(testVelocity,400,400,45,0,null,0,5000);
             drive.moveTo(testVelocity,400,0,90,0,null,0,5000);
             drive.moveTo(testVelocity,0,0,0,0,null,0,5000);
+        }
+        if (gamepad1.y) {
+            drive.setRobotPosition(0,0,0);
+            //First move to gets robot over to side in order get to submersible fast enough
+            drive.moveTo(BasicDrive.MAX_VELOCITY, Robot.B02_PLACE_SPECIMEN_Y,Robot.B02_PLACE_SPECIMEN_Y,0,Robot.B10_END_VELOCITY_SPECIMEN,null,0,5000);
+            drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, Robot.B01_PLACE_SPECIMEN_X, Robot.B02_PLACE_SPECIMEN_Y, 0, Robot.B03_END_VELOCITY_SPECIMEN, null, 0,3000);
+            drive.setMotorPower(Robot.B04_SPECIMEN_MOTOR_POWER);
+            teamUtil.pause(Robot.B05_SPECIMEN_PAUSE);
+            drive.stopMotors();
         }
     }
 

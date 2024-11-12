@@ -59,6 +59,11 @@ public class Outtake {
     public void firstCalibrate(){
         outakearm.setPosition(ARM_REST);
         outakewrist.setPosition(WRIST_REST);
+        /*
+        while(Math.abs(outakePotentiometer.getVoltage()-ARM_REST)>0.1){
+        }
+
+         */
 
 
     }

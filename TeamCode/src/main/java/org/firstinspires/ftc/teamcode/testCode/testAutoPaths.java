@@ -5,11 +5,11 @@ import static org.firstinspires.ftc.teamcode.libs.teamUtil.Alliance.RED;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.RobotLog;
 
+import org.firstinspires.ftc.teamcode.assemblies.BasicDrive;
 import org.firstinspires.ftc.teamcode.assemblies.Robot;
-import org.firstinspires.ftc.teamcode.libs.Blinkin;
+import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 
@@ -99,11 +99,10 @@ public class testAutoPaths extends LinearOpMode {
             }
             if(driverGamepad.wasUpPressed()) {
                 long startTime = System.currentTimeMillis();
-               robot.autoV1(BLOCKS,ASCENT);
+               robot.autoV1Bucket(BLOCKS,ASCENT);
                elapsedTime = System.currentTimeMillis()-startTime;
             }
             if(driverGamepad.wasDownPressed()) {
-
             }
             if(driverGamepad.wasRightPressed()) {
 
@@ -113,7 +112,9 @@ public class testAutoPaths extends LinearOpMode {
 
             }
             if(driverGamepad.wasYPressed()) {
-
+                long startTime = System.currentTimeMillis();
+                robot.autoV1Specimen(BLOCKS,ASCENT);
+                elapsedTime = System.currentTimeMillis()-startTime;
 
             }
             if(driverGamepad.wasBPressed()) {
@@ -121,7 +122,16 @@ public class testAutoPaths extends LinearOpMode {
 
             }
             if(driverGamepad.wasOptionsPressed()){
+                robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
+                robot.drive.setRobotPosition(robot.B07_GO_TO_SAMPLE_X,robot.B08_GO_TO_SAMPLE_Y,0);
 
+                if(!robot.intake.goToSampleAndGrab(5000)){
+                    teamUtil.log("FAILED to intake sample.  Giving up");
+                    break;
+                }
+                robot.intake.goToUnloadNoWait(5000);
+                robot.drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, robot.B11_WALL_SPECIMEN_X, robot.B12_WALL_SPECIMEN_Y,0,200,null,0,4000);
+                robot.output.dropSampleOutBackNoWait();
             }
 
             if(driverGamepad.wasStartPressed()){

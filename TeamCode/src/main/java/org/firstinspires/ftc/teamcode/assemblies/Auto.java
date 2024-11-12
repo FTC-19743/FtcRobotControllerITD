@@ -1,11 +1,8 @@
 package org.firstinspires.ftc.teamcode.assemblies;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.libs.Blinkin;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 import com.acmerobotics.dashboard.config.Config;
@@ -120,7 +117,7 @@ public class Auto extends LinearOpMode {
         waitForStart();
         //teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
         long startTime = System.currentTimeMillis();
-        robot.autoV1(blocks,ascent);
+        robot.autoV1Bucket(blocks,ascent);
         long endTime = System.currentTimeMillis();
         long elapsedTime = endTime-startTime;
         teamUtil.log("Elapsed Auto Time Without Wait At End: " + elapsedTime);

@@ -25,6 +25,8 @@ public class CalibrateCV extends LinearOpMode {
         gp2.initilize(false);
         intake.initialize();
         intake.initCV(true);
+        intake.startCVPipeline();
+
 
 
         telemetry.addLine("Ready to start");

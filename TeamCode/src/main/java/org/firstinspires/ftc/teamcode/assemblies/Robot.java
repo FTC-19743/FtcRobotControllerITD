@@ -47,6 +47,23 @@ public class Robot {
     public static int A22_LEVEL_ONE_ASCENT_DRIVE_POWER_TIME = 100;
 
 
+    static public int B01_PLACE_SPECIMEN_X = 760;
+    public static int B02_PLACE_SPECIMEN_Y = 120;
+    static public int B03_END_VELOCITY_SPECIMEN = 200;
+    static public float B04_SPECIMEN_MOTOR_POWER = 0.3f;
+    static public int B05_SPECIMEN_PAUSE = 250;
+    static public int B06_END_VELOCITY_SPECIMEN_BACKUP = 500;
+    public static int B07_GO_TO_SAMPLE_X = 600;
+    public static int B08_GO_TO_SAMPLE_Y = -1003;
+
+
+    public static int B09_END_VELOCITY_SEEK_AFTER_BACKUP = 0;
+    public static int B10_END_VELOCITY_SPECIMEN = 500;
+    public static int B11_WALL_SPECIMEN_X = 100;
+    public static int B12_WALL_SPECIMEN_Y = -900;
+    public static float B13_SPECIMENDROP_MOTOR_POWER = 0.1f;
+
+
 
 
 
@@ -136,7 +153,7 @@ public class Robot {
     }
 
 
-    public boolean autoV1(int blocks,boolean ascent){
+    public boolean autoV1Bucket(int blocks, boolean ascent){
         long startTime = System.currentTimeMillis();
         teamUtil.log("Running Auto.  Alliance: " + (teamUtil.alliance == RED ? "RED" : "BLUE"));
 
@@ -144,14 +161,14 @@ public class Robot {
         //Get intake and output into positions
 
         outtake.deployArm();
-        //teamUtil.theBlinkin.setSignal(Blinkin.Signals.VIOLET);
+        teamUtil.theBlinkin.setSignal(Blinkin.Signals.VIOLET);
 
         // Get close to submersible then mechanically align
         drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, A01_PLACE_SPECIMEN_X,A02_PLACE_SPECIMEN_Y,0,A13_SPECIMEN_END_VELOCITY,null,0,4000);
         drive.setMotorPower(A12_SPECIMEN_MOTOR_POWER);
-        //teamUtil.theBlinkin.setSignal(Blinkin.Signals.VIOLETHEARTBEAT);
+        teamUtil.theBlinkin.setSignal(Blinkin.Signals.VIOLETHEARTBEAT);
         teamUtil.pause(A14_SPECIMEN_PAUSE);
-        //teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
+        teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
 
         /*
         if (!placeSpecimen(2000)) {
@@ -239,6 +256,48 @@ public class Robot {
 
             return true;
         }
+
+
+        return true;
+    }
+
+    public boolean autoV1Specimen(int blocks,boolean ascent){
+        teamUtil.log("Running Auto.  Alliance: " + (teamUtil.alliance == RED ? "RED" : "BLUE"));
+
+        drive.setRobotPosition(0,0,0);
+        long startTime = System.currentTimeMillis();
+
+        outtake.deployArm();
+
+        //First move to gets robot over to side in order get to submersible fast enough
+        //drive.moveTo(BasicDrive.MAX_VELOCITY,B02_PLACE_SPECIMEN_Y,B02_PLACE_SPECIMEN_Y,0,B10_END_VELOCITY_SPECIMEN,null,0,5000);
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, B01_PLACE_SPECIMEN_X, B02_PLACE_SPECIMEN_Y, 0, B03_END_VELOCITY_SPECIMEN, null, 0,3000);
+        drive.setMotorPower(B04_SPECIMEN_MOTOR_POWER);
+        teamUtil.pause(B05_SPECIMEN_PAUSE);
+        drive.stopMotors();
+
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, A04_MOVE_TO_SAMPLE_X, B02_PLACE_SPECIMEN_Y,0,500,null,0,4000);
+        outtake.outtakeGrab();
+        drive.moveTo(BasicDrive.MAX_VELOCITY,B08_GO_TO_SAMPLE_Y,B07_GO_TO_SAMPLE_X,0,B09_END_VELOCITY_SEEK_AFTER_BACKUP,null,0,5000);
+
+        //intake.goToSeekNoWait(5000);
+
+        if(teamUtil.alliance == RED) intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
+        else intake.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
+
+        if(!intake.goToSampleAndGrab(5000)){
+            teamUtil.log("FAILED to intake sample.  Giving up");
+            return false;
+        }
+        intake.goToUnload(5000);
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, B11_WALL_SPECIMEN_X, B12_WALL_SPECIMEN_Y,0,200,null,0,4000);
+        output.dropSampleOutBackNoWait();
+
+        drive.setMotorPower(-B13_SPECIMENDROP_MOTOR_POWER);
+        teamUtil.pause(1000);
+        drive.stopMotors();
+
+
 
 
         return true;
