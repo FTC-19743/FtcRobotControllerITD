@@ -121,6 +121,7 @@ public class Output {
                 public void run() {
                     dropSampleOutBack();
                 }
+
             });
             thread.start();
         }
@@ -129,7 +130,7 @@ public class Output {
         intake = teamUtil.robot.intake;
         outtake = teamUtil.robot.outtake;
 
-        if(intake.FlipperInUnload.get()||outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_SAFE-0.1){
+        if(intake.FlipperInUnload.get()||outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_OUTPUT_CLEAR){
             teamUtil.log("Couldn't run Output Load Because Stuff is in the way");
         }
         else{
@@ -144,9 +145,10 @@ public class Output {
             }
             lift.setVelocity(0);
             bucket.setPosition(BUCKET_RELOAD);
-            outputMoving.set(false);
+
             outputLiftAtBottom.set(true);
         }
+        outputMoving.set(false);
 
 
     }
@@ -174,7 +176,7 @@ public class Output {
         intake = teamUtil.robot.intake;
         outtake = teamUtil.robot.outtake;
 
-        if(intake.FlipperInUnload.get()||outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_SAFE-0.1){
+        if(intake.FlipperInUnload.get()||outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_OUTPUT_CLEAR){
             teamUtil.log("Couldn't Put Output Low Bucket");
         }else{
             outputMoving.set(true);
@@ -192,7 +194,7 @@ public class Output {
         intake = teamUtil.robot.intake;
         outtake = teamUtil.robot.outtake;
 
-        if(intake.FlipperInUnload.get()||outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_SAFE-0.1){
+        if(intake.FlipperInUnload.get()||outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_OUTPUT_CLEAR){
             if(intake.FlipperInUnload.get()){
                 teamUtil.log("Couldn't Put Output High Bucket Cause of Flipper");
             }

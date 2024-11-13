@@ -62,7 +62,7 @@ public class CalibrateArms extends LinearOpMode {
 
         teamUtil.init(this);
         teamUtil.alliance = teamUtil.Alliance.RED;
-        teamUtil.SIDE=teamUtil.Side.SCORE;
+        teamUtil.SIDE=teamUtil.Side.BASKET;
 
         intake = new Intake();
         intake.initialize();

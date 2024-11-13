@@ -16,24 +16,27 @@ public class Auto extends LinearOpMode {
     int delay = 0;
     boolean cycle = true;
     int cycleDelay = 0;
+    boolean ascent = false;
+    int blocks = 1;
+    int specimen = 1;
 
 
-
-    public void initializeRobot(){
+    public void initializeRobot() {
         telemetry.addLine("Initializing Robot");
         teamUtil.telemetry.update();
         telemetry.update();
         robot = new Robot();
         robot.initialize();
     }
+
     @Override
-    public void runOpMode(){
+    public void runOpMode() {
         teamUtil.init(this);
         gamepad = new TeamGamepad();
         gamepad.initilize(true);
         teamUtil.alliance = teamUtil.Alliance.RED;
         //Calibrate
-        while(!gamepad.wasAPressed()){
+        while (!gamepad.wasAPressed()) {
             gamepad.loop();
             teamUtil.telemetry.addLine("Check Robot and THEN");
             teamUtil.telemetry.addLine("Press X on Game Pad 1 to CALIBRATE");
@@ -43,57 +46,113 @@ public class Auto extends LinearOpMode {
         robot.calibrate();
         teamUtil.robot = robot;
 
-
-        //Blocks
-        int blocks = 1;
-        while(!gamepad.wasAPressed()){
+        while (!gamepad.wasAPressed()) {
             gamepad.loop();
-            if(gamepad.wasUpPressed()){
-                blocks++;
-                if(blocks>3){
-                    blocks=1;
+            teamUtil.telemetry.addLine("Alliance: " + teamUtil.alliance);
+            teamUtil.telemetry.addLine("Press Bumpers To Change Alliance");
+            if (gamepad.wasRightBumperPressed() || gamepad.wasLeftBumperPressed()) {
+                if (teamUtil.alliance == teamUtil.Alliance.BLUE) {
+                    teamUtil.alliance = teamUtil.Alliance.RED;
+                } else {
+                    teamUtil.alliance = teamUtil.Alliance.BLUE;
                 }
             }
-            teamUtil.telemetry.addLine("Blocks: " + blocks);
-            teamUtil.telemetry.addLine("Press Up to Add Block");
-            teamUtil.telemetry.addLine("Press X to Move On");
-
-
-
-            teamUtil.telemetry.update();
-        }
-        boolean ascent = false;
-        while(!gamepad.wasAPressed()){
-            gamepad.loop();
-            if(gamepad.wasUpPressed()){
-                if(ascent){
-                    ascent = false;
-                }else{
-                    ascent=true;
-                }
-            }
-            teamUtil.telemetry.addLine("Ascent: " + ascent);
-            teamUtil.telemetry.addLine("Blocks: " + blocks);
-
-            teamUtil.telemetry.addLine("Press Up Change Ascent");
-            teamUtil.telemetry.addLine("Press X to Move On");
             teamUtil.telemetry.update();
         }
 
+        while (!gamepad.wasAPressed()) {
+            gamepad.loop();
+            if (gamepad.wasUpPressed()) {
+                specimen++;
+                if (specimen > 4) {
+                    specimen = 0;
+                }
+            }
+            teamUtil.telemetry.addLine("Alliance: " + teamUtil.alliance);
+            teamUtil.telemetry.addLine("Delay: " + delay);
+            teamUtil.telemetry.addLine("Press Right to Increase Delay");
+            teamUtil.telemetry.addLine("Press Left to Decrease Delay");
+            if(gamepad.wasLeftPressed()){
+                delay--;
+            }
+            if(gamepad.wasRightPressed()){
+                delay++;
+            }
+            teamUtil.telemetry.addLine("Press X to Move On");
+        }
+        if (teamUtil.SIDE == teamUtil.Side.BASKET) {
+            //Blocks
+            while (!gamepad.wasAPressed()) {
+                gamepad.loop();
+                if (gamepad.wasUpPressed()) {
+                    blocks++;
+                    if (blocks > 3) {
+                        blocks = 1;
+                    }
+                }
+                teamUtil.telemetry.addLine("Alliance: " + teamUtil.alliance);
+                teamUtil.telemetry.addLine("Blocks: " + blocks);
+                teamUtil.telemetry.addLine("Delay: " + delay);
+                teamUtil.telemetry.addLine("Press Up to Add Block");
+                teamUtil.telemetry.addLine("Press X to Move On");
+
+
+                teamUtil.telemetry.update();
+            }
+
+            while (!gamepad.wasAPressed()) {
+                gamepad.loop();
+                if (gamepad.wasUpPressed()) {
+                    if (ascent) {
+                        ascent = false;
+                    } else {
+                        ascent = true;
+                    }
+                }
+                teamUtil.telemetry.addLine("Alliance: " + teamUtil.alliance);
+                teamUtil.telemetry.addLine("Ascent: " + ascent);
+                teamUtil.telemetry.addLine("Blocks: " + blocks);
+                teamUtil.telemetry.addLine("Delay: " + delay);
+                teamUtil.telemetry.addLine("Press Up Change Ascent");
+                teamUtil.telemetry.addLine("Press X to Move On");
+                teamUtil.telemetry.update();
+            }
+
+        } else {
+            //Specimen
+            while (!gamepad.wasAPressed()) {
+                gamepad.loop();
+                if (gamepad.wasUpPressed()) {
+                    specimen++;
+                    if (specimen > 4) {
+                        specimen = 0;
+                    }
+                }
+                teamUtil.telemetry.addLine("Alliance: " + teamUtil.alliance);
+                teamUtil.telemetry.addLine("Specimen: " + specimen);
+                teamUtil.telemetry.addLine("Press Up to Add Specimen");
+                teamUtil.telemetry.addLine("Delay: " + delay);
+                teamUtil.telemetry.addLine("Press X to Move On");
+
+
+                teamUtil.telemetry.update();
+            }
+        }
         robot.initCV(false); // no live stream enabled means better FPS
 
 
-
-
-        while(!opModeIsActive()){
-
+        while (!opModeIsActive()) {
             telemetry.addLine("Ready to Go!");
-            telemetry.addLine("Blocks: " + blocks);
-            teamUtil.telemetry.addLine("Ascent: " + ascent);
-
-            telemetry.addLine("Alliance: "+teamUtil.alliance.toString());
+            teamUtil.telemetry.addLine("Alliance: " + teamUtil.alliance);
+            teamUtil.telemetry.addLine("Delay: " + delay);
+            if (teamUtil.SIDE == teamUtil.Side.BASKET) {
+                telemetry.addLine("Blocks: " + blocks);
+                telemetry.addLine("Ascent: " + ascent);
+            } else {
+                teamUtil.telemetry.addLine("Specimen: " + specimen);
+            }
             telemetry.update();
-
+        }
 
 
             /*
@@ -112,21 +171,24 @@ public class Auto extends LinearOpMode {
             }
 
              */
-        }
 
         waitForStart();
         //teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
         long startTime = System.currentTimeMillis();
-        robot.autoV1Bucket(blocks,ascent);
+        teamUtil.pause(delay);
+        if(teamUtil.SIDE == teamUtil.Side.BASKET){
+            robot.autoV1Bucket(blocks, ascent);
+        }else{
+            robot.autoV2Specimen(specimen);
+        }
         long endTime = System.currentTimeMillis();
-        long elapsedTime = endTime-startTime;
+        long elapsedTime = endTime - startTime;
         teamUtil.log("Elapsed Auto Time Without Wait At End: " + elapsedTime);
 
-        while(opModeIsActive()){
-        }
+        while (opModeIsActive()) {}
 
         teamUtil.justRanAuto = true; // avoid recalibration at start of teleop
-
     }
 }
+
 

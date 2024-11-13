@@ -73,7 +73,7 @@ public class CalibrateDrive extends LinearOpMode {
 
         teamUtil.init(this);
         teamUtil.alliance = teamUtil.Alliance.RED;
-        teamUtil.SIDE=teamUtil.Side.SCORE;
+        teamUtil.SIDE=teamUtil.Side.BASKET;
 
         drive = new BasicDrive();
         drive.initalize();

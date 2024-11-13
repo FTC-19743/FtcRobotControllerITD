@@ -83,8 +83,32 @@ public class Robot {
     static public int C10_SAMPLE_Y_ADJUST = 50;
     static public int C11_DROP_SAMPLE_X = 250;
     public static int C12_TRANSITION_VELOCITY_REVERSE = 1000;
-    static public int C13_SAMPLE_2_Y = C10_SAMPLE_1_Y-230;
+    static public int C13_SAMPLE_2_Y = C10_SAMPLE_1_Y-180;
     static public int C14_SAMPLE_3_Y = C13_SAMPLE_2_Y-170;
+    static public int C15_BACK_OUT_OBSERVATION_ZONE = 550;
+
+    public static int D0a_FAST_STRAFE_ADJUST = 250;
+    public static int D0a_FAST_STRAIGHT_ADJUST1 = 100;
+    public static int D0a_FAST_STRAIGHT_ADJUST2 = 200;
+    public static int D0a_FAST_REVERSE_ADJUST = 50;
+    static public int D00_WALL_TO_MIDFIELD_X = 199;
+    static public int D01_WALL_TO_MIDFIELD_Y = -50;
+    public static int D02_TRANSITION_VELOCITY_FAST = 2000;
+    static public int D03_MIDFIELD_TO_CHAMBER_X = 772;
+    static public int D04_MIDFIELD_TO_CHAMBER_Y = 100;
+    static public int D05_CHAMBER_TO_MIDFIELD_X = 657;
+    static public int D06_CHAMBER_TO_MIDFIELD_Y = 47;
+    static public int D07_SPECIMEN_PAUSE = 250;
+    static public int D08_PREPARE_FOR_PICKUP_X=370;
+    static public int D09_PREPARE_FOR_PICKUP_Y=-732;
+    public static int D10_TRANSITION_VELOCITY_SLOW = 750;
+    static public int D11_PICKUP_Y = -836;
+    static public int D12_PICKUP_X = 75;
+    static public int D13_GRAB_SPECIMEN_END_VELOCITY = 300;
+    static public int D14_SPECIMEN_GRAB_TIME = 500;
+    static public int D15_CYCLE_SPECIMEN_ADJUSTMENT = 100;
+
+
 
 
 
@@ -281,16 +305,17 @@ public class Robot {
         return true;
     }
 
-    public void testLinkedMovements() {
+    public void specimenCollectBlocks() {
         drive.setRobotPosition(0,0,0);
         long startTime = System.currentTimeMillis();
         //Drive to the submersible while moving a bit to the left
+        outtake.deployArm();
         drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C01_PLACE_SPECIMEN_X, C02_PLACE_SPECIMEN_Y,0,C04_END_VELOCITY_SPECIMEN,null,0,4000);
         teamUtil.pause(C05_SPECIMEN_PAUSE); // give it time to click in
 
         // Back up to clear sub
         drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C06_CLEAR_SUB_X, C02_PLACE_SPECIMEN_Y,0,C03_TRANSITION_VELOCITY_CHILL,null,0,4000);
-
+        outtake.outtakeGrab();
         // strafe over to clear sub on other side
         drive.strafeHoldingStraightEncoder(BasicDrive.MAX_VELOCITY, C07_CLEAR_SUB_Y+C0a_FAST_STRAFE_ADJUST, C06_CLEAR_SUB_X, 0, C08_TRANSITION_VELOCITY_FAST,null, 0, 2000);
 
@@ -310,13 +335,18 @@ public class Robot {
         // push second sample to observation zone
         drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C11_DROP_SAMPLE_X+C0a_FAST_REVERSE_ADJUST, C13_SAMPLE_2_Y,0,C12_TRANSITION_VELOCITY_REVERSE,null,0,4000);
 
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C15_BACK_OUT_OBSERVATION_ZONE, C13_SAMPLE_2_Y,0,C08_TRANSITION_VELOCITY_FAST,null,0,4000);
+
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, D12_PICKUP_X,C13_SAMPLE_2_Y,0,D13_GRAB_SPECIMEN_END_VELOCITY,null,0,4000);
+        teamUtil.pause(D14_SPECIMEN_GRAB_TIME);
         // head back out for 3rd sample
+        /*
         drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C09_CLEAR_SAMPLE_X- C0a_FAST_STRAIGHT_ADJUST2, C13_SAMPLE_2_Y,0,C08_TRANSITION_VELOCITY_FAST,null,0,4000);
         drive.strafeToTarget(270,0,C08_TRANSITION_VELOCITY_FAST, C14_SAMPLE_3_Y+C10_SAMPLE_Y_ADJUST,2000);
 
         // push 3rd sample to observation zone
         drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C11_DROP_SAMPLE_X+C0a_FAST_REVERSE_ADJUST, C14_SAMPLE_3_Y,0,C12_TRANSITION_VELOCITY_REVERSE,null,0,4000);
-
+         */
         drive.stopMotors(); // temp
 
     }
@@ -360,6 +390,45 @@ public class Robot {
 
 
 
+        return true;
+    }
+
+    public boolean autoV2Specimen(int cycles){
+        teamUtil.log("Running Auto.  Alliance: " + (teamUtil.alliance == RED ? "RED" : "BLUE"));
+        drive.setRobotPosition(0,0,0);
+        specimenCollectBlocks();
+        for(int i = 1; i<=cycles;i++){
+            specimenCycle(i);
+        }
+        drive.stopMotors();
+        return true;
+    }
+
+    public boolean specimenCycle(int cycles){
+        outtake.outakearm.setPosition(Outtake.ARM_UP);
+
+        BasicDrive.MIN_STRAFE_START_VELOCITY = 2000;
+        BasicDrive.MIN_START_VELOCITY = 1000;
+        //Moves robot from the observation zone to the middle of the field
+        drive.strafeHoldingStraightEncoder(BasicDrive.MAX_VELOCITY,D01_WALL_TO_MIDFIELD_Y,D00_WALL_TO_MIDFIELD_X,0,D02_TRANSITION_VELOCITY_FAST,null,0,5000);
+        outtake.deployArm();
+
+        //moves robot from the middle of the field to scoring the specimen
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY,D03_MIDFIELD_TO_CHAMBER_X,D04_MIDFIELD_TO_CHAMBER_Y+(D15_CYCLE_SPECIMEN_ADJUSTMENT*(cycles-1)),0,C04_END_VELOCITY_SPECIMEN,null,0,4000);
+        teamUtil.pause(D07_SPECIMEN_PAUSE);
+
+        //moves robot out of the way of the submersible
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY,D05_CHAMBER_TO_MIDFIELD_X,D06_CHAMBER_TO_MIDFIELD_Y,0,D02_TRANSITION_VELOCITY_FAST,null,0,4000);
+        outtake.outtakeGrab();
+
+        //moves robot into postion to drive forward to grab next specimen
+        drive.strafeHoldingStraightEncoder(BasicDrive.MAX_VELOCITY,D09_PREPARE_FOR_PICKUP_Y,D08_PREPARE_FOR_PICKUP_X,0, D10_TRANSITION_VELOCITY_SLOW,null,0,4000);
+
+        //moves robot to wall for grab
+        drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY,D12_PICKUP_X,D11_PICKUP_Y,0,D13_GRAB_SPECIMEN_END_VELOCITY,null,0,4000);
+        teamUtil.pause(D14_SPECIMEN_GRAB_TIME);
+        BasicDrive.MIN_STRAFE_START_VELOCITY = 500;
+        BasicDrive.MIN_START_VELOCITY = 300;
         return true;
     }
 

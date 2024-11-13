@@ -103,14 +103,16 @@ public class testAutoPaths extends LinearOpMode {
                elapsedTime = System.currentTimeMillis()-startTime;
             }
             if(driverGamepad.wasDownPressed()) {
-                robot.testLinkedMovements();
+                robot.specimenCollectBlocks();
             }
             if(driverGamepad.wasRightPressed()) {
-
+                robot.drive.setRobotPosition(0,0,0);
             }
             if(driverGamepad.wasXPressed()) {
-
-
+                long startTime = System.currentTimeMillis();
+                robot.specimenCycle(1);
+                robot.drive.stopMotors();
+                elapsedTime = System.currentTimeMillis()-startTime;
             }
             if(driverGamepad.wasYPressed()) {
                 long startTime = System.currentTimeMillis();
@@ -119,8 +121,9 @@ public class testAutoPaths extends LinearOpMode {
 
             }
             if(driverGamepad.wasBPressed()) {
-
-
+                long startTime = System.currentTimeMillis();
+                robot.autoV2Specimen(BLOCKS);
+                elapsedTime = System.currentTimeMillis()-startTime;
             }
             if(driverGamepad.wasOptionsPressed()){
                 robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);

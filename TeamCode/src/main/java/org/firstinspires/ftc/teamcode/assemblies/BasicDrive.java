@@ -74,8 +74,8 @@ public class BasicDrive {
     static public double MAX_STRAIGHT_DECELERATION = 1.87; //TODO
     static public double MIN_STRAFE_START_VELOCITY = 500; //TODO
     static public double MIN_STRAFE_END_VELOCITY = 200; //TODO
-    static public double MAX_STRAFE_DECELERATION = .15; //TODO
-    static public double MAX_STRAFE_ACCELERATION = 2; // TODO
+    static public double MAX_STRAFE_DECELERATION = 2; //TODO
+    static public double MAX_STRAFE_ACCELERATION = 20; // TODO
 
     static public double MAX_VELOCITY = 2200; // Calibrated 11/2/24
     static public double MAX_VELOCITY_STRAFE = 1750; // Calibrated 11/2/24

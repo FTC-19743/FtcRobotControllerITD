@@ -179,7 +179,7 @@ public class Teleop extends LinearOpMode {
                     }
                     robot.intake.manualX(armsGamepad.gamepad.left_stick_x);
 
-                    if (armsGamepad.wasBPressed()) { //Grab Red
+                    if (armsGamepad.wasBPressed()&&teamUtil.alliance == teamUtil.Alliance.RED) { //Grab Red
                         robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
                         robot.intake.goToSampleAndGrabNoWait(5000); //TODO Tune timeout
                     }
@@ -187,7 +187,7 @@ public class Teleop extends LinearOpMode {
                         robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
                         robot.intake.goToSampleAndGrabNoWait(5000); //TODO Tune timeout
                     }
-                    if (armsGamepad.wasXPressed()) { //Grab Blue
+                    if (armsGamepad.wasXPressed()&&teamUtil.alliance == teamUtil.Alliance.BLUE) { //Grab Blue
                         robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
                         robot.intake.goToSampleAndGrabNoWait(5000); //TODO Tune timeout
                     }
