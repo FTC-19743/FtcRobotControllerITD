@@ -91,23 +91,27 @@ public class Intake {
 
     static public int EXTENDER_MAX = 1500; //TODO find this number and use it in movement methods
     static public int EXTENDER_MAX_VELOCITY = 700;
-    static public int EXTENDER_MAX_RETRACT_VELOCITY = 1500;
+    static public int EXTENDER_MAX_RETRACT_VELOCITY = 2000;
     static public int EXTENDER_MIN_VELOCITY = 50;
     static public int EXTENDER_HOLD_RETRACT_VELOCITY = 200;
     static public int EXTENDER_MM_DEADBAND = 5;
     static public int EXTENDER_P_COEFFICIENT = 4;
-    static public int EXTENDER_THRESHOLD = 10;
-    static public int EXTENDER_UNLOAD = 0;
+    static public int EXTENDER_THRESHOLD = 30;
+    static public int EXTENDER_UNLOAD = 15;
     static public int EXTENDER_START_SEEK = 300; // TODO Determine this number
     static public int EXTENDER_CRAWL_INCREMENT = 30;
     static public int EXTENDER_FAST_INCREMENT = 100;
     static public int EXTENDER_MIN = 100;
     static public int EXTENDER_TOLERANCE_RETRACT = 15;
+    static public int EXTENDER_RETRACT_TIMEOUT = 3000;
+    static public int EXTENDER_SAFE_TO_UNLOAD_THRESHOLD = 50;
+
 
 
     static public int GO_TO_UNLOAD_WAIT_TIME = 0;
     static public int UNLOAD_WAIT_TIME = 734;
     static public int RELEASE_WAIT_TIME = 250;
+    static public int GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT = 10000;
 
     final int ARDU_RESOLUTION_WIDTH = 640;
     final int ARDU_RESOLUTION_HEIGHT = 480;
@@ -322,6 +326,8 @@ public class Intake {
             flipAndRotateToSampleAndGrab(timeoutTime - System.currentTimeMillis());
             if (!timedOut.get()) {
                 goToSafeRetract(timeoutTime - System.currentTimeMillis());
+
+                extendersToPosition(EXTENDER_UNLOAD,timeoutTime-System.currentTimeMillis());
                 autoSeeking.set(false);
                 return true;
             }
@@ -434,11 +440,12 @@ public class Intake {
 
 
     public void goToSampleAndGrabNoWait(long timeOut) {
-        if (moving.get()) { // Intake is already moving in another thread
+        if (autoSeeking.get()) { // Intake is already moving in another thread
             teamUtil.log("WARNING: Attempt to goToSampleAndGrab while intake is moving--ignored");
             return;
         } else {
             moving.set(true);
+            autoSeeking.set(true);
             teamUtil.log("Launching Thread to goToSampleAndGrab");
             Thread thread = new Thread(new Runnable() {
                 @Override

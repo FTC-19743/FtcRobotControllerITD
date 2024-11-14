@@ -72,7 +72,7 @@ public class Teleop extends LinearOpMode {
         armsGamepad.initilize(false);
         robot = new Robot();
         robot.initialize();
-        robot.initCV(true);// TODO: false for competition
+        robot.initCV(false);// TODO: false for competition
 
         if (!teamUtil.justRanAuto) { // Auto already took care of this, so save time and don't move anything!
             robot.calibrate();
@@ -100,7 +100,7 @@ public class Teleop extends LinearOpMode {
             telemetry.addLine("ALLIANCE : "+ teamUtil.alliance);
             telemetry.update();
         }
-
+        //TODO: FIX ALL STATE MANAGEMENT
         waitForStart();
 
         boolean extenderSliderUnlocked = false;
@@ -152,47 +152,49 @@ public class Teleop extends LinearOpMode {
                 robot.outtake.outtakeRest();
             }
 
-            if(!robot.intake.autoSeeking.get()) {
 
-                if (armsGamepad.wasAPressed()) {
-                    if(robot.intake.extender.getCurrentPosition()<20){
-                        robot.intake.unloadNoWait(5000);
-                    }
 
+            if (armsGamepad.wasAPressed()&&!robot.intake.autoSeeking.get()) {
+                if(robot.intake.extender.getCurrentPosition()<Intake.EXTENDER_SAFE_TO_UNLOAD_THRESHOLD){
+                    robot.intake.unloadNoWait(5000);
                 }
-                if (armsGamepad.wasRightJoystickFlickedDown()) {
-                    if((robot.drive.getHeadingODO()>45&&robot.drive.getHeadingODO()<135)||(robot.drive.getHeadingODO()>225&&robot.drive.getHeadingODO()<315)){
-                        robot.intake.goToUnloadNoWait(3000);
-                    }else{
-                        robot.intake.extenderSafeRetractNoWait(5000);
-                    }
-                    extenderSliderUnlocked = false;
-                }
-                if (driverGamepad.wasLeftTriggerPressed()) {
-                    robot.intake.goToSeekNoWait(3000);
-                    extenderSliderUnlocked = true;
-                } //ABOVE WAS ARMS GAMEPAD RIGHT FLICK UP
-                if (extenderSliderUnlocked) {
 
-                    if (Math.abs(armsGamepad.gamepad.left_stick_y) > EXTENDER_Y_DEADBAND) {
-                        robot.intake.manualY(armsGamepad.gamepad.left_stick_y);
-                    }
-                    robot.intake.manualX(armsGamepad.gamepad.left_stick_x);
-
-                    if (armsGamepad.wasBPressed()&&teamUtil.alliance == teamUtil.Alliance.RED) { //Grab Red
-                        robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
-                        robot.intake.goToSampleAndGrabNoWait(5000); //TODO Tune timeout
-                    }
-                    if (armsGamepad.wasYPressed()) { //Grab Yellow
-                        robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
-                        robot.intake.goToSampleAndGrabNoWait(5000); //TODO Tune timeout
-                    }
-                    if (armsGamepad.wasXPressed()&&teamUtil.alliance == teamUtil.Alliance.BLUE) { //Grab Blue
-                        robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
-                        robot.intake.goToSampleAndGrabNoWait(5000); //TODO Tune timeout
-                    }
-                }
             }
+            if (armsGamepad.wasRightJoystickFlickedDown()&&!robot.intake.autoSeeking.get()) {
+                if((robot.drive.getHeadingODO()>45&&robot.drive.getHeadingODO()<135)||(robot.drive.getHeadingODO()>225&&robot.drive.getHeadingODO()<315)){
+                    robot.intake.goToUnloadNoWait(3000);
+                }else{
+                    robot.intake.extenderSafeRetractNoWait(5000);
+                }
+                extenderSliderUnlocked = false;
+            }
+            if (driverGamepad.wasLeftTriggerPressed()&&!robot.intake.autoSeeking.get()) {
+                robot.intake.goToSeekNoWait(3000);
+                extenderSliderUnlocked = true;
+            } //ABOVE WAS ARMS GAMEPAD RIGHT FLICK UP
+
+
+            if ((Math.abs(armsGamepad.gamepad.left_stick_y) > EXTENDER_Y_DEADBAND)&&extenderSliderUnlocked&&!robot.intake.autoSeeking.get()) {
+                robot.intake.manualY(armsGamepad.gamepad.left_stick_y);
+            }
+            if(extenderSliderUnlocked&&!robot.intake.autoSeeking.get()) robot.intake.manualX(armsGamepad.gamepad.left_stick_x);
+
+
+            if ((armsGamepad.wasBPressed()&&teamUtil.alliance == teamUtil.Alliance.RED)&&extenderSliderUnlocked&&!robot.intake.autoSeeking.get()) { //Grab Red
+                robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
+                robot.intake.goToSampleAndGrabNoWait(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT);  //TODO Tune timeout
+
+            }
+            if ((armsGamepad.wasYPressed())&&extenderSliderUnlocked&&!robot.intake.autoSeeking.get()) { //Grab Yellow
+                robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
+                robot.intake.goToSampleAndGrabNoWait(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT); //TODO Tune timeout
+            }
+            if ((armsGamepad.wasXPressed()&&teamUtil.alliance == teamUtil.Alliance.BLUE)&&extenderSliderUnlocked&&!robot.intake.autoSeeking.get()) { //Grab Blue
+                robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
+                robot.intake.goToSampleAndGrabNoWait(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT); //TODO Tune timeout
+            }
+
+
             //OUTPUT
             if (armsGamepad.wasRightTriggerPressed()) {
                 robot.output.dropSampleOutBackNoWait();

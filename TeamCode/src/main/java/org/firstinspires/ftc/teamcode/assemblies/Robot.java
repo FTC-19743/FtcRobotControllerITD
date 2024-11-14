@@ -73,7 +73,7 @@ public class Robot {
     static public int C01_PLACE_SPECIMEN_X = 760;
     public static int C02_PLACE_SPECIMEN_Y = 120;
     public static int C03_TRANSITION_VELOCITY_CHILL = 500;
-    static public int C04_END_VELOCITY_SPECIMEN = 400;
+    static public int C04_END_VELOCITY_SPECIMEN = 600;
     static public int C05_SPECIMEN_PAUSE = 250;
     static public int C06_CLEAR_SUB_X = 600;
     static public int C07_CLEAR_SUB_Y = -660;

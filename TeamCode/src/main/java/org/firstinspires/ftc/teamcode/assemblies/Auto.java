@@ -62,6 +62,23 @@ public class Auto extends LinearOpMode {
 
         while (!gamepad.wasAPressed()) {
             gamepad.loop();
+            teamUtil.telemetry.addLine("Alliance: " + teamUtil.alliance);
+
+            teamUtil.telemetry.addLine("Side: " + teamUtil.SIDE);
+            teamUtil.telemetry.addLine("Press Bumpers To Change SIDE");
+            if (gamepad.wasRightBumperPressed() || gamepad.wasLeftBumperPressed()) {
+                if (teamUtil.SIDE == teamUtil.SIDE.BASKET) {
+                    teamUtil.SIDE = teamUtil.SIDE.OBSERVATION;
+                } else {
+                    teamUtil.SIDE = teamUtil.SIDE.BASKET;
+
+                }
+            }
+            teamUtil.telemetry.update();
+        }
+
+        while (!gamepad.wasAPressed()) {
+            gamepad.loop();
             if (gamepad.wasUpPressed()) {
                 specimen++;
                 if (specimen > 4) {
@@ -69,6 +86,7 @@ public class Auto extends LinearOpMode {
                 }
             }
             teamUtil.telemetry.addLine("Alliance: " + teamUtil.alliance);
+            teamUtil.telemetry.addLine("Side: " + teamUtil.SIDE);
             teamUtil.telemetry.addLine("Delay: " + delay);
             teamUtil.telemetry.addLine("Press Right to Increase Delay");
             teamUtil.telemetry.addLine("Press Left to Decrease Delay");
@@ -91,6 +109,7 @@ public class Auto extends LinearOpMode {
                     }
                 }
                 teamUtil.telemetry.addLine("Alliance: " + teamUtil.alliance);
+                teamUtil.telemetry.addLine("Side: " + teamUtil.SIDE);
                 teamUtil.telemetry.addLine("Blocks: " + blocks);
                 teamUtil.telemetry.addLine("Delay: " + delay);
                 teamUtil.telemetry.addLine("Press Up to Add Block");
@@ -110,6 +129,7 @@ public class Auto extends LinearOpMode {
                     }
                 }
                 teamUtil.telemetry.addLine("Alliance: " + teamUtil.alliance);
+                teamUtil.telemetry.addLine("Side: " + teamUtil.SIDE);
                 teamUtil.telemetry.addLine("Ascent: " + ascent);
                 teamUtil.telemetry.addLine("Blocks: " + blocks);
                 teamUtil.telemetry.addLine("Delay: " + delay);
@@ -129,6 +149,7 @@ public class Auto extends LinearOpMode {
                     }
                 }
                 teamUtil.telemetry.addLine("Alliance: " + teamUtil.alliance);
+                teamUtil.telemetry.addLine("Side: " + teamUtil.SIDE);
                 teamUtil.telemetry.addLine("Specimen: " + specimen);
                 teamUtil.telemetry.addLine("Press Up to Add Specimen");
                 teamUtil.telemetry.addLine("Delay: " + delay);
@@ -144,6 +165,7 @@ public class Auto extends LinearOpMode {
         while (!opModeIsActive()) {
             telemetry.addLine("Ready to Go!");
             teamUtil.telemetry.addLine("Alliance: " + teamUtil.alliance);
+            teamUtil.telemetry.addLine("Side: " + teamUtil.SIDE);
             teamUtil.telemetry.addLine("Delay: " + delay);
             if (teamUtil.SIDE == teamUtil.Side.BASKET) {
                 telemetry.addLine("Blocks: " + blocks);

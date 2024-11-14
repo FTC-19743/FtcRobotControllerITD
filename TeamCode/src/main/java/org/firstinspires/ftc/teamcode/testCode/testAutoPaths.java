@@ -105,7 +105,7 @@ public class testAutoPaths extends LinearOpMode {
             if(driverGamepad.wasDownPressed()) {
                 robot.specimenCollectBlocks();
             }
-            if(driverGamepad.wasRightPressed()) {
+            if(driverGamepad.wasRightTriggerPressed()) {
                 robot.drive.setRobotPosition(0,0,0);
             }
             if(driverGamepad.wasXPressed()) {
