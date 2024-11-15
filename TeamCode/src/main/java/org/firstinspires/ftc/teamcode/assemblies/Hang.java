@@ -26,7 +26,7 @@ public class Hang {
     public DcMotorEx hang;
 
     public AtomicBoolean hangMoving = new AtomicBoolean(false);
-    public boolean details;
+    public boolean details = true;
 
     public static int HANG_EXTEND = 3100;
     public static int HANG_ENGAGE = 800;
@@ -80,26 +80,30 @@ public class Hang {
         if (details) teamUtil.log("Extending Hang");
         long timeout2 = System.currentTimeMillis()+timeout;
         hangMoving.set(true);
+        hang.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         hang.setTargetPosition(HANG_EXTEND);
         hang.setVelocity(HANG_VELOCITY);
         while(Math.abs(hang.getCurrentPosition()-HANG_EXTEND)>20&&System.currentTimeMillis()<timeout2){
+            if(details)teamUtil.log("Hang Encoder Position: " + hang.getCurrentPosition());
+            teamUtil.pause(20);
         }
         teamUtil.log("Hang Extended");
         hangMoving.set(false);
-
     }
 
     public void engageHang(long timeout){
         if (details) teamUtil.log("Engaging Hang");
         long timeout2 = System.currentTimeMillis()+timeout;
         hangMoving.set(true);
+        hang.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         hang.setTargetPosition(HANG_ENGAGE);
         hang.setVelocity(HANG_VELOCITY);
         while(Math.abs(hang.getCurrentPosition()-HANG_ENGAGE)>20&&System.currentTimeMillis()<timeout2){
+            if(details)teamUtil.log("Hang Encoder Position: " + hang.getCurrentPosition());
+            teamUtil.pause(20);
         }
         teamUtil.log("Hang Engaged");
         hangMoving.set(false);
-
     }
 
     public void extendHangNoWait(long timeout){

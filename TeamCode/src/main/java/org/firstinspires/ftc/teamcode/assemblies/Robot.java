@@ -398,6 +398,7 @@ public class Robot {
         drive.setRobotPosition(0,0,0);
         specimenCollectBlocks();
         for(int i = 1; i<=cycles;i++){
+            teamUtil.log("Auto V2 Specimen Cycle Number: " + i);
             specimenCycle(i);
         }
         drive.stopMotors();

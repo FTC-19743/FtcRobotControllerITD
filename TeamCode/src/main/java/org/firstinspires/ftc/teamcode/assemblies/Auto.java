@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.assemblies;
 
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
@@ -7,11 +8,17 @@ import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 import com.acmerobotics.dashboard.config.Config;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+
 @Config
+
 @Autonomous(name = "Auto", group = "LinearOpMode")
 public class Auto extends LinearOpMode {
     Robot robot;
     TeamGamepad gamepad;
+
+
+
 
     int delay = 0;
     boolean cycle = true;
@@ -28,6 +35,8 @@ public class Auto extends LinearOpMode {
         robot = new Robot();
         robot.initialize();
     }
+
+
 
     @Override
     public void runOpMode() {
@@ -81,7 +90,7 @@ public class Auto extends LinearOpMode {
             gamepad.loop();
             if (gamepad.wasUpPressed()) {
                 specimen++;
-                if (specimen > 4) {
+                if (specimen > 3) {
                     specimen = 0;
                 }
             }
