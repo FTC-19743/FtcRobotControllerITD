@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+
+<Robot type="FirstInspires-FTC">
+    <Webcam name="Webcam 1" serialNumber="989ECEC0" />
+
+    <LynxUsbDevice name="Control Hub Portal" serialNumber="(embedded)" parentModuleAddress="173">
+        <LynxModule name="Control Hub" port="173">
+            <goBILDA5202SeriesMotor name="lm" port="0" />
+            <goBILDA5202SeriesMotor name="rm" port="1" />
+            <goBILDA5202SeriesMotor name="am" port="2" />
+            <LynxEmbeddedIMU name="imu" port="0" bus="0" />
+
+            <Servo name="headServo" port="0" />
+            <Servo name="hatchServo" port="1" />
+            <Servo name="servo" port="4" />
+
+
+
+            <RevBlinkinLedDriver name="blinkin" port="5"/>
+
+            <AnalogInput name="sensor" port="0"/>
+
+        </LynxModule>
+    </LynxUsbDevice>
+</Robot>
+
+
+
