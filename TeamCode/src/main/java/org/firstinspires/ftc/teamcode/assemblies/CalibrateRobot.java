@@ -28,6 +28,7 @@ public class CalibrateRobot extends LinearOpMode {
         telemetry.update();
 
         robot.calibrate();
+        teamUtil.justRanCalibrateRobot = true;
     }
 }
 

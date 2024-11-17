@@ -15,6 +15,8 @@ public class teamUtil {
     public static boolean inInitialization = true;
     public static Telemetry telemetry;
     public static boolean justRanAuto = false;
+    public static boolean justRanCalibrateRobot = false;
+
     public static Robot robot;
 
     public enum Alliance {RED, BLUE}

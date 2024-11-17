@@ -74,11 +74,13 @@ public class Teleop extends LinearOpMode {
         robot.initialize();
         robot.initCV(false);// TODO: false for competition
 
-        if (!teamUtil.justRanAuto) { // Auto already took care of this, so save time and don't move anything!
+        if (!teamUtil.justRanAuto||!teamUtil.justRanCalibrateRobot) { // Auto already took care of this, so save time and don't move anything!
             robot.calibrate();
 
         }
         teamUtil.justRanAuto=false;
+        teamUtil.justRanCalibrateRobot=false;
+
 
 
         telemetry.addLine("Ready to start");
