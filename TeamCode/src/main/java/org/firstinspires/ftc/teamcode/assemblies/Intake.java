@@ -59,6 +59,8 @@ public class Intake {
     static public int FLIPPER_GRAB_PAUSE = 500;
     static public float FLIPPER_SAFE = .24f;
 
+    static public int FLIPPER_INTO_POS_PAUSE = 1000;
+
     static public float WRIST_LOAD = 0.5f;
     static public float WRIST_UNLOAD = 0.5f; //0 angle
     static public float WRIST_MIN = 0.17f; // 0 angle
@@ -187,6 +189,7 @@ public class Intake {
         flipper.setPosition(FLIPPER_SEEK);
         FlipperInSeek.set(true);
         FlipperInUnload.set(false);
+        teamUtil.pause(FLIPPER_INTO_POS_PAUSE);
 
         wrist.setPosition(WRIST_MIDDLE);
         grabberReady();
@@ -197,7 +200,7 @@ public class Intake {
         goToSafe();
 
         extender.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        extender.setPower(-.1);
+        extender.setPower(-.2);
         int lastExtenderPosition = extender.getCurrentPosition();
         teamUtil.pause(250);
         while (extender.getCurrentPosition() != lastExtenderPosition) {

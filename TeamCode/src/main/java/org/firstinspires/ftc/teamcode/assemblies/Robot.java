@@ -35,7 +35,7 @@ public class Robot {
     static public int A10_MOVE_TO_SAFE_OUTPUT_LOAD_POSITION_X = A06_MOVE_TO_BUCKET_X+50;
     static public int A11_MOVE_TO_SAFE_OUTPUT_LOAD_POSITION_Y = A05_MOVE_TO_BUCKET_Y-50;
     static public float A12_SPECIMEN_MOTOR_POWER = .3f;
-    static public int A13_SPECIMEN_END_VELOCITY = 200;
+    static public int A13_SPECIMEN_END_VELOCITY = 500;
     static public long A14_SPECIMEN_PAUSE = 250;
     static public int A15_TRUSS_MOVEMENT_X = 1333;
     static public int A16_TRUSS_MOVEMENT_Y = 500;
@@ -444,7 +444,7 @@ public class Robot {
     }
 
     public void sampleInBucketAndDeploy(){
-        intake.goToUnload(3000);
+        intake.unload();
         output.outputHighBucket();
     }
 
