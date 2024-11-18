@@ -192,7 +192,12 @@ public class AdafruitNeoDriverImpl3 extends I2cDeviceSynchDeviceWithParameters<I
         deviceClient.write(NEO_BASE_REGISTER_ADDR, bytes, I2cWaitControl.WRITTEN);
     }
 
-    @Override
+    public void setNumberOfPixelsAndBytesPerPixel(int numPixels, int bytesPerPixel) {
+        parameters.bytesPerPixel = bytesPerPixel;
+        setNumberOfPixels(numPixels);
+    }
+
+        @Override
     public void setPixelColor(int index, String colorString) {
         setPixelColor(index, Color.parseColor(colorString));
     }
@@ -339,6 +344,8 @@ public class AdafruitNeoDriverImpl3 extends I2cDeviceSynchDeviceWithParameters<I
 
         /**
          * Number of bytes per pixel. Use 3 for RGB or 4 for RGBW
+         * To build a RGB color use Android Color.rgb()
+         * To build a RGBW color use Android color.argb()
          */
         public int bytesPerPixel = 3;
 

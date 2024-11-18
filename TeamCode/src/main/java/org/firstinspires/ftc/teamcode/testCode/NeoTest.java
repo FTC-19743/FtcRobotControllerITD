@@ -3,6 +3,8 @@ import android.graphics.Color;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+
+import org.firstinspires.ftc.teamcode.libs.AdafruitNeoDriverImpl3;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 
@@ -15,11 +17,12 @@ import com.w8wjb.ftc.AdafruitNeoDriver;
 @TeleOp(name = "NeoPixel Test", group = "Test Code")
 public class NeoTest extends LinearOpMode {
 
-    private static final int NUM_PIXELS = 30;
-    private static int INTENSITY = 10;
-    private static int RED_ADJUSTMENT = 0;
-    private static int BLUE_ADJUSTMENT = 0;
-    private static int GREEN_ADJUSTMENT = 0;
+    public static final int NUM_PIXELS = 12;
+    public static final int BYTES_PER_PIXEL=4; // RGBW neo pixel device
+    public static int WHITE = 0;
+    public static int RED = 0;
+    public static int BLUE = 0;
+    public static int GREEN = 0;
     private TeamGamepad gamepadOne = new TeamGamepad();
     AdafruitNeoDriver neopixels;
 
@@ -30,56 +33,54 @@ public class NeoTest extends LinearOpMode {
         gamepadOne.initilize(true);
 
         neopixels = hardwareMap.get(AdafruitNeoDriver.class, "neo");
-        neopixels.setNumberOfPixels(NUM_PIXELS);
+        ((AdafruitNeoDriverImpl3)neopixels).setNumberOfPixelsAndBytesPerPixel(NUM_PIXELS, BYTES_PER_PIXEL);
 
 
         waitForStart();
         while(opModeIsActive()) {
             if (gamepadOne.wasRightBumperPressed()) {
-                // Signal purple pixel
-                neopixels.fill(Color.rgb(INTENSITY + RED_ADJUSTMENT, INTENSITY + GREEN_ADJUSTMENT, INTENSITY + BLUE_ADJUSTMENT));
+                neopixels.fill(Color.argb(WHITE,RED, GREEN, BLUE));
                 neopixels.show();
             }
-            if (gamepadOne.wasLeftPressed()) {
-                RED_ADJUSTMENT++;
+            if (gamepad1.x && gamepadOne.wasDownPressed()) {
+                BLUE--;
             }
-            if (gamepadOne.wasRightPressed()) {
-                RED_ADJUSTMENT--;
+            if (gamepad1.x && gamepadOne.wasUpPressed()) {
+                BLUE++;
             }
-            if (gamepadOne.wasDownPressed()) {
-                BLUE_ADJUSTMENT--;
+
+            if (gamepad1.b && gamepadOne.wasUpPressed()) {
+                RED++;
             }
-            if (gamepadOne.wasUpPressed()) {
-                BLUE_ADJUSTMENT++;
+            if (gamepad1.b && gamepadOne.wasDownPressed()) {
+                RED--;
             }
-            if (gamepadOne.wasYPressed()) {
-                GREEN_ADJUSTMENT++;
+
+            if (gamepad1.a && gamepadOne.wasUpPressed()) {
+                GREEN++;
             }
-            if (gamepadOne.wasAPressed()) {
-                GREEN_ADJUSTMENT--;
+            if (gamepad1.a && gamepadOne.wasDownPressed()) {
+                GREEN--;
             }
-            if (gamepadOne.wasXPressed()) {
-                INTENSITY += 5;
+
+            if (gamepad1.y && gamepadOne.wasUpPressed()) {
+                WHITE++;
             }
-            if (gamepadOne.wasBPressed()) {
-                INTENSITY -= 5;
+            if (gamepad1.y && gamepadOne.wasDownPressed()) {
+                WHITE--;
             }
-            if (gamepadOne.wasLeftBumperPressed()) {
-                neopixels.fill(Color.rgb(0, 0, 0));
+
+            if (gamepadOne.wasRightTriggerPressed()) {
+                neopixels.fill(Color.argb(0,0, 0, 0));
+                neopixels.show();
             }
             gamepadOne.loop();
-            telemetry.addLine("Red Adjustment: " + RED_ADJUSTMENT);
-            telemetry.addLine("Green Adjustment: " + GREEN_ADJUSTMENT);
-            telemetry.addLine("Blue Adjustment: " + BLUE_ADJUSTMENT);
-            telemetry.addLine("Intensity: " + INTENSITY);
+            telemetry.addLine("Red : " + RED);
+            telemetry.addLine("Green : " + GREEN);
+            telemetry.addLine("Blue : " + BLUE);
+            telemetry.addLine("White : " + WHITE);
             telemetry.update();
         }
-
-        //else {
-            // Lights off
-          //  neopixels.fill(0);
-          //  neopixels.show();
-        //}
     }
 
 }
