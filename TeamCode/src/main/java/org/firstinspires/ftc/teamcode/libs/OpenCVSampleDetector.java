@@ -82,13 +82,13 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
     static public int blurFactor = 10;
 
-    static public int yellowLowH = 5, yellowLowS = 100, yellowLowV = 150;
+    static public int yellowLowH = 15, yellowLowS = 85, yellowLowV = 150;
     static public int yellowHighH = 35, yellowHighS = 255, yellowHighV = 255;
     static public int yellowErosionFactor = 20;
-    static public int blueLowH = 90, blueLowS = 120, blueLowV = 30; // low was 10
+    static public int blueLowH = 90, blueLowS = 100, blueLowV = 30; // low was 10
     static public int blueHighH = 130, blueHighS = 255, blueHighV = 255;
     static public int blueErosionFactor = 20;
-    static public int rbyLowH = -1, rbyLowS = 150, rbyLowV = 115;
+    static public int rbyLowH = -1, rbyLowS = 130, rbyLowV = 115;
     static public int rbyHighH = 180, rbyHighS = 255, rbyHighV = 255;
     static public int redErosionFactor = 20;
     static public int redDilutionFactor = 10;

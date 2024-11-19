@@ -99,7 +99,7 @@ public class Intake {
     static public int EXTENDER_MM_DEADBAND = 5;
     static public int EXTENDER_P_COEFFICIENT = 4;
     static public int EXTENDER_THRESHOLD = 30;
-    static public int EXTENDER_UNLOAD = 15;
+    static public int EXTENDER_UNLOAD = 5;
     static public int EXTENDER_START_SEEK = 300; // TODO Determine this number
     static public int EXTENDER_CRAWL_INCREMENT = 30;
     static public int EXTENDER_FAST_INCREMENT = 100;
