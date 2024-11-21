@@ -2,18 +2,22 @@ package org.firstinspires.ftc.teamcode.assemblies;
 
 import static androidx.core.math.MathUtils.clamp;
 
+import android.graphics.Color;
 import android.util.Size;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.w8wjb.ftc.AdafruitNeoDriver;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraCharacteristics;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.teamcode.libs.AdafruitNeoDriverImpl3;
 import org.firstinspires.ftc.teamcode.libs.Blinkin;
 import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
@@ -34,6 +38,10 @@ public class Intake {
     public Servo grabber;
     public DcMotorEx extender;
     public AxonSlider axonSlider = new AxonSlider();
+    public AnalogInput flipperPotentiometer;
+    public AnalogInput grabberPotentiometer;
+    public AnalogInput sweeperPotentiometer;
+    AdafruitNeoDriver neopixels;
 
     public OpenCVSampleDetector sampleDetector = new OpenCVSampleDetector();
 
@@ -43,6 +51,9 @@ public class Intake {
     public AtomicBoolean FlipperInSeek = new AtomicBoolean(true);
     public AtomicBoolean autoSeeking = new AtomicBoolean(false);
 
+    public static final int NUM_PIXELS = 12;
+    public static final int BYTES_PER_PIXEL=4; // RGBW neo pixel device
+
 
 
     static public int SLIDER_MM_DEADBAND = 5;
@@ -50,14 +61,38 @@ public class Intake {
     static public float SLIDER_MIN_VELOCITY = 0.05f;
     static public float SLIDER_P_COEFFICIENT = .001f;
 
+    static public int WHITE_NEOPIXEL = 255;
+    static public int RED_NEOPIXEL = 0;
+    static public int GREEN_NEOPIXEL = 0;
+    static public int BLUE_NEOPIXEL = 0;
+
+
+
     //static public float SLIDER_UNLOAD = 300f; // TODO Recalibrate
     //static public float SLIDER_READY = 330f;//TODO Recalibrate
 
-    static public float FLIPPER_SEEK = 0.43f;
-    static public float FLIPPER_UNLOAD = 0f;
-    static public float FLIPPER_GRAB = 0.785f;
+    static public float FLIPPER_SEEK = 0.38f;
+    static public double FLIPPER_SEEK_POT_VOLTAGE = 2.008;
+    static public double FLIPPER_SEEK_POT_THRESHOLD = .1;
+    static public float FLIPPER_UNLOAD = 0.89f;
+    static public double FLIPPER_UNLOAD_POT_VOLTAGE = 0.488;
+    static public double FLIPPER_UNLOAD_POT_THRESHOLD = 0.1;
+    static public float FLIPPER_GRAB = 0.21f;
+    static public double FLIPPER_GRAB_POT_VOLTAGE = 2.485;
+    static public double FLIPPER_GRAB_POT_THRESHOLD = .01;
+    static public float FLIPPER_SAFE = .7f;
+    static public double FLIPPER_SAFE_POT_VOLTAGE = 1.045;
+    static public double FLIPPER_SAFE_POT_THRESHOLD = .1;
     static public int FLIPPER_GRAB_PAUSE = 500;
-    static public float FLIPPER_SAFE = .24f;
+
+
+//    static public float FLIPPER_POTENTIOMETER_SAFE = ;
+//    static public float FLIPPER_POTENTIOMETER_SAFE = ;
+//    static public float FLIPPER_POTENTIOMETER_SAFE = ;
+//    static public float FLIPPER_POTENTIOMETER_SAFE = ;
+
+
+
 
     static public int FLIPPER_INTO_POS_PAUSE = 1000;
 
@@ -69,15 +104,24 @@ public class Intake {
     static public int ROTATE_PAUSE = 250;
 
     static public float SWEEPER_HORIZONTAL_READY = 0.35f;
+    static public float SWEEPER_HORIZONTAL_READY_POT_VOLTAGE = 0;
     static public float SWEEPER_EXPAND = 0.59f;
+    static public float SWEEPER_EXPAND_POT_VOLTAGE = 0;
     static public float SWEEPER_GRAB = 0.53f;// was .59f
+    static public float SWEEPER_GRAB_POT_VOLTAGE = 0;
     static public float SWEEPER_RELEASE = .9f;
+    static public float SWEEPER_RELEASE_POT_VOLTAGE = 0;
     static public float SWEEPER_VERTICAL_READY = 0.5f;
+    static public float SWEEPER_VERTICAL_READY_POT_VOLTAGE = 0;
     static public int SWEEPER_POS_COF =1;
 
+
     static public float GRABBER_READY = 0.25f;
+    static public float GRABBER_READY_POT_VOLTAGE = 0;
     static public float GRABBER_GRAB = 0.64f;
+    static public float GRABBER_GRAB_POT_VOLTAGE = 0;
     static public float GRABBER_RELEASE = .63f;
+    static public float GRABBER_RELEASE_POT_VOLTAGE = 0;
     static public int GRAB_PAUSE = 250;
     static public int GRAB_DELAY1 = 150;
     static public int GRAB_DELAY2 = 100;
@@ -111,8 +155,8 @@ public class Intake {
 
 
     static public int GO_TO_UNLOAD_WAIT_TIME = 0;
-    static public int UNLOAD_WAIT_TIME = 734;
-    static public int RELEASE_WAIT_TIME = 250;
+    static public int UNLOAD_WAIT_TIME = 0;
+    static public int RELEASE_WAIT_TIME = 500;
     static public int GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT = 10000;
 
     final int ARDU_RESOLUTION_WIDTH = 640;
@@ -136,6 +180,12 @@ public class Intake {
         sweeper = hardwareMap.get(Servo.class,"sweeper");
         grabber = hardwareMap.get(Servo.class,"grabber");
         axonSlider.init(hardwareMap,"slider","sliderPotentiometer");
+        flipperPotentiometer = hardwareMap.analogInput.get("flipperPotentiometer");
+        grabberPotentiometer = hardwareMap.analogInput.get("grabberPotentiometer");
+        sweeperPotentiometer = hardwareMap.analogInput.get("sweeperPotentiometer");
+
+        neopixels = hardwareMap.get(AdafruitNeoDriver.class, "intakeleds");
+        ((AdafruitNeoDriverImpl3)neopixels).setNumberOfPixelsAndBytesPerPixel(NUM_PIXELS, BYTES_PER_PIXEL);
 
         extender = hardwareMap.get(DcMotorEx.class,"extender");
         teamUtil.log("extender tolerance " + extender.getTargetPositionTolerance());
@@ -187,9 +237,11 @@ public class Intake {
 
         // Get Grabber into safe position
         flipper.setPosition(FLIPPER_SEEK);
+        while(Math.abs(flipperPotentiometer.getVoltage()-FLIPPER_SEEK_POT_VOLTAGE)>FLIPPER_SEEK_POT_THRESHOLD){
+            teamUtil.pause(10);
+        }
         FlipperInSeek.set(true);
         FlipperInUnload.set(false);
-        teamUtil.pause(FLIPPER_INTO_POS_PAUSE);
 
         wrist.setPosition(WRIST_MIDDLE);
         grabberReady();
@@ -241,6 +293,83 @@ public class Intake {
     public void stopCVPipeline () {
         arduPortal.setProcessorEnabled(sampleDetector, false );
     }
+    public boolean flipperGoToSeek(long timeout){
+        teamUtil.log("flipperGoToSeek has Started. Starting Potentiometer Value: " + flipperPotentiometer.getVoltage()+ "Distance: " + Math.abs(flipperPotentiometer.getVoltage()-FLIPPER_SEEK_POT_VOLTAGE));
+        long timeoutTime = System.currentTimeMillis() + timeout;
+        boolean details = true;
+        flipper.setPosition(FLIPPER_SEEK);
+        while(Math.abs(flipperPotentiometer.getVoltage()-FLIPPER_SEEK_POT_VOLTAGE)>FLIPPER_SEEK_POT_THRESHOLD&&teamUtil.keepGoing(timeoutTime)){
+            if(details)teamUtil.log("Voltage: " + flipperPotentiometer.getVoltage() + "Target Voltage: " + FLIPPER_SEEK_POT_VOLTAGE);
+            teamUtil.pause(10);
+        }
+        if(!teamUtil.keepGoing(timeoutTime)){
+            FlipperInSeek.set(false);
+            teamUtil.log("flipperGoToSeek has FAILED");
+            return false;
+        }
+        FlipperInSeek.set(true);
+        FlipperInUnload.set(false);
+        teamUtil.log("flipperGoToSeek has Finished");
+        return true;
+
+    }
+    public boolean flipperGoToSafe(long timeout){
+        teamUtil.log("flipperGoToSafe has Started. Starting Potentiometer Value: " + flipperPotentiometer.getVoltage()+ "Distance: " + Math.abs(flipperPotentiometer.getVoltage()-FLIPPER_SAFE_POT_VOLTAGE));
+        long timeoutTime = System.currentTimeMillis() + timeout;
+        boolean details = true;
+        flipper.setPosition(FLIPPER_SAFE);
+        while(Math.abs(flipperPotentiometer.getVoltage()-FLIPPER_SAFE_POT_VOLTAGE)>FLIPPER_SAFE_POT_THRESHOLD&&teamUtil.keepGoing(timeoutTime)){
+            if(details)teamUtil.log("Voltage: " + flipperPotentiometer.getVoltage() + "Target Voltage: " + FLIPPER_SAFE_POT_VOLTAGE);
+            teamUtil.pause(10);
+        }
+        if(!teamUtil.keepGoing(timeoutTime)) {
+            teamUtil.log("flipperGoToSeek has FAILED");
+            return false;
+        }
+
+        teamUtil.log("flipperGoToSafe has Finished");
+        return true;
+
+    }
+    public boolean flipperGoToGrab(long timeout){
+        teamUtil.log("flipperGoToGrab has Started. Starting Potentiometer Value: " + flipperPotentiometer.getVoltage()+ "Distance: " + Math.abs(flipperPotentiometer.getVoltage()-FLIPPER_GRAB_POT_VOLTAGE));
+        long timeoutTime = System.currentTimeMillis() + timeout;
+        boolean details = true;
+        flipper.setPosition(FLIPPER_GRAB);
+        while(Math.abs(flipperPotentiometer.getVoltage()-FLIPPER_GRAB_POT_VOLTAGE)>FLIPPER_GRAB_POT_THRESHOLD&&teamUtil.keepGoing(timeoutTime)){
+            if(details)teamUtil.log("Voltage: " + flipperPotentiometer.getVoltage() + "Target Voltage: " + FLIPPER_GRAB_POT_VOLTAGE);
+            teamUtil.pause(10);
+        }
+        if(!teamUtil.keepGoing(timeoutTime)) {
+            teamUtil.log("flipperGoToGrab has FAILED");
+            return false;
+        }
+
+        teamUtil.log("flipperGoToGrab has Finished");
+        return true;
+    }
+    public boolean flipperGoToUnload(long timeout){
+        teamUtil.log("flipperGoToUnload has Started. Starting Potentiometer Value: " + flipperPotentiometer.getVoltage() + "Distance: " + Math.abs(flipperPotentiometer.getVoltage()-FLIPPER_UNLOAD_POT_VOLTAGE));
+        long timeoutTime = System.currentTimeMillis() + timeout;
+        boolean details = true;
+        flipper.setPosition(FLIPPER_UNLOAD);
+        while(Math.abs(flipperPotentiometer.getVoltage()-FLIPPER_UNLOAD_POT_VOLTAGE)>FLIPPER_UNLOAD_POT_THRESHOLD&&teamUtil.keepGoing(timeoutTime)){
+            if(details)teamUtil.log("Voltage: " + flipperPotentiometer.getVoltage() + "Target Voltage: " + FLIPPER_UNLOAD_POT_VOLTAGE);
+            teamUtil.pause(10);
+        }
+        if(!teamUtil.keepGoing(timeoutTime)) {
+            teamUtil.log("flipperGoToUnload has FAILED");
+            FlipperInUnload.set(false);
+            return false;
+        }
+
+        teamUtil.log("flipperGoToUnload has Finished");
+        FlipperInUnload.set(true);
+        FlipperInSeek.set(false);
+        return true;
+
+    }
+
 
     // Go to seek position
     // Centers first then goes forward a bit
@@ -251,6 +380,7 @@ public class Intake {
         long timeoutTime = System.currentTimeMillis()+timeOut;
 
         flipper.setPosition(FLIPPER_SEEK);
+
         FlipperInSeek.set(true);
 
         FlipperInUnload.set(false);
@@ -345,9 +475,9 @@ public class Intake {
         boolean details = true;
 
         startCVPipeline();
+        lightsOnandOff(WHITE_NEOPIXEL,RED_NEOPIXEL,GREEN_NEOPIXEL,BLUE_NEOPIXEL,true);
         flipper.setPosition(FLIPPER_SEEK);
         FlipperInSeek.set(true);
-
         FlipperInUnload.set(false);
 
         grabber.setPosition(GRABBER_READY);
@@ -542,9 +672,10 @@ public class Intake {
         teamUtil.log("goToUnload--Finished");
     }
     public void unload(){
-        flipper.setPosition(FLIPPER_UNLOAD);
-        FlipperInSeek.set(false);
-        FlipperInUnload.set(true);
+//        flipper.setPosition(FLIPPER_UNLOAD);
+//        FlipperInSeek.set(false);
+//        FlipperInUnload.set(true);
+        flipperGoToUnload(1000);
         wrist.setPosition(WRIST_UNLOAD);
         teamUtil.pause(UNLOAD_WAIT_TIME);
         release();
@@ -597,13 +728,7 @@ public class Intake {
         grabber.setPosition(GRABBER_GRAB);
         sweeper.setPosition(SWEEPER_GRAB);
     }
-    public void goToGrab() {
-        flipper.setPosition(FLIPPER_GRAB);
-        FlipperInSeek.set(false);
 
-        FlipperInUnload.set(false);
-        teamUtil.pause(1000);
-    }
     public void grabberReady() {
         sweeper.setPosition(SWEEPER_HORIZONTAL_READY);
         grabber.setPosition(GRABBER_READY);
@@ -628,11 +753,12 @@ public class Intake {
         // TODO: Use timeOut
         rotateToSample(sampleDetector.rectAngle.get());
         teamUtil.pause(ROTATE_PAUSE);
-        flipper.setPosition(FLIPPER_GRAB);
-        FlipperInSeek.set(false);
-
-        FlipperInUnload.set(false);
-        teamUtil.pause(FLIPPER_GRAB_PAUSE);
+        flipperGoToGrab(1000);
+//        flipper.setPosition(FLIPPER_GRAB);
+//        FlipperInSeek.set(false);
+//
+//        FlipperInUnload.set(false);
+//        teamUtil.pause(FLIPPER_GRAB_PAUSE);
         grab();
         teamUtil.pause(GRAB_PAUSE);
         if(System.currentTimeMillis()>timeoutTime){
@@ -733,6 +859,16 @@ public class Intake {
             axonSlider.manualSliderControl(joystick);
         }
     }
+    public void lightsOnandOff(int alpha, int red, int green, int blue, boolean on){
+        if(on){
+            neopixels.fill(Color.argb(alpha,red,green,blue));
+            neopixels.show();
+        }
+        else{
+            neopixels.fill(Color.argb(0,0,0,0));
+            neopixels.show();
+        }
+    }
 
     public void testWiring() {
         //wrist.setPosition(WRIST_LOAD);
@@ -749,5 +885,6 @@ public class Intake {
 
         telemetry.addLine("Intake Extender Position: " + extender.getCurrentPosition());
         telemetry.addLine("Axon Slider Position : " + axonSlider.getPosition() + " (0-360): " + (int)axonSlider.getDegrees360() + " Voltage: " + axonSlider.axonPotentiometer.getVoltage());
+        telemetry.addLine("Flipper: " + flipperPotentiometer.getVoltage() + "V Grabber: " + grabberPotentiometer.getVoltage() + "V Sweeper: " + sweeperPotentiometer.getVoltage() + "V");
     }
 }

@@ -77,7 +77,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public boolean WHITEBALANCEAUTO = true;
     static public int FOCUSLENGTH =125;
     static public int GAIN = 150;
-    static public int EXPOSURE = 1;
+    static public int EXPOSURE = 4;
     static public int TEMPERATURE = 2800;
 
     static public int blurFactor = 10;

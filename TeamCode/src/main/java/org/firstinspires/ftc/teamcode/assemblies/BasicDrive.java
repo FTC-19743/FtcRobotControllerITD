@@ -95,6 +95,7 @@ public class BasicDrive {
 
     static public double MOVE_TO_COEFFICIENT = 2;
     static public double MOVE_TO_THRESHOLD = 10;
+    static public double MOVE_TO_DECCEL_COEFFICIENT = 0.5;
 
     public static float DEADBAND = 0.1f;
     public static float SLOPE = 1.6f;
@@ -1232,6 +1233,109 @@ public class BasicDrive {
         teamUtil.log("strafeHoldingStraightEncoder--Finished.  Current Strafe Encoder:" + odo.getPosY());
         return true;
     }
+
+    public void moveToV2(double maxVelocity, double strafeTarget, double straightTarget, double robotHeading, double endVelocity,ActionCallback action, double actionTarget, boolean endInDeadband, long timeout){
+        teamUtil.log("MoveTo StrafeTarget: " + strafeTarget +  " Straight target: " + straightTarget + " robotH: " + robotHeading + " MaxV: " + maxVelocity + " EndV: " + endVelocity + " EndInDeadband: " + endInDeadband);
+
+        //TODO THIS CODE SHALL NOT BE USED UNTIL THE ANGLE PROBLEM IS FIXED
+        details = true;
+        teamUtil.log("moveTo");
+        odo.update();
+        long timeoutTime = System.currentTimeMillis()+timeout;
+        boolean withinThreshold = false;
+        boolean strafeTargetAchieved = false;
+        boolean straightTargetAchieved = false;
+        boolean strafeIncreasing = (strafeTarget - odo.getPosY() > 0);
+        boolean straightIncreasing = (straightTarget - odo.getPosX() > 0);
+        if(endVelocity<MIN_END_VELOCITY){
+            endVelocity=MIN_END_VELOCITY;
+            lastVelocity=0;
+        }
+        else{
+            lastVelocity=endVelocity;
+        }
+        double angle = 0;
+        double driveHeading;
+        double velocity;
+
+        while(!withinThreshold&&teamUtil.keepGoing(timeoutTime)) {
+            odo.update();
+            double straightChange = straightTarget - odo.getPosX();
+            double strafeChange = strafeTarget - odo.getPosY();
+
+            if(strafeChange==0){
+                driveHeading = straightChange>0? 0:180;
+            } else if (straightChange==0) {
+                driveHeading = strafeChange>0? 90:270;
+            }else {
+                angle = Math.toDegrees(Math.atan(straightChange / strafeChange));
+                if (straightChange > 0) {
+                    if (strafeChange > 0) {
+                        driveHeading=90-angle;
+                    } else {
+                        driveHeading=270-angle;
+                    }
+                } else {
+                    if (strafeChange > 0) {
+                        driveHeading=90-angle;
+                    } else {
+                        driveHeading=270-angle;
+                    }
+                }
+            }
+
+            double remainingDistance = Math.sqrt(straightChange * straightChange + strafeChange * strafeChange);
+            if(remainingDistance<=MOVE_TO_THRESHOLD+15){
+                velocity = Math.max(MOVE_TO_DECCEL_COEFFICIENT * remainingDistance+endVelocity, endVelocity);
+            } else{
+                velocity = Math.min(MOVE_TO_COEFFICIENT * remainingDistance+endVelocity, maxVelocity);
+            }
+
+            if(endInDeadband){ // We must be at or near the target
+                if (remainingDistance <= MOVE_TO_THRESHOLD) {
+                    withinThreshold = true;
+                }
+            }else{ // We just need to exceed the targets in both dimensions once
+                strafeTargetAchieved = strafeTargetAchieved || strafeIncreasing ? odo.getPosY() > strafeTarget - MOVE_TO_THRESHOLD : odo.getPosY() < strafeTarget + MOVE_TO_THRESHOLD;
+                straightTargetAchieved = straightTargetAchieved || straightIncreasing ? odo.getPosX() > straightTarget - MOVE_TO_THRESHOLD : odo.getPosX() < straightTarget + MOVE_TO_THRESHOLD;
+                withinThreshold = strafeTargetAchieved && straightTargetAchieved;
+                /*
+                if(driveHeading>=0&&driveHeading<90){
+                    if((strafeChange<MOVE_TO_THRESHOLD)&&(straightChange<MOVE_TO_THRESHOLD)){
+                        withinThreshold=true;
+                    }
+                }else if(driveHeading<270&&driveHeading>=180){
+                    if((strafeChange>-MOVE_TO_THRESHOLD)&&(straightChange>-MOVE_TO_THRESHOLD)){
+                        withinThreshold=true;
+                    }
+                }else if(driveHeading<=360&&driveHeading>=270){
+                    if((strafeChange>-MOVE_TO_THRESHOLD)&&(straightChange<MOVE_TO_THRESHOLD)){
+                        withinThreshold=true;
+                    }
+                }else{
+                    if((strafeChange<MOVE_TO_THRESHOLD)&&(straightChange>-MOVE_TO_THRESHOLD)){
+                        withinThreshold=true;
+                    }
+                }
+                 */
+            }
+            driveMotorsHeadingsFR(driveHeading, robotHeading, velocity);
+
+
+            if (details) {
+                teamUtil.log(String.format("Raw Angle %.1f DH: %.1f RH: %.1f Vel: %.0f Distance: %.0f X: %.0f Y %.0f", angle, driveHeading, robotHeading, velocity, remainingDistance, strafeChange, straightChange));
+                // teamUtil.log("Raw Angle: " + angle + " DH: " + driveHeading + " RH: " + robotHeading + " Vel: " + velocity + " Distance " + remainingDistance + " X: " + strafeChange + " Y: " + straightChange);
+            }
+        }
+        // TODO Make lastVelocity accurate
+        if(lastVelocity<=MIN_END_VELOCITY){
+            stopMotors();
+        }
+
+        teamUtil.log("MoveTo FINISHED");
+    }
+
+
 
     public void moveTo(double maxVelocity, double strafeTarget, double straightTarget, double robotHeading, double endVelocity,ActionCallback action, double actionTarget, long timeout){
         moveTo(maxVelocity,strafeTarget,straightTarget,robotHeading,endVelocity,action,actionTarget,true,timeout);

@@ -12,14 +12,17 @@
             <goBILDA5202SeriesMotor name="hang" port="1" />
             <goBILDA5202SeriesMotor name="extender" port="3" />
             <goBILDA5202SeriesMotor name="lift" port="0" />
+
             <Servo name="outakewrist" port="0" />
             <Servo name="flipper" port="1" />
             <ContinuousRotationServo name="slider" port="2" />
             <RevBlinkinLedDriver name="blinkin" port="3"/>
             <Servo name="outakearm" port="5" />
 
+            <AnalogInput name = "grabberPotentiometer" port ="2"/>
+            <AnalogInput name = "sweeperPotentiometer" port ="3"/>
 
-
+            <AdafruitNeoDriver3 name="intakeleds" port="0" bus="0" />
 
         </LynxModule>
         <LynxModule name="Control Hub" port="173">
@@ -33,7 +36,9 @@
             <goBILDA5202SeriesMotor name="flm" port="1" />
             <goBILDA5202SeriesMotor name="brm" port="2" />
             <goBILDA5202SeriesMotor name="blm" port="3" />
+
             <AnalogInput name = "sliderPotentiometer" port ="0"/>
+            <AnalogInput name = "flipperPotentiometer" port ="1"/>
             <AnalogInput name = "outakePotentiometer" port ="2"/>
 
 

@@ -32,20 +32,21 @@ public class Output {
     public boolean details;
 
     static public int LIFT_MAX = 3070; //TODO find this number and use it in methods
-    static public int LIFT_MAX_VELOCITY = 2000;
+    static public int LIFT_MAX_VELOCITY = 3000;
+    static public int LIFT_MAX_POWER = 1;
     static public int LIFT_MIN_VELOCITY = 200;
     static public int LIFT_DOWN = 2;
     static public int LIFT_TOP_BUCKET = 3070; // TODO Determine this number
     static public int LIFT_MIDDLE_BUCKET = 1700; // TODO Determine this number
 
-    static public float BUCKET_DEPLOY_AT_BOTTOM = 0.42f;
-    static public float BUCKET_DEPLOY_AT_TOP = 0.41f;
-    static public float BUCKET_SAFE = .82f;
+    static public float BUCKET_DEPLOY_AT_BOTTOM = 0.33f;
+    static public float BUCKET_DEPLOY_AT_TOP = 0.39f;
+    static public float BUCKET_SAFE = 0.8f;
 
     static public float BUCKET_RELOAD = 0.7f;
 
     static public int DROP_SAMPLE_TIME = 1000;
-    static public int BUCKET_LOAD_PAUSE = 1000;
+    static public int BUCKET_LOAD_PAUSE = 0;
 
 
 
@@ -207,6 +208,38 @@ public class Output {
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             lift.setTargetPosition(LIFT_TOP_BUCKET);
             lift.setVelocity(LIFT_MAX_VELOCITY);
+            teamUtil.log("outputHighBucket Completed");
+            outputLiftAtBottom.set(false);
+            outputMoving.set(false);
+        }
+
+
+    }
+
+    //Uses Run Using Encoder to bypass PID deceleration part of run up
+    public void outputHighBucketV2(){
+        intake = teamUtil.robot.intake;
+        outtake = teamUtil.robot.outtake;
+
+        if(intake.FlipperInUnload.get()||outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_OUTPUT_CLEAR){
+            if(intake.FlipperInUnload.get()){
+                teamUtil.log("Couldn't Put Output High Bucket Cause of Flipper");
+            }
+            else{
+                teamUtil.log("Outtake Was in the Way Couldn't Go to High Bucket");
+            }
+        }else{
+            outputMoving.set(true);
+            bucket.setPosition(BUCKET_SAFE);
+            lift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            lift.setPower(LIFT_MAX_VELOCITY);
+            while(lift.getCurrentPosition()<LIFT_TOP_BUCKET-200){
+                ;
+            }
+            lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            lift.setTargetPosition(LIFT_TOP_BUCKET);
+            lift.setVelocity(LIFT_MAX_VELOCITY);
+
             teamUtil.log("outputHighBucket Completed");
             outputLiftAtBottom.set(false);
             outputMoving.set(false);

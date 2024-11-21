@@ -12,6 +12,7 @@ import org.firstinspires.ftc.teamcode.assemblies.Hang;
 import org.firstinspires.ftc.teamcode.assemblies.Intake;
 import org.firstinspires.ftc.teamcode.assemblies.Output;
 import org.firstinspires.ftc.teamcode.assemblies.Outtake;
+import org.firstinspires.ftc.teamcode.assemblies.Robot;
 import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
@@ -63,19 +64,26 @@ public class CalibrateArms extends LinearOpMode {
         teamUtil.init(this);
         teamUtil.alliance = teamUtil.Alliance.RED;
         teamUtil.SIDE=teamUtil.Side.BASKET;
+        Robot robot = new Robot();
+        teamUtil.robot = robot;
 
         intake = new Intake();
         intake.initialize();
         intake.initCV(true);
-        intake.calibrate();
+        intake.startCVPipeline();
+
+        teamUtil.robot.intake = intake;
+        //intake.calibrate();
 
         outtake = new Outtake();
         outtake.initalize();
         outtake.outakeTelemetry();
+        teamUtil.robot.outtake = outtake;
+
 
         output = new Output();
         output.initalize();
-        output.calibrate();
+        //output.calibrate();
 
         axonSlider = new AxonSlider();
 
@@ -156,15 +164,22 @@ public class CalibrateArms extends LinearOpMode {
     public void intakeManualOperation() {
         if (gp1.wasUpPressed()) {
             intake.goToSeek(1500);
+            //intake.flipperGoToSeek(2000);
         }
         if (gp1.wasDownPressed()) {
-            intake.goToGrab();
+            //intake.goToGrab();
+            intake.flipperGoToGrab(2000);
+
         }
         if (gp1.wasLeftPressed()) {
-            intake.goToUnload(2000);
+            //intake.goToUnload(2000);
+            //intake.flipperGoToUnload(2000);
+            intake.unload();
         }
+
         if (gp1.wasRightPressed()) {
             intake.flipAndRotateToSampleAndGrab(1500);
+            //intake.flipperGoToSafe(2000);
         }
         if (gp1.gamepad.left_stick_x < -.25) {
             intake.wrist.setPosition(intake.wrist.getPosition()-.01);
@@ -187,6 +202,9 @@ public class CalibrateArms extends LinearOpMode {
         }
         if(gp1.wasRightBumperPressed()){
             intake.goToSampleAndGrab(5000);
+        }
+        if(gp1.wasRightTriggerPressed()){
+            intake.calibrate();
         }
 //        if(gp1.wasLeftTriggerPressed()){
 //            intake.axonSlider.runToPosition(AxonSlider.RIGHT_LIMIT, 6000);
@@ -254,10 +272,16 @@ public class CalibrateArms extends LinearOpMode {
             output.outputLoad(4000);
         }
         if(gp1.wasYPressed()){
+            output.outputHighBucketV2();
+        }
+        if(gp1.wasBPressed()){
             output.outputHighBucket();
         }
         if(gp1.wasAPressed()){
             output.outputLowBucket();
+        }
+        if(gp1.wasRightTriggerPressed()){
+            output.calibrate();
         }
     }
     public void hangManualOperation(){

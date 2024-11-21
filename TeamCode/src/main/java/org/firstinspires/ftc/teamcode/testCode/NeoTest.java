@@ -19,12 +19,14 @@ public class NeoTest extends LinearOpMode {
 
     public static final int NUM_PIXELS = 12;
     public static final int BYTES_PER_PIXEL=4; // RGBW neo pixel device
+    AdafruitNeoDriver neopixels;
+
     public static int WHITE = 0;
     public static int RED = 0;
     public static int BLUE = 0;
     public static int GREEN = 0;
     private TeamGamepad gamepadOne = new TeamGamepad();
-    AdafruitNeoDriver neopixels;
+
 
 
     public void runOpMode () {
@@ -32,7 +34,7 @@ public class NeoTest extends LinearOpMode {
         teamUtil.init(this);
         gamepadOne.initilize(true);
 
-        neopixels = hardwareMap.get(AdafruitNeoDriver.class, "neo");
+        neopixels = hardwareMap.get(AdafruitNeoDriver.class, "intakeleds");
         ((AdafruitNeoDriverImpl3)neopixels).setNumberOfPixelsAndBytesPerPixel(NUM_PIXELS, BYTES_PER_PIXEL);
 
 

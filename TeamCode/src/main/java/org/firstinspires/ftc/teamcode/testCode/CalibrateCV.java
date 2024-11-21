@@ -69,6 +69,12 @@ public class CalibrateCV extends LinearOpMode {
             if (gp1.wasAPressed()) {
                 intake.sampleDetector.nextView();
             }
+            if(gp1.wasRightTriggerPressed()){
+                intake.lightsOnandOff(Intake.WHITE_NEOPIXEL,Intake.RED_NEOPIXEL,Intake.GREEN_NEOPIXEL,Intake.BLUE_NEOPIXEL, true);
+            }
+            if(gp1.wasLeftTriggerPressed()){
+                intake.lightsOnandOff(Intake.WHITE_NEOPIXEL,Intake.RED_NEOPIXEL,Intake.GREEN_NEOPIXEL,Intake.BLUE_NEOPIXEL, false);
+            }
 
             intake.intakeTelemetry();
             if (intake.sampleDetector.sampleAvgs.val != null && intake.sampleDetector.sampleAvgs.val.length > 0) {
