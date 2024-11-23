@@ -84,6 +84,7 @@ public class Intake {
     static public double FLIPPER_SAFE_POT_VOLTAGE = 1.045;
     static public double FLIPPER_SAFE_POT_THRESHOLD = .1;
     static public int FLIPPER_GRAB_PAUSE = 500;
+    static public long FLIPPER_GO_TO_SEEK_TIMEOUT = 2000;
 
 
 //    static public float FLIPPER_POTENTIOMETER_SAFE = ;
@@ -137,7 +138,7 @@ public class Intake {
     static public float GRABBER_RELEASE = .63f; // No Pot .63f TODO: Is this really the right value? Almost the same as grab?
     static public float GRABBER_RELEASE_POT_VOLTAGE = 0;
     */
-    static public int GRAB_PAUSE = 250;
+    static public int GRAB_PAUSE = 500;
     static public int GRAB_DELAY1 = 150;
     static public int GRAB_DELAY2 = 100;
 
@@ -251,12 +252,18 @@ public class Intake {
         teamUtil.log("Calibrating Intake");
 
         // Get Grabber into safe position
+        /*
         flipper.setPosition(FLIPPER_SEEK);
         while(Math.abs(flipperPotentiometer.getVoltage()-FLIPPER_SEEK_POT_VOLTAGE)>FLIPPER_SEEK_POT_THRESHOLD){
             teamUtil.pause(10);
         }
         FlipperInSeek.set(true);
         FlipperInUnload.set(false);
+
+         */
+       if(!flipperGoToSeek(2000)){
+            //TODO implement a failsafe in case flipper fails
+       }
 
         wrist.setPosition(WRIST_MIDDLE);
         grabberReady();
@@ -328,6 +335,22 @@ public class Intake {
         return true;
 
     }
+    public void flipperGoToSeekNoWait(long timeOut){
+        if (moving.get()) {
+            teamUtil.log("flipperGoToSeekNoWait called while intake is already moving");
+            //TODO fix states
+        } else {
+            moving.set(true);
+            teamUtil.log("Launching Thread to goToSafeRetract");
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    flipperGoToSeek(timeOut);
+                }
+            });
+            thread.start();
+        }
+    }
     public boolean flipperGoToSafe(long timeout){
         teamUtil.log("flipperGoToSafe has Started. Starting Potentiometer Value: " + flipperPotentiometer.getVoltage()+ "Distance: " + Math.abs(flipperPotentiometer.getVoltage()-FLIPPER_SAFE_POT_VOLTAGE));
         long timeoutTime = System.currentTimeMillis() + timeout;
@@ -393,13 +416,7 @@ public class Intake {
         moving.set(true);
         timedOut.set(false);
         long timeoutTime = System.currentTimeMillis()+timeOut;
-
-        flipper.setPosition(FLIPPER_SEEK);
-
-        FlipperInSeek.set(true);
-
-        FlipperInUnload.set(false);
-
+        flipperGoToSeek(FLIPPER_GO_TO_SEEK_TIMEOUT);
         wrist.setPosition(WRIST_MIDDLE);
         grabberReady();
         axonSlider.runToPosition(axonSlider.SLIDER_READY, timeOut);
@@ -491,9 +508,13 @@ public class Intake {
 
         startCVPipeline();
         lightsOnandOff(WHITE_NEOPIXEL,RED_NEOPIXEL,GREEN_NEOPIXEL,BLUE_NEOPIXEL,true);
+        /*
         flipper.setPosition(FLIPPER_SEEK);
         FlipperInSeek.set(true);
         FlipperInUnload.set(false);
+
+         */
+        flipperGoToSeekNoWait(2000);
 
         grabber.setPosition(GRABBER_READY);
         sweeper.setPosition(SWEEPER_HORIZONTAL_READY);
@@ -522,6 +543,7 @@ public class Intake {
             moving.set(false);
             teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
             stopCVPipeline();
+            lightsOnandOff(0,0,0,0,false);
             return false;
         }
         else{
@@ -546,6 +568,7 @@ public class Intake {
                     moving.set(false);
                     teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
                     stopCVPipeline();
+                    lightsOnandOff(0,0,0,0,false);
                     return false;
                 }
 
@@ -574,6 +597,7 @@ public class Intake {
 
                 teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
                 stopCVPipeline();
+                lightsOnandOff(0,0,0,0,false);
                 return false;
             }
 
@@ -583,6 +607,7 @@ public class Intake {
 
         teamUtil.theBlinkin.setSignal(Blinkin.Signals.DARK_GREEN);
         teamUtil.log("GoToSample has finished--At Block");
+        lightsOnandOff(0,0,0,0,false);
         return true;
     }
 
@@ -742,6 +767,7 @@ public class Intake {
         wrist.setPosition(WRIST_MIDDLE);
         grabber.setPosition(GRABBER_GRAB);
         sweeper.setPosition(SWEEPER_GRAB);
+        //TODO could use flipperGoToSafe insteadd
     }
 
     public void grabberReady() {
