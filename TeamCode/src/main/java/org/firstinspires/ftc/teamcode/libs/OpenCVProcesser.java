@@ -72,6 +72,8 @@ public abstract class OpenCVProcesser implements VisionProcessor {
             }
             if (exposureControl.setExposure(exposure, TimeUnit.MILLISECONDS)) {
                 teamUtil.log("Set WebCam Exposure to "+ exposure);
+                teamUtil.log("WebCam Exposure now "+ exposureControl.getExposure(TimeUnit.MILLISECONDS));
+
             } else {
                 teamUtil.log("FAILED to set WebCam Exposure");
             }
