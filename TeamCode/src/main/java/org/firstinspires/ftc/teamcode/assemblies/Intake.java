@@ -103,25 +103,40 @@ public class Intake {
     static public float WRIST_MIDDLE = 0.5f;
     static public int ROTATE_PAUSE = 250;
 
+    /* Values without potentiometer */
     static public float SWEEPER_HORIZONTAL_READY = 0.35f;
-    static public float SWEEPER_HORIZONTAL_READY_POT_VOLTAGE = 0;
     static public float SWEEPER_EXPAND = 0.59f;
-    static public float SWEEPER_EXPAND_POT_VOLTAGE = 0;
-    static public float SWEEPER_GRAB = 0.53f;// was .59f
-    static public float SWEEPER_GRAB_POT_VOLTAGE = 0;
+    static public float SWEEPER_GRAB = 0.53f;
     static public float SWEEPER_RELEASE = .9f;
-    static public float SWEEPER_RELEASE_POT_VOLTAGE = 0;
     static public float SWEEPER_VERTICAL_READY = 0.5f;
-    static public float SWEEPER_VERTICAL_READY_POT_VOLTAGE = 0;
+
+    /* Values with potentiometer--WAITING TO HEAR FROM AXON ON THIS
+    static public float SWEEPER_HORIZONTAL_READY = 0.5f; //No Pot .25f
+    static public float SWEEPER_HORIZONTAL_READY_POT_VOLTAGE = 1.6535f;
+    static public float SWEEPER_VERTICAL_READY = 0.64f;//No Pot .25f
+    static public float SWEEPER_VERTICAL_READY_POT_VOLTAGE = 1.295f;
+    static public float SWEEPER_GRAB = 0.66f;// No Pot .25f
+    static public float SWEEPER_GRAB_POT_VOLTAGE = 1.2415f;
+    static public float SWEEPER_EXPAND = 0.7f; //No Pot .25f
+    static public float SWEEPER_EXPAND_POT_VOLTAGE = 1.1415f;
+    static public float SWEEPER_RELEASE = .93f; //No Pot .25f
+    static public float SWEEPER_RELEASE_POT_VOLTAGE = .5747f;
+    */
     static public int SWEEPER_POS_COF =1;
 
+    /* Values without potentiometer */
+    static public float GRABBER_READY = 0.25f; //No Pot .25f
+    static public float GRABBER_GRAB = 0.64f; // No Pot .64f
+    static public float GRABBER_RELEASE = .63f; // No Pot .63f TODO: Is this really the right value? Almost the same as grab?
 
-    static public float GRABBER_READY = 0.25f;
+    /* Values with potentiometer--NOT CALIBRATED YET!
+    static public float GRABBER_READY = 0.25f; //No Pot .25f
     static public float GRABBER_READY_POT_VOLTAGE = 0;
-    static public float GRABBER_GRAB = 0.64f;
+    static public float GRABBER_GRAB = 0.64f; // No Pot .64f
     static public float GRABBER_GRAB_POT_VOLTAGE = 0;
-    static public float GRABBER_RELEASE = .63f;
+    static public float GRABBER_RELEASE = .63f; // No Pot .63f TODO: Is this really the right value? Almost the same as grab?
     static public float GRABBER_RELEASE_POT_VOLTAGE = 0;
+    */
     static public int GRAB_PAUSE = 250;
     static public int GRAB_DELAY1 = 150;
     static public int GRAB_DELAY2 = 100;

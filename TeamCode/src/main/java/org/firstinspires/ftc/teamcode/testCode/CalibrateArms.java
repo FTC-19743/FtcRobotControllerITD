@@ -156,8 +156,18 @@ public class CalibrateArms extends LinearOpMode {
         }
         if(gp1.wasYPressed()){
             intake.grab();
-        }if(gp1.wasAPressed()){
+        }
+        if(gp1.wasAPressed()){
             intake.grabberReady();
+        }
+        if(gp1.wasXPressed()){
+            intake.grabber.setPosition(Intake.GRABBER_READY);
+        }
+        if(gp1.wasBPressed()){
+            intake.sweeper.setPosition(Intake.SWEEPER_HORIZONTAL_READY);
+        }
+        if(gp1.wasRightTriggerPressed()){
+            intake.wrist.setPosition(Intake.WRIST_MIDDLE);
         }
     }
 
