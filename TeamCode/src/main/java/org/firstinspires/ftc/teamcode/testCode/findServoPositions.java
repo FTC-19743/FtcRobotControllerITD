@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.testCode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ServoControllerEx;
@@ -20,8 +21,9 @@ public class findServoPositions extends LinearOpMode {
     public double currentPosition = INITIAL_POS;
     TeamGamepad gamepad;
     private Servo servo;
-    private int port = 4;
-    private boolean ch = false; // Start on Expansion Hub port 0
+    private int port = 0;
+    private boolean ch = true; // Start on Control Hub
+    public AnalogInput potentiometer;
 
     private void updateServo()
     {
@@ -41,6 +43,19 @@ public class findServoPositions extends LinearOpMode {
         }
         servo.setPosition(INITIAL_POS);
         currentPosition = INITIAL_POS;
+        if (port < 4) {
+            String potName = "Pot";
+            if (ch) {
+                potName = potName + "CH";
+            } else {
+                potName = potName + "EH";
+            }
+            potName = potName + port;
+            potentiometer = hardwareMap.analogInput.get(potName);
+        } else {
+            potentiometer=null;
+        }
+
     }
 
     public void runOpMode() {
@@ -103,6 +118,7 @@ public class findServoPositions extends LinearOpMode {
             telemetry.addLine("Hub: " + (ch ? "Control" : "Expansion"));
             telemetry.addData("Port: ", port);
             telemetry.addData("Position: ", servo.getPosition());
+            telemetry.addLine("Potentiometer: " + (((potentiometer==null)?"NONE": potentiometer.getVoltage())));
             telemetry.update();
         }
     }
