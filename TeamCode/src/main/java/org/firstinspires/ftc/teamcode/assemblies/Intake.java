@@ -413,6 +413,9 @@ public class Intake {
         moving.set(false);
         teamUtil.log("goToSeek--Finished");
     }
+
+
+
     public void goToSeekNoWait(long timeOut) {
         if (moving.get()) { // Intake is already moving in another thread
             teamUtil.log("WARNING: Attempt to goToSeek while intake is moving--ignored");
@@ -585,6 +588,110 @@ public class Intake {
         teamUtil.log("GoToSample has finished--At Block");
         return true;
     }
+
+    public boolean goToSampleV3(long timeOut){
+        teamUtil.log("GoToSample V2 has started");
+        long timeoutTime = System.currentTimeMillis() + timeOut;
+        boolean details = true;
+
+        startCVPipeline();
+        lightsOnandOff(WHITE_NEOPIXEL,RED_NEOPIXEL,GREEN_NEOPIXEL,BLUE_NEOPIXEL,true);
+        flipper.setPosition(FLIPPER_SEEK);
+        FlipperInSeek.set(true);
+        FlipperInUnload.set(false);
+
+        grabber.setPosition(GRABBER_READY);
+        sweeper.setPosition(SWEEPER_HORIZONTAL_READY);
+        wrist.setPosition(WRIST_MIDDLE);
+        extender.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        double extenderVelocity;
+        float sliderVelocity;
+        extender.setVelocity(EXTENDER_MAX_VELOCITY);//Tune increment
+        if(OpenCVSampleDetector.targetColor== OpenCVSampleDetector.TargetColor.BLUE){
+            teamUtil.theBlinkin.setSignal(Blinkin.Signals.BLUE_PATH_1);
+        }
+        else if(OpenCVSampleDetector.targetColor== OpenCVSampleDetector.TargetColor.RED){
+            teamUtil.theBlinkin.setSignal(Blinkin.Signals.RED);
+        }
+        else{
+            teamUtil.theBlinkin.setSignal((Blinkin.Signals.YELLOW));
+        }
+        while(!sampleDetector.foundOne.get()&&extender.getCurrentPosition()<EXTENDER_MAX-10){ // TODO: Need to check for timeout here
+            teamUtil.pause(30);
+        }
+        double blockX = sampleDetector.rectCenterXOffset.get();
+        double blockY = sampleDetector.rectCenterYOffset.get();
+
+        if(!sampleDetector.foundOne.get()){
+            teamUtil.log("Found One False after Search");
+            extender.setVelocity(0);
+            moving.set(false);
+            teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
+            stopCVPipeline();
+            return false;
+        }
+        else{
+            teamUtil.log("Found One True");
+            double mmFromCenterX = sampleDetector.rectCenterXOffset.get()*MM_PER_PIX_X;
+            double mmFromCenterY = sampleDetector.rectCenterYOffset.get()*MM_PER_PIX_Y;
+            while((Math.abs(mmFromCenterY)>EXTENDER_MM_DEADBAND||Math.abs(mmFromCenterX)>SLIDER_MM_DEADBAND)&&teamUtil.keepGoing(timeoutTime)){ // TODO: Need to check for timeout here
+                axonSlider.loop();
+                if(Math.abs(mmFromCenterY)<=EXTENDER_MM_DEADBAND){
+                    extenderVelocity=0;
+                }else{
+                    extenderVelocity = Math.min(EXTENDER_P_COEFFICIENT*Math.abs(mmFromCenterY)+EXTENDER_MIN_VELOCITY,EXTENDER_MAX_VELOCITY);
+                    if(mmFromCenterY<0){
+                        extenderVelocity*=-1;
+                    }
+                }
+
+                if(mmFromCenterX>(axonSlider.RIGHT_LIMIT -axonSlider.getPosition())*MM_PER_SLIDER_DEGREE||mmFromCenterX<(axonSlider.LEFT_LIMIT -axonSlider.getPosition())*MM_PER_SLIDER_DEGREE){
+                    extender.setVelocity(0);
+                    axonSlider.setPower(0);
+                    teamUtil.log("Target slider position is beyond mechanical range. Failing out.");
+                    moving.set(false);
+                    teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
+                    stopCVPipeline();
+                    return false;
+                }
+
+                if(Math.abs(mmFromCenterX)<=SLIDER_MM_DEADBAND){
+                    sliderVelocity = 0;
+                }else{
+                    sliderVelocity = (float) Math.min(SLIDER_P_COEFFICIENT*Math.abs(mmFromCenterX)+SLIDER_MIN_VELOCITY,SLIDER_MAX_VELOCITY);
+                    if(mmFromCenterX>0){
+                        sliderVelocity*=-1;
+                    }
+                }
+                extender.setVelocity(extenderVelocity);
+                axonSlider.setAdjustedPower(sliderVelocity);
+                mmFromCenterY = sampleDetector.rectCenterYOffset.get()*MM_PER_PIX_Y;
+                mmFromCenterX = sampleDetector.rectCenterXOffset.get()*MM_PER_PIX_X;
+                if (details) teamUtil.log("MM from Center X: " + mmFromCenterX + " Y: " + mmFromCenterY);
+                if (details) teamUtil.log("slide power: " + sliderVelocity + " extender power: " + extenderVelocity);
+                teamUtil.pause(30);
+
+            }
+            extender.setVelocity(0);
+            axonSlider.setPower(0);
+            if(!teamUtil.keepGoing(timeoutTime)){
+                teamUtil.log("GoToSample has Timed Out");
+                moving.set(false);
+
+                teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
+                stopCVPipeline();
+                return false;
+            }
+
+        }
+        stopCVPipeline();
+        moving.set(false);
+
+        teamUtil.theBlinkin.setSignal(Blinkin.Signals.DARK_GREEN);
+        teamUtil.log("GoToSample has finished--At Block");
+        return true;
+    }
+
 
 
     public void goToSampleAndGrabNoWait(long timeOut) {
