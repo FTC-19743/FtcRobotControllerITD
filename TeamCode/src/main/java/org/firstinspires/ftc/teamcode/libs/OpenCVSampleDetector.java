@@ -95,8 +95,8 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
     //static public int CLOSEFACTOR = 20;
 
-    private int sampleX = TARGET_X;
-    private int sampleY = TARGET_Y;
+    public int sampleX = TARGET_X;
+    public int sampleY = TARGET_Y;
     public static int FOUND_ONE_RIGHT_THRESHOLD = 580;
     public static int FOUND_ONE_LEFT_THRESHOLD = 60;
 

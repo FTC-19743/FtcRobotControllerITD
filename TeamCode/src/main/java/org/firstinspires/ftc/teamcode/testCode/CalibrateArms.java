@@ -6,6 +6,7 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.teamcode.assemblies.AxonSlider;
 import org.firstinspires.ftc.teamcode.assemblies.Hang;
@@ -247,10 +248,18 @@ public class CalibrateArms extends LinearOpMode {
         }
 
         if (gp1.wasYPressed()) {
-            intake.axonSlider.runToPosition(AxonSlider.SLIDER_UNLOAD, 1500);
+            //intake.axonSlider.runToPosition(AxonSlider.SLIDER_UNLOAD, 1500);
+            intake.goToSafeRetractNoWait(4000);
         }
         if (gp1.wasBPressed()) {
-            intake.axonSlider.runToPosition(AxonSlider.SLIDER_READY, 1500);
+            //intake.axonSlider.runToPosition(AxonSlider.SLIDER_READY, 1500);
+            intake.extender.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            intake.extender.setVelocity(Intake.EXTENDER_TEST_VELOCITY);
+            intake.extender.setTargetPosition(Intake.TEST_EXTENDER_VAL);
+            intake.axonSlider.runToPosition(Intake.TEST_SLIDER_VAL, 1500);
+            while(intake.extender.isBusy()){
+                ;
+            }
         }
         if (gp1.wasAPressed()) {
             intake.axonSlider.calibrate(-0.3f, 1);

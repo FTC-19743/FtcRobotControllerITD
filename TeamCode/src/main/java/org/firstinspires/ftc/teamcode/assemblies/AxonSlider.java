@@ -31,6 +31,11 @@ public class AxonSlider {
     double SLIDER_X_DEADBAND = 0.5;
     public boolean CALIBRATED = false;
 
+    //292 slider degrees to 10 cm
+
+    public static float SLIDER_DEGREES_PER_CM = 29.2f;
+    public static float CM_PER_SLIDER_DEGREE = 0.03425f;
+
     public static int axonRotations = 0; // The number of full rotations postive or negative the servo has traveled from its center range
     private double lastDegrees360; // the rotational angle of the servo in degrees last time we checked
 
@@ -108,12 +113,22 @@ public class AxonSlider {
         }
         float sliderVelocity;
         double degreesFromTarget = target-getPosition();
+
+        //Drift Calculation
+        double drift = 234.234*(RTP_P_COEFFICIENT)+9.6486;
+        if(target>getPosition()){
+            target-=drift;
+        }else{
+            target+=drift;
+        }
+
         while (teamUtil.keepGoing(timeoutTime) && Math.abs(degreesFromTarget) > RTP_DEADBAND_DEGREES) {
             loop();
             sliderVelocity = (float) Math.min(RTP_P_COEFFICIENT * Math.abs(degreesFromTarget) + RTP_MIN_VELOCITY, RTP_MAX_VELOCITY);
             if (degreesFromTarget > 0) {
                 sliderVelocity *= -1;
             }
+
             setAdjustedPower(sliderVelocity);
             if (details) teamUtil.log("Degrees from Target: " + degreesFromTarget + " Power: " + sliderVelocity);
             degreesFromTarget = target-getPosition();

@@ -79,6 +79,7 @@ public class CalibrateCV extends LinearOpMode {
             intake.intakeTelemetry();
             if (intake.sampleDetector.sampleAvgs.val != null && intake.sampleDetector.sampleAvgs.val.length > 0) {
                 telemetry.addLine("Average HSV: " + ((int) intake.sampleDetector.sampleAvgs.val[0]) + ", " + ((int) intake.sampleDetector.sampleAvgs.val[1]) + ", " + ((int) intake.sampleDetector.sampleAvgs.val[2]));
+                telemetry.addLine("Dot X: " + ((int) intake.sampleDetector.sampleX) + " Dot Y: " + ((int) intake.sampleDetector.sampleY));
             } else {
                 telemetry.addLine("No Sample Average");
             }
