@@ -8,12 +8,15 @@ import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 
+import java.util.Locale;
+
 @TeleOp(name = "Calibrate CV ", group = "Test Code")
 public class CalibrateCV extends LinearOpMode {
 
     Intake intake;
     private TeamGamepad gp1 = new TeamGamepad();
     private TeamGamepad gp2 = new TeamGamepad();
+    int frameCount = 0;
 
 
     public void runOpMode() {
@@ -40,6 +43,10 @@ public class CalibrateCV extends LinearOpMode {
             if (gp1.wasLeftBumperPressed()) {
                 intake.sampleDetector.configureCam(intake.arduPortal, OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE, OpenCVSampleDetector.AFOCUS, OpenCVSampleDetector.FOCUSLENGTH);
             }
+            if (gp1.wasOptionsPressed()) {
+                intake.arduPortal.saveNextFrameRaw(String.format(Locale.US, "CameraFrameCapture-%06d", frameCount++));
+            }
+
             if (gp1.wasRightBumperPressed()) {
                 teamUtil.log("Average HSV: " + ((int)intake.sampleDetector.sampleAvgs.val[0]) + ", " + ((int)intake.sampleDetector.sampleAvgs.val[1]) + ", "+ ((int)intake.sampleDetector.sampleAvgs.val[2]));
                 //teamUtil.log("Pixel HSV: " + ((int)intake.sampleDetector.samplePixel[0]) + ", " + ((int)intake.sampleDetector.samplePixel[1]) + ", "+ ((int)intake.sampleDetector.samplePixel[2]));

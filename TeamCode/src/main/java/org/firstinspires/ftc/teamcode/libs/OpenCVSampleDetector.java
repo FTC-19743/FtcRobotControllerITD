@@ -77,11 +77,12 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public boolean WHITEBALANCEAUTO = true;
     static public int FOCUSLENGTH =125;
     static public int GAIN = 150;
-    static public int EXPOSURE = 2;
+    static public int EXPOSURE = 4; // With Adafruit 12 led ring at full white (no RGB)
     static public int TEMPERATURE = 2800;
 
     static public int blurFactor = 10;
 
+    /* 4 leds (Meet 1)
     static public int yellowLowH = 15, yellowLowS = 85, yellowLowV = 150;
     static public int yellowHighH = 35, yellowHighS = 255, yellowHighV = 255;
     static public int yellowErosionFactor = 20;
@@ -92,6 +93,19 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public int rbyHighH = 180, rbyHighS = 255, rbyHighV = 255;
     static public int redErosionFactor = 20;
     static public int redDilutionFactor = 10;
+     */
+    // Adafruit Ring max white (no rgb) at manual exposure 4
+    static public int yellowLowH = 10, yellowLowS = 100, yellowLowV = 170;
+    static public int yellowHighH = 35, yellowHighS = 255, yellowHighV = 255;
+    static public int yellowErosionFactor = 20;
+    static public int blueLowH = 90, blueLowS = 110, blueLowV = 70; // low was 10
+    static public int blueHighH = 130, blueHighS = 255, blueHighV = 255;
+    static public int blueErosionFactor = 20;
+    static public int rbyLowH = -1, rbyLowS = 150, rbyLowV = 200;
+    static public int rbyHighH = 35, rbyHighS = 255, rbyHighV = 255;
+    static public int redErosionFactor = 20;
+    static public int redDilutionFactor = 10;
+
 
     //static public int CLOSEFACTOR = 20;
 
@@ -147,8 +161,8 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         RAW_IMAGE,
         HSV,
         BLURRED,
-        THRESHOLD,
         INVERTED,
+        THRESHOLD,
         ERODED,
         EDGES,
         FINAL
@@ -245,6 +259,32 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                 break;
             case RED:
                 Core.inRange(blurredMat, rbyLowHSV, rbyHighHSV, thresholdMatAll); // Get Red and Yellow
+
+                Core.inRange(blurredMat, yellowLowHSV, yellowHighHSV, thresholdMat);
+                Imgproc.erode(thresholdMat, erodedMat, yellowErosionElement); // Get yellow eroded rects
+                Imgproc.Canny(erodedMat, edgesMat, 100, 300); // find edges
+                thresholdMatYB = thresholdMat.clone();
+                thresholdMatYB.setTo(new Scalar(0));
+                contours.clear(); // empty the list from last time
+                Imgproc.findContours(edgesMat, contours, hierarchyMat, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE); // find contours around yellow rects
+                if (!contours.isEmpty()) {
+                    MatOfPoint2f[] contoursPoly = new MatOfPoint2f[contours.size()];
+                    RotatedRect[] boundRect = new RotatedRect[contours.size()];
+                    for (int i = 0; i < contours.size(); i++) {  // for each yellow rect, draw a white rectangle inside it
+                        contoursPoly[i] = new MatOfPoint2f();
+                        Imgproc.approxPolyDP(new MatOfPoint2f(contours.get(i).toArray()), contoursPoly[i], 3, true);
+                        boundRect[i] = Imgproc.minAreaRect(contoursPoly[i]);
+                        Point[] points = new Point[4];
+                        boundRect[i].points(points);
+                        MatOfPoint r = new MatOfPoint(points);
+                        Imgproc.fillConvexPoly(thresholdMatYB, r, new Scalar(255));
+                    }
+                }
+                Core.subtract(thresholdMatAll, thresholdMatYB,  thresholdMat);
+                Imgproc.erode(thresholdMat, erodedMat, redErosionElement);
+
+                /* Previous algorithm for subtracting yellow and blue threshold mats from combined threshold mat--left too many small holes that were tough to fill
+                Core.inRange(blurredMat, rbyLowHSV, rbyHighHSV, thresholdMatAll); // Get Red and Yellow
                 Core.inRange(blurredMat, yellowLowHSV, yellowHighHSV, thresholdMatYellow);
                 Core.inRange(blurredMat, blueLowHSV, blueHighHSV, thresholdMatBlue);
                 Core.add(thresholdMatBlue, thresholdMatYellow, thresholdMatYB); // combine yellow and blue threshold mat
@@ -261,9 +301,9 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                 //for (int i = 0; i < contours.size(); i++) {
                 Imgproc.drawContours(thresholdMat,contours,-1,BLACK,-1); // fill the holes back on the original threshold mat
 
-                //Core.add(dilutedMat,thresholdMat, closedMat);
-                //Imgproc.dilate(thresholdMat, dilutedMat, redDilutionElement);
                 Imgproc.erode(thresholdMat, erodedMat, redErosionElement);
+
+                 */
                 break;
 
         }
@@ -390,7 +430,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                 case BLURRED: { Utils.matToBitmap(blurredMat, bmp); break;}
                 case INVERTED: {
                     if (targetColor == TargetColor.RED) {
-                        Utils.matToBitmap(invertedMat, bmp);
+                        Utils.matToBitmap(thresholdMatAll, bmp);
                     } else {
                         Utils.matToBitmap(thresholdMat, bmp);
                     }
