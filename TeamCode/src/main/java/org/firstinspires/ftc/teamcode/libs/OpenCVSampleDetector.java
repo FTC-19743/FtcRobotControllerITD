@@ -170,6 +170,11 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     private Stage stageToRenderToViewport = Stage.FINAL;
     private Stage[] stages = Stage.values();
 
+    class Context {
+        RotatedRect[] rots;
+        List<MatOfPoint> contours;
+    }
+
     public OpenCVSampleDetector() {
         hardwareMap = teamUtil.theOpMode.hardwareMap;
         telemetry = teamUtil.telemetry;
@@ -412,7 +417,11 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
         if (details) teamUtil.log("Real Angle" + realAngle + "Lowest: " + vertices1[lowestPixel].x + "," + vertices1[lowestPixel].y+"Closest: " + vertices1[closestPixel].x+ "," +vertices1[closestPixel].y);
 
-        return rotatedRect;
+        //return rotatedRect;
+        Context context = new Context();
+        context.rots = rotatedRect;
+        context.contours = contours;
+        return context;
     }
 
     @Override
@@ -456,43 +465,67 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         canvas.drawRect((float)sampleRect.tl().x*scaleBmpPxToCanvasPx, (float)sampleRect.tl().y*scaleBmpPxToCanvasPx, (float)sampleRect.br().x*scaleBmpPxToCanvasPx, (float)sampleRect.br().y*scaleBmpPxToCanvasPx,samplePaint);
 
         if (userContext != null) {
-            RotatedRect[] rotatedRect = (RotatedRect[]) userContext;
+            RotatedRect[] rotatedRect = ((Context) userContext).rots;
+            if (rotatedRect != null) {
+                Paint rectPaint = new Paint();
+                rectPaint.setColor(Color.MAGENTA);
+                rectPaint.setStyle(Paint.Style.STROKE);
+                rectPaint.setStrokeWidth(scaleCanvasDensity * 6);
+                Paint anglePaint = new Paint();
+                anglePaint.setColor(Color.CYAN);
+                anglePaint.setStyle(Paint.Style.STROKE);
+                anglePaint.setTextSize(20);
+                anglePaint.setStrokeWidth(scaleCanvasDensity * 6);
+                Paint centerPaint = new Paint();
+                centerPaint.setColor(Color.BLACK);
+                centerPaint.setStyle(Paint.Style.STROKE);
+                centerPaint.setStrokeWidth(scaleCanvasDensity * 6);
 
-            Paint rectPaint = new Paint();
-            rectPaint.setColor(Color.MAGENTA);
-            rectPaint.setStyle(Paint.Style.STROKE);
-            rectPaint.setStrokeWidth(scaleCanvasDensity * 6);
-            Paint anglePaint = new Paint();
-            anglePaint.setColor(Color.CYAN);
-            anglePaint.setStyle(Paint.Style.STROKE);
-            anglePaint.setTextSize(20);
-            anglePaint.setStrokeWidth(scaleCanvasDensity * 6);
-            Paint centerPaint = new Paint();
-            centerPaint.setColor(Color.BLACK);
-            centerPaint.setStyle(Paint.Style.STROKE);
-            centerPaint.setStrokeWidth(scaleCanvasDensity * 6);
+                for (int i = 0; i < rotatedRect.length; i++) {
 
-            for (int i = 0; i < rotatedRect.length; i++) {
+                    // Draw rotated Rectangle
+                    Point vertices[] = new Point[4];
+                    rotatedRect[i].points(vertices);
+                    for (int j = 0; j < 4; j++) {
+                        canvas.drawLine((float)vertices[j].x*scaleBmpPxToCanvasPx,(float)vertices[j].y*scaleBmpPxToCanvasPx,(float)vertices[(j+1)%4].x*scaleBmpPxToCanvasPx,(float)vertices[(j+1)%4].y*scaleBmpPxToCanvasPx,rectPaint);
+                    }
+                    if (targetIndex == i) {
+                        // Draw Center
+                        canvas.drawCircle((float)rotatedRect[i].center.x*scaleBmpPxToCanvasPx, (float)rotatedRect[i].center.y*scaleBmpPxToCanvasPx, 5,centerPaint);
 
-                // Draw rotated Rectangle
-                Point vertices[] = new Point[4];
-                rotatedRect[i].points(vertices);
-                for (int j = 0; j < 4; j++) {
-                    canvas.drawLine((float)vertices[j].x*scaleBmpPxToCanvasPx,(float)vertices[j].y*scaleBmpPxToCanvasPx,(float)vertices[(j+1)%4].x*scaleBmpPxToCanvasPx,(float)vertices[(j+1)%4].y*scaleBmpPxToCanvasPx,rectPaint);
+                        // Draw angle vector
+                        int endX = (int) (rotatedRect[i].center.x + 20 * Math.cos(rectAngle.get() * 3.14 / 180.0));
+                        int endY =  (int) (rotatedRect[i].center.y + 20 * Math.sin(rectAngle.get() * 3.14 / 180.0));
+                        canvas.drawLine((float)rotatedRect[i].center.x*scaleBmpPxToCanvasPx,(float)rotatedRect[i].center.y*scaleBmpPxToCanvasPx,(float)endX*scaleBmpPxToCanvasPx,(float)endY*scaleBmpPxToCanvasPx,rectPaint);
+                        //Imgproc.putText(matImgDst, String.valueOf((int)boundRect[i].angle),boundRect[i].center,0,1,PASTEL_GREEN);
+                        canvas.drawText(Integer.toString(rectAngle.get()),(float)rotatedRect[i].center.x*scaleBmpPxToCanvasPx,(float)rotatedRect[i].center.y*scaleBmpPxToCanvasPx,anglePaint);
+                    }
+
                 }
-                if (targetIndex == i) {
-                    // Draw Center
-                    canvas.drawCircle((float)rotatedRect[i].center.x*scaleBmpPxToCanvasPx, (float)rotatedRect[i].center.y*scaleBmpPxToCanvasPx, 5,centerPaint);
-
-                    // Draw angle vector
-                    int endX = (int) (rotatedRect[i].center.x + 20 * Math.cos(rectAngle.get() * 3.14 / 180.0));
-                    int endY =  (int) (rotatedRect[i].center.y + 20 * Math.sin(rectAngle.get() * 3.14 / 180.0));
-                    canvas.drawLine((float)rotatedRect[i].center.x*scaleBmpPxToCanvasPx,(float)rotatedRect[i].center.y*scaleBmpPxToCanvasPx,(float)endX*scaleBmpPxToCanvasPx,(float)endY*scaleBmpPxToCanvasPx,rectPaint);
-                    //Imgproc.putText(matImgDst, String.valueOf((int)boundRect[i].angle),boundRect[i].center,0,1,PASTEL_GREEN);
-                    canvas.drawText(Integer.toString(rectAngle.get()),(float)rotatedRect[i].center.x*scaleBmpPxToCanvasPx,(float)rotatedRect[i].center.y*scaleBmpPxToCanvasPx,anglePaint);
-                }
-
             }
+            List<MatOfPoint> drawContours = ((Context) userContext).contours;
+            if (drawContours != null) {
+                if (!drawContours.isEmpty()) {
+                    Paint polyPaint = new Paint();
+                    polyPaint.setColor(Color.WHITE);
+                    polyPaint.setStyle(Paint.Style.STROKE);
+                    polyPaint.setStrokeWidth(scaleCanvasDensity * 6);
+
+                    List<MatOfPoint> polygons = new ArrayList<>();
+                    for (MatOfPoint contour : drawContours) {
+                        MatOfPoint2f contour2f = new MatOfPoint2f(contour.toArray());
+                        MatOfPoint2f polygon2f = new MatOfPoint2f();
+                        //Imgproc.approxPolyDP(contour2f, polygon2f, 0.02 * Imgproc.arcLength(contour2f, true), true);
+                        Imgproc.approxPolyDP(contour2f, polygon2f, 3, true);
+                        Point[] points = polygon2f.toArray();
+                        for (int i = 0; i < points.length - 1; i++) {
+                            canvas.drawLine((float) points[i].x * scaleBmpPxToCanvasPx, (float) points[i].y * scaleBmpPxToCanvasPx, (float) points[i + 1].x * scaleBmpPxToCanvasPx, (float) points[i + 1].y * scaleBmpPxToCanvasPx, polyPaint);
+                        }
+                        canvas.drawLine((float) points[0].x * scaleBmpPxToCanvasPx, (float) points[0].y * scaleBmpPxToCanvasPx, (float) points[points.length-1].x * scaleBmpPxToCanvasPx, (float) points[points.length-1].y * scaleBmpPxToCanvasPx, polyPaint);
+                    }
+                }
+            }
+
         }
     }
 }
