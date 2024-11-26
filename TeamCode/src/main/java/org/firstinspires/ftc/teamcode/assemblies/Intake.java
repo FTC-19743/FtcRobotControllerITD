@@ -139,8 +139,9 @@ public class Intake {
     static public float GRABBER_RELEASE_POT_VOLTAGE = 0;
     */
     static public int GRAB_PAUSE = 500;
-    static public int GRAB_DELAY1 = 150;
+    static public int GRAB_DELAY_H = 75;
     static public int GRAB_DELAY2 = 100;
+    static public int GRAB_DELAY3 = 75;
 
     static public float MM_PER_PIX_Y = 0.5625f;
     static public float MM_PER_PIX_X = 0.59375f;
@@ -167,7 +168,8 @@ public class Intake {
     static public int EXTENDER_TOLERANCE_RETRACT = 15;
     static public int EXTENDER_RETRACT_TIMEOUT = 3000;
     static public int EXTENDER_SAFE_TO_UNLOAD_THRESHOLD = 50;
-    static public int EXTENDER_GO_TO_SAMPLE_VELOCITY = 500;
+    static public int EXTENDER_GO_TO_SAMPLE_VELOCITY = 2000;
+    static public int EXTENDER_TOLERANCE_SEEK = 5;
 
 
     static public int TEST_EXTENDER_VAL = 1000;
@@ -512,6 +514,26 @@ public class Intake {
         return false;
     }
 
+    public boolean goToSampleAndGrabV2(long timeOut){
+        autoSeeking.set(true);
+        teamUtil.log("Launched GoToSample and Grab" );
+        timedOut.set(false);
+        long timeoutTime = System.currentTimeMillis()+timeOut;
+        if(goToSampleV3(timeOut,5000) && !timedOut.get()) {
+            flipAndRotateToSampleAndGrab(timeoutTime - System.currentTimeMillis());
+            if (!timedOut.get()) {
+                goToSafeRetract(timeoutTime - System.currentTimeMillis());
+
+                extendersToPosition(EXTENDER_UNLOAD,timeoutTime-System.currentTimeMillis());
+                autoSeeking.set(false);
+                return true;
+            }
+        }
+        teamUtil.log("Failed to locate and grab sample" );
+        autoSeeking.set(false);
+        return false;
+    }
+
 
     public boolean goToSampleV2(long timeOut){
         teamUtil.log("GoToSample V2 has started");
@@ -624,14 +646,17 @@ public class Intake {
     }
 
 
-    public int yPixelsToTics(int pixels){
+    public double yPixelsToTicsInZone(double pixels){
+        //73 tics for 43.333 pixels
+        //51 pixels per inch
         //TODO Implement
-        return pixels;
+        return pixels*(73f/43.3333);
     }
 
-    public int xPixelsToDegrees(int pixels){
+    public double xPixelsToDegreesInZone(double pixels){
         //TODO Implement
-        return pixels;
+        //65 degrees for 51 pixels
+        return pixels*(65f/47f);
     }
 
 
@@ -641,8 +666,13 @@ public class Intake {
         long timeoutTime = System.currentTimeMillis() + timeOut;
         boolean details = true;
 
+        sampleDetector.reset();
         startCVPipeline();
+
+        //TODO TAKE OUT
         lightsOnandOff(WHITE_NEOPIXEL,RED_NEOPIXEL,GREEN_NEOPIXEL,BLUE_NEOPIXEL,true);
+        teamUtil.pause(100);
+
         flipper.setPosition(FLIPPER_SEEK);
         FlipperInSeek.set(true);
         FlipperInUnload.set(false);
@@ -653,6 +683,7 @@ public class Intake {
         extender.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         double extenderVelocity;
         float sliderVelocity;
+        extender.setTargetPositionTolerance(EXTENDER_TOLERANCE_SEEK);
         extender.setVelocity(EXTENDER_MAX_VELOCITY);//Tune increment
         if(OpenCVSampleDetector.targetColor== OpenCVSampleDetector.TargetColor.BLUE){
             teamUtil.theBlinkin.setSignal(Blinkin.Signals.BLUE_PATH_1);
@@ -663,49 +694,95 @@ public class Intake {
         else{
             teamUtil.theBlinkin.setSignal((Blinkin.Signals.YELLOW));
         }
-        while(!sampleDetector.foundOne.get()&&extender.getCurrentPosition()<EXTENDER_MAX-10){ // TODO: Need to check for timeout here
+        /*
+        while(!sampleDetector.foundOne.get()&&extender.getCurrentPosition()<EXTENDER_MAX-10) { // TODO: Need to check for timeout here
             teamUtil.pause(30);
         }
+
+         */
+
+
         extender.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
 
-        int blockX = sampleDetector.rectCenterXOffset.get();
-        int blockY = sampleDetector.rectCenterYOffset.get();
-        stopCVPipeline();
+        double blockX;
+        double blockY;
 
         if(!sampleDetector.foundOne.get()){
             teamUtil.log("Found One False after Search");
             extender.setVelocity(0);
             moving.set(false);
             teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
-            stopCVPipeline();
+            //stopCVPipeline(); TODO Put back in
             return false;
         }
+
+
+
         else{
+
+            //stopCVPipeline(); TODO pUt back in
             teamUtil.log("Found One True");
-            double ticsFromCenterY = yPixelsToTics(blockY);
-            double degreesFromCenterX = xPixelsToDegrees(blockX);
+            if(Math.abs(sampleDetector.rectCenterXOffset.get())<154&&Math.abs(sampleDetector.rectCenterYOffset.get())<130){
+                blockX = sampleDetector.rectCenterXOffset.get();
+                blockY = sampleDetector.rectCenterYOffset.get();
+                teamUtil.log("In GoldiLocks Zone");
 
-            double xPos = axonSlider.getPosition() - degreesFromCenterX;
-            if (xPos>AxonSlider.RIGHT_LIMIT|| xPos<AxonSlider.LEFT_LIMIT){
-                teamUtil.log("Required Slider Position Outside of Range");
-                return false;
+                double ticsFromCenterY = yPixelsToTicsInZone(blockY);
+                double degreesFromCenterX = xPixelsToDegreesInZone(blockX);
+
+                double xPos = axonSlider.getPosition() + degreesFromCenterX;
+                if (xPos>AxonSlider.RIGHT_LIMIT|| xPos<AxonSlider.LEFT_LIMIT){
+                    teamUtil.log("Required Slider Position Outside of Range");
+                    return false;
+                }
+
+                double yPos = extender.getCurrentPosition()+ ticsFromCenterY;
+                if (yPos<Intake.EXTENDER_MIN|| yPos>Intake.EXTENDER_MAX){
+                    teamUtil.log("Required Extender Position Outside of Range");
+                    return false;
+                }
+                extender.setVelocity(EXTENDER_GO_TO_SAMPLE_VELOCITY);
+
+                teamUtil.log("Starting XPos :  " + axonSlider.getPosition() );
+                teamUtil.log("Starting YPos :  " + extender.getCurrentPosition());
+                teamUtil.log("Target XPos :  " + xPos);
+                teamUtil.log("Target YPos :  " + yPos);
+
+                extender.setTargetPosition((int)yPos);
+                rotateToSample(sampleDetector.rectAngle.get());
+                //TODO THERE IS A BUG!!!! IT SOMETIMES DOESN"T REACH ITS ROTATION PRIOR TO FLIPPING DOWN
+                axonSlider.runToPosition(xPos, sliderTimeout);
+
+
+
+
+
+                axonSlider.setPower(0);
+            }
+            else{
+                /*
+                while(Math.abs(sampleDetector.rectCenterXOffset.get())>154&&Math.abs(sampleDetector.rectCenterYOffset.get())>130){
+                    if(sampleDetector.rectCenterXOffset.get()>0){
+                        axonSlider.setPower(0.5);
+                    }else{
+                        axonSlider.setPower(-.5);
+                    }
+                    if(sampleDetector.rectCenterYOffset.get()>0){
+                        extender.setPower(1);
+                    }else{
+                        extender.setPower(-1);
+                    }
+                }
+
+                axonSlider.setPower(0);
+                extender.setVelocity(0);
+                blockX = sampleDetector.rectCenterXOffset.get();
+                blockY = sampleDetector.rectCenterYOffset.get();
+
+                 */
             }
 
-            double yPos = extender.getCurrentPosition()+ ticsFromCenterY;
-            if (yPos<Intake.EXTENDER_MIN|| yPos>Intake.EXTENDER_MAX){
-                teamUtil.log("Required Extender Position Outside of Range");
-                return false;
-            }
-            extender.setVelocity(EXTENDER_GO_TO_SAMPLE_VELOCITY);
 
-            extender.setTargetPosition((int)yPos);
-            axonSlider.runToPosition(xPos, sliderTimeout);
-
-
-
-
-            extender.setVelocity(0);
-            axonSlider.setPower(0);
             /*
             if(!teamUtil.keepGoing(timeoutTime)){
                 teamUtil.log("GoToSample has Timed Out");
@@ -740,6 +817,24 @@ public class Intake {
                 @Override
                 public void run() {
                     goToSampleAndGrab(timeOut);
+                }
+            });
+            thread.start();
+        }
+    }
+
+    public void goToSampleAndGrabNoWaitV2(long timeOut) {
+        if (autoSeeking.get()) { // Intake is already moving in another thread
+            teamUtil.log("WARNING: Attempt to goToSampleAndGrab while intake is moving--ignored");
+            return;
+        } else {
+            moving.set(true);
+            autoSeeking.set(true);
+            teamUtil.log("Launching Thread to goToSampleAndGrab");
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    goToSampleAndGrabV2(timeOut);
                 }
             });
             thread.start();
@@ -891,11 +986,14 @@ public class Intake {
         grabber.setPosition(GRABBER_READY);
     }
     public void grab(){
+        int GRAB_DELAY_1 = (int)((SWEEPER_VERTICAL_READY-sweeper.getPosition())/(SWEEPER_VERTICAL_READY-SWEEPER_HORIZONTAL_READY)*(float) GRAB_DELAY_H);
         sweeper.setPosition(SWEEPER_EXPAND);
-        teamUtil.pause(GRAB_DELAY1);
+        teamUtil.pause(GRAB_DELAY_1);
         grabber.setPosition(GRABBER_GRAB);
         teamUtil.pause(GRAB_DELAY2);
         sweeper.setPosition(SWEEPER_GRAB);
+        teamUtil.pause(GRAB_DELAY3);
+
     }
     public void release() {
         teamUtil.log("Release Called ");
@@ -908,8 +1006,8 @@ public class Intake {
         long timeoutTime = System.currentTimeMillis()+timeOut;
         teamUtil.log("flipAndRotateToSampleAndGrab");
         // TODO: Use timeOut
-        rotateToSample(sampleDetector.rectAngle.get());
-        teamUtil.pause(ROTATE_PAUSE);
+//        rotateToSample(sampleDetector.rectAngle.get());
+//        teamUtil.pause(ROTATE_PAUSE);
         flipperGoToGrab(1000);
 //        flipper.setPosition(FLIPPER_GRAB);
 //        FlipperInSeek.set(false);
@@ -917,7 +1015,6 @@ public class Intake {
 //        FlipperInUnload.set(false);
 //        teamUtil.pause(FLIPPER_GRAB_PAUSE);
         grab();
-        teamUtil.pause(GRAB_PAUSE);
         if(System.currentTimeMillis()>timeoutTime){
             timedOut.set(true);
             teamUtil.log("flipAndRotateToSampleAndGrab Has Timed Out");

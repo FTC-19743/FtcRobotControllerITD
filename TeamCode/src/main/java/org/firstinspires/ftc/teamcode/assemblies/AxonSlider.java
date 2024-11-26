@@ -23,7 +23,7 @@ public class AxonSlider {
     static public float SLIDER_READY = 0;//TODO Recalibrate
 
     public static int RTP_DEADBAND_DEGREES = 3;
-    public static float RTP_P_COEFFICIENT = .001f;
+    public static float RTP_P_COEFFICIENT = .005f;
     public static float RTP_MIN_VELOCITY = .1f;
     public static float RTP_MAX_VELOCITY = .5f;
     public static float POWER_ADJUSTEMENT = -.01f;
@@ -32,6 +32,7 @@ public class AxonSlider {
     public boolean CALIBRATED = false;
 
     //292 slider degrees to 10 cm
+    //LEFT IS NEGATIVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     public static float SLIDER_DEGREES_PER_CM = 29.2f;
     public static float CM_PER_SLIDER_DEGREE = 0.03425f;

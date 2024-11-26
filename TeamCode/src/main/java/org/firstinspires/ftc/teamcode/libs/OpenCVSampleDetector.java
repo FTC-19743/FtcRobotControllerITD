@@ -77,7 +77,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public boolean WHITEBALANCEAUTO = true;
     static public int FOCUSLENGTH =125;
     static public int GAIN = 150;
-    static public int EXPOSURE = 4;
+    static public int EXPOSURE = 2;
     static public int TEMPERATURE = 2800;
 
     static public int blurFactor = 10;
@@ -406,11 +406,12 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         }
 
 
-
         Paint samplePaint = new Paint();
         samplePaint.setColor(Color.GREEN);
         samplePaint.setStyle(Paint.Style.STROKE);
         samplePaint.setStrokeWidth(scaleCanvasDensity * 4);
+        canvas.drawRect(166,110,474,370,samplePaint);
+
         canvas.drawCircle((float)TARGET_X*scaleBmpPxToCanvasPx, (float)TARGET_Y*scaleBmpPxToCanvasPx, 10,samplePaint);
         canvas.drawRect((float)sampleRect.tl().x*scaleBmpPxToCanvasPx, (float)sampleRect.tl().y*scaleBmpPxToCanvasPx, (float)sampleRect.br().x*scaleBmpPxToCanvasPx, (float)sampleRect.br().y*scaleBmpPxToCanvasPx,samplePaint);
 
