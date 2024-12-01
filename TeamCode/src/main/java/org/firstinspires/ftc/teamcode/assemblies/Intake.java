@@ -249,6 +249,7 @@ public class Intake {
         }
         sampleDetector.configureCam(arduPortal, true, OpenCVSampleDetector.AEPRIORITY, 1, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE, OpenCVSampleDetector.AFOCUS, OpenCVSampleDetector.FOCUSLENGTH);
         // TODO: Do we need a pause here?
+        teamUtil.pause(250);
         sampleDetector.configureCam(arduPortal, OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE, OpenCVSampleDetector.AFOCUS, OpenCVSampleDetector.FOCUSLENGTH);
         stopCVPipeline();
         teamUtil.log("Initializing CV in Intake - Finished");
@@ -694,12 +695,14 @@ public class Intake {
         else{
             teamUtil.theBlinkin.setSignal((Blinkin.Signals.YELLOW));
         }
-        /*
+
         while(!sampleDetector.foundOne.get()&&extender.getCurrentPosition()<EXTENDER_MAX-10) { // TODO: Need to check for timeout here
             teamUtil.pause(30);
         }
 
-         */
+
+
+
 
 
         extender.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
@@ -709,6 +712,13 @@ public class Intake {
 
         if(!sampleDetector.foundOne.get()){
             teamUtil.log("Found One False after Search");
+            extender.setVelocity(0);
+            moving.set(false);
+            teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
+            //stopCVPipeline(); TODO Put back in
+            return false;
+        }if(sampleDetector.outsideUseableCameraRange.get()){
+            teamUtil.log("Found One But Block Is Outside Of Useable Camera Range");
             extender.setVelocity(0);
             moving.set(false);
             teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
@@ -760,26 +770,79 @@ public class Intake {
                 axonSlider.setPower(0);
             }
             else{
-                /*
-                while(Math.abs(sampleDetector.rectCenterXOffset.get())>154&&Math.abs(sampleDetector.rectCenterYOffset.get())>130){
-                    if(sampleDetector.rectCenterXOffset.get()>0){
-                        axonSlider.setPower(0.5);
-                    }else{
-                        axonSlider.setPower(-.5);
+                if(sampleDetector.foundOne.get()&&!sampleDetector.outsideUseableCameraRange.get()){
+                    if (details) teamUtil.log("X Offset: " + sampleDetector.rectCenterXOffset + "Y Offset: " + sampleDetector.rectCenterYOffset);
+
+                    teamUtil.log("Outside of Goldilocks Zone But Block Has been Found");
+                    //threshold values are smaller than actual goldilocks zone in order to avoid further drift
+                    while(Math.abs(sampleDetector.rectCenterXOffset.get())>50&&Math.abs(sampleDetector.rectCenterYOffset.get())>50){
+                        axonSlider.loop();
+                        if (details) teamUtil.log("X Offset: " + sampleDetector.rectCenterXOffset + "Y Offset: " + sampleDetector.rectCenterYOffset);
+                        if(sampleDetector.rectCenterXOffset.get()>0&&axonSlider.getPosition()>AxonSlider.LEFT_LIMIT){
+                            axonSlider.setPower(-0.5);
+                        }else if(sampleDetector.rectCenterXOffset.get()<0&&axonSlider.getPosition()<AxonSlider.RIGHT_LIMIT){
+                            axonSlider.setPower(0.5);
+                        }else {
+                            axonSlider.setPower(0);
+                        }
+                        if(sampleDetector.rectCenterYOffset.get()>0&&extender.getCurrentPosition()<EXTENDER_MAX){
+                            extender.setPower(1);
+                        }else if(sampleDetector.rectCenterYOffset.get()<0&&extender.getCurrentPosition()>EXTENDER_MIN){
+                            extender.setPower(-1);
+                        }else{
+                            extender.setPower(0);
+                        }
                     }
-                    if(sampleDetector.rectCenterYOffset.get()>0){
-                        extender.setPower(1);
-                    }else{
-                        extender.setPower(-1);
+
+                    axonSlider.setPower(0);
+                    extender.setPower(0);
+
+                    blockX = sampleDetector.rectCenterXOffset.get();
+                    blockY = sampleDetector.rectCenterYOffset.get();
+                    teamUtil.log("In GoldiLocks Zone");
+
+                    double ticsFromCenterY = yPixelsToTicsInZone(blockY);
+                    double degreesFromCenterX = xPixelsToDegreesInZone(blockX);
+
+                    double xPos = axonSlider.getPosition() + degreesFromCenterX;
+                    if (xPos>AxonSlider.RIGHT_LIMIT|| xPos<AxonSlider.LEFT_LIMIT){
+                        teamUtil.log("Required Slider Position Outside of Range");
+                        return false;
                     }
+
+                    double yPos = extender.getCurrentPosition()+ ticsFromCenterY;
+                    if (yPos<Intake.EXTENDER_MIN|| yPos>Intake.EXTENDER_MAX){
+                        teamUtil.log("Required Extender Position Outside of Range");
+                        return false;
+                    }
+                    extender.setVelocity(EXTENDER_GO_TO_SAMPLE_VELOCITY);
+
+                    teamUtil.log("Starting XPos :  " + axonSlider.getPosition() );
+                    teamUtil.log("Starting YPos :  " + extender.getCurrentPosition());
+                    teamUtil.log("Target XPos :  " + xPos);
+                    teamUtil.log("Target YPos :  " + yPos);
+
+                    extender.setTargetPosition((int)yPos);
+                    rotateToSample(sampleDetector.rectAngle.get());
+                    //TODO THERE IS A BUG!!!! IT SOMETIMES DOESN"T REACH ITS ROTATION PRIOR TO FLIPPING DOWN
+                    axonSlider.runToPosition(xPos, sliderTimeout);
+
+
+
+
+
+                    axonSlider.setPower(0);
+
+                }
+                else{
+                    teamUtil.log("Something Went Wrong and Found One Has Been Set To False");
+                    teamUtil.log("Or Block is Outside Useable Range");
+
                 }
 
-                axonSlider.setPower(0);
-                extender.setVelocity(0);
-                blockX = sampleDetector.rectCenterXOffset.get();
-                blockY = sampleDetector.rectCenterYOffset.get();
 
-                 */
+
+
             }
 
 

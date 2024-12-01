@@ -179,7 +179,11 @@ public class CalibrateArms extends LinearOpMode {
 
     public void intakeSeekTesting() {
         if (gp1.wasUpPressed()) {
+            intake.goToSampleV3(5000,5000);
+            //intake.goToSampleAndGrabV2(5000);
+        } if (gp1.wasOptionsPressed()) {
             intake.goToSampleAndGrabV2(5000);
+            //intake.goToSampleAndGrabV2(5000);
         } if(gp1.wasLeftPressed()){
             intake.flipper.setPosition(Intake.FLIPPER_SEEK);
         }if(gp1.wasRightPressed()){

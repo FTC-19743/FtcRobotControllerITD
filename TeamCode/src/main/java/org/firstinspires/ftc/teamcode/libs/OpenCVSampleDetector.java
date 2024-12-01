@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.libs;
 
-import
-        android.graphics.Bitmap;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -23,11 +22,15 @@ import org.opencv.core.RotatedRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.calib3d.Calib3d;
+
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+
 
 @Config // Makes Static data members available in Dashboard
 public class OpenCVSampleDetector extends OpenCVProcesser {
@@ -46,6 +49,20 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public int TARGET_X = 334;
     static public int TARGET_Y = 160;
     static public int AREA_THRESHOLD = 2000;
+
+    double[][] cameraMatrixData = {
+            { 478.3939243528238, 0.0, 333.6082048642555 },
+            { 0.0, 470.9276030162481, 297.451893471244 },
+            { 0.0, 0.0, 1.0 }
+    };
+
+    // Define your distortion coefficients constants
+    double[] distCoeffsData = { -0.3219047808733794, 0.09609610660662812, -0.04785830392770931, -0.0050045386058039, -0.05072346571900022 };
+
+
+    Mat cameraMatrix = new Mat(3, 3, CvType.CV_64F);
+    Mat distCoeffs = new Mat(1, 5, CvType.CV_64F);
+
 
     private final double CMS_PER_PIXEL_X = 0; //Set (Will most likely not be linear)
     private final double CMS_PER_PIXEL_Y = 0; //Set (Will most likely not be linear)
@@ -111,8 +128,8 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
     public int sampleX = TARGET_X;
     public int sampleY = TARGET_Y;
-    public static int FOUND_ONE_RIGHT_THRESHOLD = 580;
-    public static int FOUND_ONE_LEFT_THRESHOLD = 60;
+    public static int FOUND_ONE_RIGHT_THRESHOLD = 620;
+    public static int FOUND_ONE_LEFT_THRESHOLD = 20;
 
     static public int SAMPLE_SIZE = 1;
     //public double[] samplePixel = new double[3];
@@ -126,6 +143,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     private Mat blurredMat = new Mat();
     private Mat thresholdMat = new Mat();
     private Mat thresholdMatAll = new Mat();
+    private Mat undistortedMat = new Mat();
     private Mat thresholdMatYellow = new Mat();
     private Mat thresholdMatBlue = new Mat();
     private Mat thresholdMatYB = new Mat();
@@ -147,6 +165,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     }
 
     public AtomicBoolean foundOne = new AtomicBoolean(false);
+    public AtomicBoolean outsideUseableCameraRange = new AtomicBoolean(false);
     // TODO: Data about the located Sample
 
     public AtomicInteger rectAngle = new AtomicInteger(-1);
@@ -163,6 +182,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         BLURRED,
         INVERTED,
         THRESHOLD,
+        UNDISTORTED,
         ERODED,
         EDGES,
         FINAL
@@ -182,6 +202,10 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     @Override
     public void init(int width, int height, CameraCalibration calibration) {
         teamUtil.log("Initializing OpenCVSampleDetector processor");
+        for (int i=0;i<3;i++)
+            cameraMatrix.put(i,0, cameraMatrixData[i]); // preload calibration data
+        distCoeffs.put(0, 0, distCoeffsData);
+
         teamUtil.log("Initializing OpenCVSampleDetector processor - FINISHED");
     }
     public void outputTelemetry () {
@@ -254,11 +278,15 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         switch (targetColor) {
             case YELLOW:
                 Core.inRange(blurredMat, yellowLowHSV, yellowHighHSV, thresholdMat);
+                //Calib3d.undistort(thresholdMat,undistortedMat,cameraMatrix,distCoeffs);
+
                 //Imgproc.morphologyEx(thresholdMat, closedMat,Imgproc.MORPH_CLOSE, closeElement);
                 Imgproc.erode(thresholdMat, erodedMat, yellowErosionElement);
                 break;
             case BLUE:
                 Core.inRange(blurredMat, blueLowHSV, blueHighHSV, thresholdMat);
+                //Calib3d.undistort(thresholdMat,undistortedMat,cameraMatrix,distCoeffs);
+
                 //Imgproc.morphologyEx(thresholdMat, closedMat,Imgproc.MORPH_CLOSE, closeElement);
                 Imgproc.erode(thresholdMat, erodedMat, blueErosionElement);
                 break;
@@ -286,6 +314,9 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                     }
                 }
                 Core.subtract(thresholdMatAll, thresholdMatYB,  thresholdMat);
+
+                //Calib3d.undistort(thresholdMat,undistortedMat,cameraMatrix,distCoeffs);
+
                 Imgproc.erode(thresholdMat, erodedMat, redErosionElement);
 
                 /* Previous algorithm for subtracting yellow and blue threshold mats from combined threshold mat--left too many small holes that were tough to fill
@@ -404,19 +435,27 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
          */
         if(rotatedRect[closestAreaSelectionNum].center.x<FOUND_ONE_LEFT_THRESHOLD||rotatedRect[closestAreaSelectionNum].center.x>FOUND_ONE_RIGHT_THRESHOLD){
+
+
             teamUtil.log("OPEN CV SAMPLE DETECTOR FOUND BLOCK BUT CENTER X VALUE WAS OUTSIDE USEABLE RANGE");
+            teamUtil.log("X of Block Center: " + rotatedRect[closestAreaSelectionNum].center.x);
+            teamUtil.log("Y of Block Center: " + rotatedRect[closestAreaSelectionNum].center.y);
+            outsideUseableCameraRange.set(true);
             foundOne.set(false);
         }
         else{
+            outsideUseableCameraRange.set(false);
             foundOne.set(true);
+
+            rectCenterYOffset.set(-1 * ((int) rotatedRect[closestAreaSelectionNum].center.y - TARGET_Y));
+            rectCenterXOffset.set((int) rotatedRect[closestAreaSelectionNum].center.x - TARGET_X);
+            rectAngle.set((int) realAngle);
+            targetIndex = closestAreaSelectionNum;
+
+            if (details) teamUtil.log("Real Angle" + realAngle + "Lowest: " + vertices1[lowestPixel].x + "," + vertices1[lowestPixel].y+"Closest: " + vertices1[closestPixel].x+ "," +vertices1[closestPixel].y);
+
+
         }
-        rectCenterYOffset.set(-1 * ((int) rotatedRect[closestAreaSelectionNum].center.y - TARGET_Y));
-        rectCenterXOffset.set((int) rotatedRect[closestAreaSelectionNum].center.x - TARGET_X);
-        rectAngle.set((int) realAngle);
-        targetIndex = closestAreaSelectionNum;
-
-        if (details) teamUtil.log("Real Angle" + realAngle + "Lowest: " + vertices1[lowestPixel].x + "," + vertices1[lowestPixel].y+"Closest: " + vertices1[closestPixel].x+ "," +vertices1[closestPixel].y);
-
         //return rotatedRect;
         Context context = new Context();
         context.rots = rotatedRect;
@@ -446,6 +485,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                     break;
                 }
                 case THRESHOLD: { Utils.matToBitmap(thresholdMat, bmp); break;}
+                case UNDISTORTED: { Utils.matToBitmap(undistortedMat,bmp); break;}
                 case ERODED: { Utils.matToBitmap(erodedMat, bmp); break;}
                 case EDGES: { Utils.matToBitmap(edgesMat, bmp); break;}
                 default: {}
