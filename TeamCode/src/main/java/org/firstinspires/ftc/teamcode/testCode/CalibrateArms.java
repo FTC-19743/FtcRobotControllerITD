@@ -6,6 +6,7 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.teamcode.assemblies.AxonSlider;
 import org.firstinspires.ftc.teamcode.assemblies.Hang;
@@ -34,7 +35,8 @@ public class CalibrateArms extends LinearOpMode {
         Outtake_Manual_Operation,
         Output_Manual_Operation,
         Hang_Manual_Operation,
-        Intake_Fine_Manual_Operation
+        Intake_Fine_Manual_Operation,
+        Intake_Seek_Testing
         };
     public static Ops AA_Operation = Ops.Intake_Manual_Operation;
 
@@ -52,6 +54,7 @@ public class CalibrateArms extends LinearOpMode {
             case Output_Manual_Operation: outputManualOperation();break;
             case Hang_Manual_Operation: hangManualOperation();break;
             case Intake_Fine_Manual_Operation: intakeFineManualOperation();break;
+            case Intake_Seek_Testing: intakeSeekTesting();break;
 
         }
     }
@@ -123,6 +126,9 @@ public class CalibrateArms extends LinearOpMode {
             } else if (AA_Operation==Ops.Intake_Fine_Manual_Operation) {
                 intakeFineManualOperation();
             }
+            else if (AA_Operation==Ops.Intake_Seek_Testing) {
+                intakeSeekTesting();
+            }
 
             // Drawing stuff on the field
             TelemetryPacket packet = new TelemetryPacket();
@@ -153,6 +159,39 @@ public class CalibrateArms extends LinearOpMode {
             intake.flipper.setPosition(Intake.FLIPPER_GRAB);
         }if(gp1.wasDownPressed()){
             intake.rotateToSample(intake.sampleDetector.rectAngle.get());
+        }
+        if(gp1.wasYPressed()){
+            intake.grab();
+        }
+        if(gp1.wasAPressed()){
+            intake.grabberReady();
+        }
+        if(gp1.wasXPressed()){
+            intake.grabber.setPosition(Intake.GRABBER_READY);
+        }
+        if(gp1.wasBPressed()){
+            intake.sweeper.setPosition(Intake.SWEEPER_HORIZONTAL_READY);
+        }
+        if(gp1.wasRightTriggerPressed()){
+            intake.wrist.setPosition(Intake.WRIST_MIDDLE);
+        }
+    }
+
+    public void intakeSeekTesting() {
+        if (gp1.wasUpPressed()) {
+            intake.goToSampleV3(5000,5000);
+            //intake.goToSampleAndGrabV2(5000);
+        } if (gp1.wasOptionsPressed()) {
+            intake.goToSampleAndGrabV2(5000);
+            //intake.goToSampleAndGrabV2(5000);
+        } if(gp1.wasLeftPressed()){
+            intake.flipper.setPosition(Intake.FLIPPER_SEEK);
+        }if(gp1.wasRightPressed()){
+            intake.flipper.setPosition(Intake.FLIPPER_GRAB);
+        }if(gp1.wasDownPressed()){
+            intake.rotateToSample(intake.sampleDetector.rectAngle.get());
+        } if(gp1.wasHomePressed()){
+            intake.calibrate();
         }
         if(gp1.wasYPressed()){
             intake.grab();
@@ -247,10 +286,18 @@ public class CalibrateArms extends LinearOpMode {
         }
 
         if (gp1.wasYPressed()) {
-            intake.axonSlider.runToPosition(AxonSlider.SLIDER_UNLOAD, 1500);
+            //intake.axonSlider.runToPosition(AxonSlider.SLIDER_UNLOAD, 1500);
+            intake.goToSafeRetractNoWait(4000);
         }
         if (gp1.wasBPressed()) {
-            intake.axonSlider.runToPosition(AxonSlider.SLIDER_READY, 1500);
+            //intake.axonSlider.runToPosition(AxonSlider.SLIDER_READY, 1500);
+            intake.extender.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            intake.extender.setVelocity(Intake.EXTENDER_TEST_VELOCITY);
+            intake.extender.setTargetPosition(Intake.TEST_EXTENDER_VAL);
+            intake.axonSlider.runToPosition(Intake.TEST_SLIDER_VAL, 1500);
+            while(intake.extender.isBusy()){
+                ;
+            }
         }
         if (gp1.wasAPressed()) {
             intake.axonSlider.calibrate(-0.3f, 1);

@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.libs;
 
-import
-        android.graphics.Bitmap;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -23,11 +22,15 @@ import org.opencv.core.RotatedRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.calib3d.Calib3d;
+
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+
 
 @Config // Makes Static data members available in Dashboard
 public class OpenCVSampleDetector extends OpenCVProcesser {
@@ -46,6 +49,20 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public int TARGET_X = 334;
     static public int TARGET_Y = 160;
     static public int AREA_THRESHOLD = 2000;
+
+    double[][] cameraMatrixData = {
+            { 478.3939243528238, 0.0, 333.6082048642555 },
+            { 0.0, 470.9276030162481, 297.451893471244 },
+            { 0.0, 0.0, 1.0 }
+    };
+
+    // Define your distortion coefficients constants
+    double[] distCoeffsData = { -0.3219047808733794, 0.09609610660662812, -0.04785830392770931, -0.0050045386058039, -0.05072346571900022 };
+
+
+    Mat cameraMatrix = new Mat(3, 3, CvType.CV_64F);
+    Mat distCoeffs = new Mat(1, 5, CvType.CV_64F);
+
 
     private final double CMS_PER_PIXEL_X = 0; //Set (Will most likely not be linear)
     private final double CMS_PER_PIXEL_Y = 0; //Set (Will most likely not be linear)
@@ -77,11 +94,12 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public boolean WHITEBALANCEAUTO = true;
     static public int FOCUSLENGTH =125;
     static public int GAIN = 150;
-    static public int EXPOSURE = 4;
+    static public int EXPOSURE = 4; // With Adafruit 12 led ring at full white (no RGB)
     static public int TEMPERATURE = 2800;
 
     static public int blurFactor = 10;
 
+    /* 4 leds (Meet 1)
     static public int yellowLowH = 15, yellowLowS = 85, yellowLowV = 150;
     static public int yellowHighH = 35, yellowHighS = 255, yellowHighV = 255;
     static public int yellowErosionFactor = 20;
@@ -92,13 +110,26 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public int rbyHighH = 180, rbyHighS = 255, rbyHighV = 255;
     static public int redErosionFactor = 20;
     static public int redDilutionFactor = 10;
+     */
+    // Adafruit Ring max white (no rgb) at manual exposure 4
+    static public int yellowLowH = 10, yellowLowS = 100, yellowLowV = 170;
+    static public int yellowHighH = 35, yellowHighS = 255, yellowHighV = 255;
+    static public int yellowErosionFactor = 20;
+    static public int blueLowH = 90, blueLowS = 110, blueLowV = 70; // low was 10
+    static public int blueHighH = 130, blueHighS = 255, blueHighV = 255;
+    static public int blueErosionFactor = 20;
+    static public int rbyLowH = -1, rbyLowS = 150, rbyLowV = 200;
+    static public int rbyHighH = 35, rbyHighS = 255, rbyHighV = 255;
+    static public int redErosionFactor = 20;
+    static public int redDilutionFactor = 10;
+
 
     //static public int CLOSEFACTOR = 20;
 
-    private int sampleX = TARGET_X;
-    private int sampleY = TARGET_Y;
-    public static int FOUND_ONE_RIGHT_THRESHOLD = 580;
-    public static int FOUND_ONE_LEFT_THRESHOLD = 60;
+    public int sampleX = TARGET_X;
+    public int sampleY = TARGET_Y;
+    public static int FOUND_ONE_RIGHT_THRESHOLD = 620;
+    public static int FOUND_ONE_LEFT_THRESHOLD = 20;
 
     static public int SAMPLE_SIZE = 1;
     //public double[] samplePixel = new double[3];
@@ -112,6 +143,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     private Mat blurredMat = new Mat();
     private Mat thresholdMat = new Mat();
     private Mat thresholdMatAll = new Mat();
+    private Mat undistortedMat = new Mat();
     private Mat thresholdMatYellow = new Mat();
     private Mat thresholdMatBlue = new Mat();
     private Mat thresholdMatYB = new Mat();
@@ -133,6 +165,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     }
 
     public AtomicBoolean foundOne = new AtomicBoolean(false);
+    public AtomicBoolean outsideUseableCameraRange = new AtomicBoolean(false);
     // TODO: Data about the located Sample
 
     public AtomicInteger rectAngle = new AtomicInteger(-1);
@@ -147,14 +180,20 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         RAW_IMAGE,
         HSV,
         BLURRED,
-        THRESHOLD,
         INVERTED,
+        THRESHOLD,
+        UNDISTORTED,
         ERODED,
         EDGES,
         FINAL
     }
     private Stage stageToRenderToViewport = Stage.FINAL;
     private Stage[] stages = Stage.values();
+
+    class Context {
+        RotatedRect[] rots;
+        List<MatOfPoint> contours;
+    }
 
     public OpenCVSampleDetector() {
         hardwareMap = teamUtil.theOpMode.hardwareMap;
@@ -163,6 +202,10 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     @Override
     public void init(int width, int height, CameraCalibration calibration) {
         teamUtil.log("Initializing OpenCVSampleDetector processor");
+        for (int i=0;i<3;i++)
+            cameraMatrix.put(i,0, cameraMatrixData[i]); // preload calibration data
+        distCoeffs.put(0, 0, distCoeffsData);
+
         teamUtil.log("Initializing OpenCVSampleDetector processor - FINISHED");
     }
     public void outputTelemetry () {
@@ -235,15 +278,48 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         switch (targetColor) {
             case YELLOW:
                 Core.inRange(blurredMat, yellowLowHSV, yellowHighHSV, thresholdMat);
+                //Calib3d.undistort(thresholdMat,undistortedMat,cameraMatrix,distCoeffs);
+
                 //Imgproc.morphologyEx(thresholdMat, closedMat,Imgproc.MORPH_CLOSE, closeElement);
                 Imgproc.erode(thresholdMat, erodedMat, yellowErosionElement);
                 break;
             case BLUE:
                 Core.inRange(blurredMat, blueLowHSV, blueHighHSV, thresholdMat);
+                //Calib3d.undistort(thresholdMat,undistortedMat,cameraMatrix,distCoeffs);
+
                 //Imgproc.morphologyEx(thresholdMat, closedMat,Imgproc.MORPH_CLOSE, closeElement);
                 Imgproc.erode(thresholdMat, erodedMat, blueErosionElement);
                 break;
             case RED:
+                Core.inRange(blurredMat, rbyLowHSV, rbyHighHSV, thresholdMatAll); // Get Red and Yellow
+
+                Core.inRange(blurredMat, yellowLowHSV, yellowHighHSV, thresholdMat);
+                Imgproc.erode(thresholdMat, erodedMat, yellowErosionElement); // Get yellow eroded rects
+                Imgproc.Canny(erodedMat, edgesMat, 100, 300); // find edges
+                thresholdMatYB = thresholdMat.clone();
+                thresholdMatYB.setTo(new Scalar(0));
+                contours.clear(); // empty the list from last time
+                Imgproc.findContours(edgesMat, contours, hierarchyMat, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE); // find contours around yellow rects
+                if (!contours.isEmpty()) {
+                    MatOfPoint2f[] contoursPoly = new MatOfPoint2f[contours.size()];
+                    RotatedRect[] boundRect = new RotatedRect[contours.size()];
+                    for (int i = 0; i < contours.size(); i++) {  // for each yellow rect, draw a white rectangle inside it
+                        contoursPoly[i] = new MatOfPoint2f();
+                        Imgproc.approxPolyDP(new MatOfPoint2f(contours.get(i).toArray()), contoursPoly[i], 3, true);
+                        boundRect[i] = Imgproc.minAreaRect(contoursPoly[i]);
+                        Point[] points = new Point[4];
+                        boundRect[i].points(points);
+                        MatOfPoint r = new MatOfPoint(points);
+                        Imgproc.fillConvexPoly(thresholdMatYB, r, new Scalar(255));
+                    }
+                }
+                Core.subtract(thresholdMatAll, thresholdMatYB,  thresholdMat);
+
+                //Calib3d.undistort(thresholdMat,undistortedMat,cameraMatrix,distCoeffs);
+
+                Imgproc.erode(thresholdMat, erodedMat, redErosionElement);
+
+                /* Previous algorithm for subtracting yellow and blue threshold mats from combined threshold mat--left too many small holes that were tough to fill
                 Core.inRange(blurredMat, rbyLowHSV, rbyHighHSV, thresholdMatAll); // Get Red and Yellow
                 Core.inRange(blurredMat, yellowLowHSV, yellowHighHSV, thresholdMatYellow);
                 Core.inRange(blurredMat, blueLowHSV, blueHighHSV, thresholdMatBlue);
@@ -261,9 +337,9 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                 //for (int i = 0; i < contours.size(); i++) {
                 Imgproc.drawContours(thresholdMat,contours,-1,BLACK,-1); // fill the holes back on the original threshold mat
 
-                //Core.add(dilutedMat,thresholdMat, closedMat);
-                //Imgproc.dilate(thresholdMat, dilutedMat, redDilutionElement);
                 Imgproc.erode(thresholdMat, erodedMat, redErosionElement);
+
+                 */
                 break;
 
         }
@@ -359,20 +435,32 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
          */
         if(rotatedRect[closestAreaSelectionNum].center.x<FOUND_ONE_LEFT_THRESHOLD||rotatedRect[closestAreaSelectionNum].center.x>FOUND_ONE_RIGHT_THRESHOLD){
+
+
             teamUtil.log("OPEN CV SAMPLE DETECTOR FOUND BLOCK BUT CENTER X VALUE WAS OUTSIDE USEABLE RANGE");
+            teamUtil.log("X of Block Center: " + rotatedRect[closestAreaSelectionNum].center.x);
+            teamUtil.log("Y of Block Center: " + rotatedRect[closestAreaSelectionNum].center.y);
+            outsideUseableCameraRange.set(true);
             foundOne.set(false);
         }
         else{
+            outsideUseableCameraRange.set(false);
             foundOne.set(true);
+
+            rectCenterYOffset.set(-1 * ((int) rotatedRect[closestAreaSelectionNum].center.y - TARGET_Y));
+            rectCenterXOffset.set((int) rotatedRect[closestAreaSelectionNum].center.x - TARGET_X);
+            rectAngle.set((int) realAngle);
+            targetIndex = closestAreaSelectionNum;
+
+            if (details) teamUtil.log("Real Angle" + realAngle + "Lowest: " + vertices1[lowestPixel].x + "," + vertices1[lowestPixel].y+"Closest: " + vertices1[closestPixel].x+ "," +vertices1[closestPixel].y);
+
+
         }
-        rectCenterYOffset.set(-1 * ((int) rotatedRect[closestAreaSelectionNum].center.y - TARGET_Y));
-        rectCenterXOffset.set((int) rotatedRect[closestAreaSelectionNum].center.x - TARGET_X);
-        rectAngle.set((int) realAngle);
-        targetIndex = closestAreaSelectionNum;
-
-        if (details) teamUtil.log("Real Angle" + realAngle + "Lowest: " + vertices1[lowestPixel].x + "," + vertices1[lowestPixel].y+"Closest: " + vertices1[closestPixel].x+ "," +vertices1[closestPixel].y);
-
-        return rotatedRect;
+        //return rotatedRect;
+        Context context = new Context();
+        context.rots = rotatedRect;
+        context.contours = contours;
+        return context;
     }
 
     @Override
@@ -390,13 +478,14 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                 case BLURRED: { Utils.matToBitmap(blurredMat, bmp); break;}
                 case INVERTED: {
                     if (targetColor == TargetColor.RED) {
-                        Utils.matToBitmap(invertedMat, bmp);
+                        Utils.matToBitmap(thresholdMatAll, bmp);
                     } else {
                         Utils.matToBitmap(thresholdMat, bmp);
                     }
                     break;
                 }
                 case THRESHOLD: { Utils.matToBitmap(thresholdMat, bmp); break;}
+                case UNDISTORTED: { Utils.matToBitmap(undistortedMat,bmp); break;}
                 case ERODED: { Utils.matToBitmap(erodedMat, bmp); break;}
                 case EDGES: { Utils.matToBitmap(edgesMat, bmp); break;}
                 default: {}
@@ -406,52 +495,77 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         }
 
 
-
         Paint samplePaint = new Paint();
         samplePaint.setColor(Color.GREEN);
         samplePaint.setStyle(Paint.Style.STROKE);
         samplePaint.setStrokeWidth(scaleCanvasDensity * 4);
+        canvas.drawRect(166,110,474,370,samplePaint);
+
         canvas.drawCircle((float)TARGET_X*scaleBmpPxToCanvasPx, (float)TARGET_Y*scaleBmpPxToCanvasPx, 10,samplePaint);
         canvas.drawRect((float)sampleRect.tl().x*scaleBmpPxToCanvasPx, (float)sampleRect.tl().y*scaleBmpPxToCanvasPx, (float)sampleRect.br().x*scaleBmpPxToCanvasPx, (float)sampleRect.br().y*scaleBmpPxToCanvasPx,samplePaint);
 
         if (userContext != null) {
-            RotatedRect[] rotatedRect = (RotatedRect[]) userContext;
+            RotatedRect[] rotatedRect = ((Context) userContext).rots;
+            if (rotatedRect != null) {
+                Paint rectPaint = new Paint();
+                rectPaint.setColor(Color.MAGENTA);
+                rectPaint.setStyle(Paint.Style.STROKE);
+                rectPaint.setStrokeWidth(scaleCanvasDensity * 6);
+                Paint anglePaint = new Paint();
+                anglePaint.setColor(Color.CYAN);
+                anglePaint.setStyle(Paint.Style.STROKE);
+                anglePaint.setTextSize(20);
+                anglePaint.setStrokeWidth(scaleCanvasDensity * 6);
+                Paint centerPaint = new Paint();
+                centerPaint.setColor(Color.BLACK);
+                centerPaint.setStyle(Paint.Style.STROKE);
+                centerPaint.setStrokeWidth(scaleCanvasDensity * 6);
 
-            Paint rectPaint = new Paint();
-            rectPaint.setColor(Color.MAGENTA);
-            rectPaint.setStyle(Paint.Style.STROKE);
-            rectPaint.setStrokeWidth(scaleCanvasDensity * 6);
-            Paint anglePaint = new Paint();
-            anglePaint.setColor(Color.CYAN);
-            anglePaint.setStyle(Paint.Style.STROKE);
-            anglePaint.setTextSize(20);
-            anglePaint.setStrokeWidth(scaleCanvasDensity * 6);
-            Paint centerPaint = new Paint();
-            centerPaint.setColor(Color.BLACK);
-            centerPaint.setStyle(Paint.Style.STROKE);
-            centerPaint.setStrokeWidth(scaleCanvasDensity * 6);
+                for (int i = 0; i < rotatedRect.length; i++) {
 
-            for (int i = 0; i < rotatedRect.length; i++) {
+                    // Draw rotated Rectangle
+                    Point vertices[] = new Point[4];
+                    rotatedRect[i].points(vertices);
+                    for (int j = 0; j < 4; j++) {
+                        canvas.drawLine((float)vertices[j].x*scaleBmpPxToCanvasPx,(float)vertices[j].y*scaleBmpPxToCanvasPx,(float)vertices[(j+1)%4].x*scaleBmpPxToCanvasPx,(float)vertices[(j+1)%4].y*scaleBmpPxToCanvasPx,rectPaint);
+                    }
+                    if (targetIndex == i) {
+                        // Draw Center
+                        canvas.drawCircle((float)rotatedRect[i].center.x*scaleBmpPxToCanvasPx, (float)rotatedRect[i].center.y*scaleBmpPxToCanvasPx, 5,centerPaint);
 
-                // Draw rotated Rectangle
-                Point vertices[] = new Point[4];
-                rotatedRect[i].points(vertices);
-                for (int j = 0; j < 4; j++) {
-                    canvas.drawLine((float)vertices[j].x*scaleBmpPxToCanvasPx,(float)vertices[j].y*scaleBmpPxToCanvasPx,(float)vertices[(j+1)%4].x*scaleBmpPxToCanvasPx,(float)vertices[(j+1)%4].y*scaleBmpPxToCanvasPx,rectPaint);
+                        // Draw angle vector
+                        int endX = (int) (rotatedRect[i].center.x + 20 * Math.cos(rectAngle.get() * 3.14 / 180.0));
+                        int endY =  (int) (rotatedRect[i].center.y + 20 * Math.sin(rectAngle.get() * 3.14 / 180.0));
+                        canvas.drawLine((float)rotatedRect[i].center.x*scaleBmpPxToCanvasPx,(float)rotatedRect[i].center.y*scaleBmpPxToCanvasPx,(float)endX*scaleBmpPxToCanvasPx,(float)endY*scaleBmpPxToCanvasPx,rectPaint);
+                        //Imgproc.putText(matImgDst, String.valueOf((int)boundRect[i].angle),boundRect[i].center,0,1,PASTEL_GREEN);
+                        canvas.drawText(Integer.toString(rectAngle.get()),(float)rotatedRect[i].center.x*scaleBmpPxToCanvasPx,(float)rotatedRect[i].center.y*scaleBmpPxToCanvasPx,anglePaint);
+                    }
+
                 }
-                if (targetIndex == i) {
-                    // Draw Center
-                    canvas.drawCircle((float)rotatedRect[i].center.x*scaleBmpPxToCanvasPx, (float)rotatedRect[i].center.y*scaleBmpPxToCanvasPx, 5,centerPaint);
-
-                    // Draw angle vector
-                    int endX = (int) (rotatedRect[i].center.x + 20 * Math.cos(rectAngle.get() * 3.14 / 180.0));
-                    int endY =  (int) (rotatedRect[i].center.y + 20 * Math.sin(rectAngle.get() * 3.14 / 180.0));
-                    canvas.drawLine((float)rotatedRect[i].center.x*scaleBmpPxToCanvasPx,(float)rotatedRect[i].center.y*scaleBmpPxToCanvasPx,(float)endX*scaleBmpPxToCanvasPx,(float)endY*scaleBmpPxToCanvasPx,rectPaint);
-                    //Imgproc.putText(matImgDst, String.valueOf((int)boundRect[i].angle),boundRect[i].center,0,1,PASTEL_GREEN);
-                    canvas.drawText(Integer.toString(rectAngle.get()),(float)rotatedRect[i].center.x*scaleBmpPxToCanvasPx,(float)rotatedRect[i].center.y*scaleBmpPxToCanvasPx,anglePaint);
-                }
-
             }
+            List<MatOfPoint> drawContours = ((Context) userContext).contours;
+            if (drawContours != null) {
+                if (!drawContours.isEmpty()) {
+                    Paint polyPaint = new Paint();
+                    polyPaint.setColor(Color.WHITE);
+                    polyPaint.setStyle(Paint.Style.STROKE);
+                    polyPaint.setStrokeWidth(scaleCanvasDensity * 6);
+
+                    List<MatOfPoint> polygons = new ArrayList<>();
+                    for (MatOfPoint contour : drawContours) {
+                        MatOfPoint2f contour2f = new MatOfPoint2f(contour.toArray());
+                        MatOfPoint2f polygon2f = new MatOfPoint2f();
+                        //Imgproc.approxPolyDP(contour2f, polygon2f, 0.02 * Imgproc.arcLength(contour2f, true), true);
+                        Imgproc.approxPolyDP(contour2f, polygon2f, 3, true);
+                        Point[] points = polygon2f.toArray();
+                        for (int i = 0; i < points.length - 1; i++) {
+                            canvas.drawLine((float) points[i].x * scaleBmpPxToCanvasPx, (float) points[i].y * scaleBmpPxToCanvasPx, (float) points[i + 1].x * scaleBmpPxToCanvasPx, (float) points[i + 1].y * scaleBmpPxToCanvasPx, polyPaint);
+                        }
+                        canvas.drawLine((float) points[0].x * scaleBmpPxToCanvasPx, (float) points[0].y * scaleBmpPxToCanvasPx, (float) points[points.length-1].x * scaleBmpPxToCanvasPx, (float) points[points.length-1].y * scaleBmpPxToCanvasPx, polyPaint);
+                    }
+                }
+            }
+
         }
     }
 }
