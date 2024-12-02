@@ -179,9 +179,13 @@ public class CalibrateArms extends LinearOpMode {
 
     public void intakeSeekTesting() {
         if (gp1.wasUpPressed()) {
-            intake.goToSampleV3(5000,5000);
+            intake.lightsOnandOff(Intake.WHITE_NEOPIXEL,Intake.RED_NEOPIXEL,Intake.GREEN_NEOPIXEL,Intake.BLUE_NEOPIXEL,true);
+
+            intake.goToSampleV4(5000,5000);
             //intake.goToSampleAndGrabV2(5000);
         } if (gp1.wasOptionsPressed()) {
+            intake.lightsOnandOff(Intake.WHITE_NEOPIXEL,Intake.RED_NEOPIXEL,Intake.GREEN_NEOPIXEL,Intake.BLUE_NEOPIXEL,true);
+
             intake.goToSampleAndGrabV2(5000);
             //intake.goToSampleAndGrabV2(5000);
         } if(gp1.wasLeftPressed()){
@@ -347,13 +351,14 @@ public class CalibrateArms extends LinearOpMode {
             hangCalibrated = true;
         }
         if(gp1.wasYPressed() && hangCalibrated){
-            hang.extendHang(5000);
+            hang.extendHang();
         }
         if(gp1.wasBPressed() && hangCalibrated){
-            hang.engageHang(5000);
+            hang.engageHang();
         }
-        if(gp1.wasAPressed()){
-            output.outputLowBucket();
+
+        if(gp1.wasUpPressed()){
+            hang.stowHang();
         }
     }
 }

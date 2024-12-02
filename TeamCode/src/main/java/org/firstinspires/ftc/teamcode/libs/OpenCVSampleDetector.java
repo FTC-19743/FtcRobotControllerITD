@@ -499,7 +499,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         samplePaint.setColor(Color.GREEN);
         samplePaint.setStyle(Paint.Style.STROKE);
         samplePaint.setStrokeWidth(scaleCanvasDensity * 4);
-        canvas.drawRect(166,110,474,370,samplePaint);
+        canvas.drawRect(180,30,488,290,samplePaint);
 
         canvas.drawCircle((float)TARGET_X*scaleBmpPxToCanvasPx, (float)TARGET_Y*scaleBmpPxToCanvasPx, 10,samplePaint);
         canvas.drawRect((float)sampleRect.tl().x*scaleBmpPxToCanvasPx, (float)sampleRect.tl().y*scaleBmpPxToCanvasPx, (float)sampleRect.br().x*scaleBmpPxToCanvasPx, (float)sampleRect.br().y*scaleBmpPxToCanvasPx,samplePaint);

@@ -23,7 +23,9 @@ public class Hang {
     HardwareMap hardwareMap;
     Telemetry telemetry;
 
-    public DcMotorEx hang;
+    public Servo pulley_left;
+    public Servo pulley_right;
+
 
     public AtomicBoolean hangMoving = new AtomicBoolean(false);
     public boolean details = true;
@@ -31,6 +33,15 @@ public class Hang {
     public static int HANG_EXTEND = 3100;
     public static int HANG_ENGAGE = 800;
     public static int HANG_VELOCITY = 3000;
+
+    public static float PULLEYLEFT_STOW = 0.4f;
+    public static float PULLEYLEFT_HANG = 0.44f;
+    public static float PULLEYLEFT_EXTEND = 0.86f;
+
+    public static float PULLEYRIGHT_STOW = 0.61f;
+    public static float PULLEYRIGHT_HANG = 0.54f;
+    public static float PULLEYRIGHT_EXTEND = 0.17f;
+
 
 
     public Hang() {
@@ -41,104 +52,50 @@ public class Hang {
 
     public void initalize() {
         teamUtil.log("Initializing Hang");
-        hang = hardwareMap.get(DcMotorEx.class,"hang");
+        pulley_left = hardwareMap.get(Servo.class,"pulleyleft");
+        pulley_right = hardwareMap.get(Servo.class,"pulleyright");
+
 
 
     }
+
     public void calibrate(){
-        hang.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        hang.setPower(-.3); // go fast first time
-        int lastHangPosition = hang.getCurrentPosition();
-        teamUtil.pause(250);
-        while (hang.getCurrentPosition() != lastHangPosition) {
-            lastHangPosition = hang.getCurrentPosition();
-            if (details) teamUtil.log("Calibrate Hang: " + hang.getCurrentPosition());
-            teamUtil.pause(50);
-        }
-        hang.setPower(0);
-        teamUtil.pause(1000);
-        hang.setPower(-.07); //Go slow second time so it doesn't bounce
-        lastHangPosition = hang.getCurrentPosition();
-        teamUtil.pause(250);
-        while (hang.getCurrentPosition() != lastHangPosition) {
-            lastHangPosition = hang.getCurrentPosition();
-            if (details) teamUtil.log("Calibrate Hang: " + hang.getCurrentPosition());
-            teamUtil.pause(50);
-        }
-        hang.setPower(0);
-        hang.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        hang.setTargetPosition(hang.getCurrentPosition());
-        hang.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        teamUtil.log("Calibrate Hang Final: "+hang.getCurrentPosition());
+
     }
+
+
 
     public void outputTelemetry(){
-        telemetry.addLine("Hang Current Position: " +hang.getCurrentPosition());
+        //telemetry.addLine("Hang Current Position: " +hang.getCurrentPosition());
     }
 
-    public void extendHang(long timeout){
+    public void extendHang(){
         if (details) teamUtil.log("Extending Hang");
-        long timeout2 = System.currentTimeMillis()+timeout;
         hangMoving.set(true);
-        hang.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        hang.setTargetPosition(HANG_EXTEND);
-        hang.setVelocity(HANG_VELOCITY);
-        while(Math.abs(hang.getCurrentPosition()-HANG_EXTEND)>20&&System.currentTimeMillis()<timeout2){
-            if(details)teamUtil.log("Hang Encoder Position: " + hang.getCurrentPosition());
-            teamUtil.pause(20);
-        }
+        pulley_left.setPosition(PULLEYLEFT_EXTEND);
+        pulley_right.setPosition(PULLEYRIGHT_EXTEND);
+
         teamUtil.log("Hang Extended");
         hangMoving.set(false);
     }
 
-    public void engageHang(long timeout){
-        if (details) teamUtil.log("Engaging Hang");
-        long timeout2 = System.currentTimeMillis()+timeout;
+    public void engageHang(){
+        if (details) teamUtil.log("Extending Hang");
         hangMoving.set(true);
-        hang.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        hang.setTargetPosition(HANG_ENGAGE);
-        hang.setVelocity(HANG_VELOCITY);
-        while(Math.abs(hang.getCurrentPosition()-HANG_ENGAGE)>20&&System.currentTimeMillis()<timeout2){
-            if(details)teamUtil.log("Hang Encoder Position: " + hang.getCurrentPosition());
-            teamUtil.pause(20);
-        }
-        teamUtil.log("Hang Engaged");
+        pulley_left.setPosition(PULLEYLEFT_HANG);
+        pulley_right.setPosition(PULLEYRIGHT_HANG);
+
+        teamUtil.log("Hang Extended");
         hangMoving.set(false);
     }
 
-    public void extendHangNoWait(long timeout){
-        if(hangMoving.get()){
-            teamUtil.log("WARNING: Attempt to extendHang while hang is moving--ignored");
-        }
-        else{
-            hangMoving.set(true);
-            teamUtil.log("Launching Thread to ExtendHangNoWait");
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    extendHang(timeout);
-                }
-            });
-            thread.start();
-        }
+    public void stowHang(){
+        if (details) teamUtil.log("Extending Hang");
+        hangMoving.set(true);
+        pulley_left.setPosition(PULLEYLEFT_STOW);
+        pulley_right.setPosition(PULLEYRIGHT_STOW);
+
+        teamUtil.log("Hang Extended");
+        hangMoving.set(false);
     }
-
-    public void engageHangNoWait(long timeout){
-        if(hangMoving.get()){
-            teamUtil.log("WARNING: Attempt to engage Hang while Hang is moving--ignored");
-        }
-        else{
-            hangMoving.set(true);
-            teamUtil.log("Launching Thread to engageHangNoWait");
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    engageHang(timeout);
-                }
-            });
-            thread.start();
-        }
-    }
-
-
 }

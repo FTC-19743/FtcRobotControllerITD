@@ -159,6 +159,7 @@ public class Teleop extends LinearOpMode {
             if (armsGamepad.wasAPressed()&&!robot.intake.autoSeeking.get()) {
                 if(robot.intake.extender.getCurrentPosition()<Intake.EXTENDER_SAFE_TO_UNLOAD_THRESHOLD){
                     robot.intake.unloadNoWait(5000);
+                    extenderSliderUnlocked = false;
                 }
 
             }
@@ -184,16 +185,16 @@ public class Teleop extends LinearOpMode {
 
             if ((armsGamepad.wasBPressed()&&teamUtil.alliance == teamUtil.Alliance.RED)&&extenderSliderUnlocked&&!robot.intake.autoSeeking.get()) { //Grab Red
                 robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
-                robot.intake.goToSampleAndGrabNoWait(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT);  //TODO Tune timeout
+                robot.intake.goToSampleAndGrabNoWaitV2(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT);  //TODO Tune timeout
 
             }
             if ((armsGamepad.wasYPressed())&&extenderSliderUnlocked&&!robot.intake.autoSeeking.get()) { //Grab Yellow
                 robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
-                robot.intake.goToSampleAndGrabNoWait(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT); //TODO Tune timeout
+                robot.intake.goToSampleAndGrabNoWaitV2(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT); //TODO Tune timeout
             }
             if ((armsGamepad.wasXPressed()&&teamUtil.alliance == teamUtil.Alliance.BLUE)&&extenderSliderUnlocked&&!robot.intake.autoSeeking.get()) { //Grab Blue
                 robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
-                robot.intake.goToSampleAndGrabNoWait(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT); //TODO Tune timeout
+                robot.intake.goToSampleAndGrabNoWaitV2(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT); //TODO Tune timeout
             }
 
 
@@ -211,10 +212,10 @@ public class Teleop extends LinearOpMode {
 
             //HANG
             if (driverGamepad.wasUpPressed()) {
-                robot.hang.extendHangNoWait(4000);
+                robot.hang.extendHang();
             }
             if (driverGamepad.wasDownPressed()) {
-                robot.hang.engageHangNoWait(4000);
+                robot.hang.engageHang();
             }
 
 
