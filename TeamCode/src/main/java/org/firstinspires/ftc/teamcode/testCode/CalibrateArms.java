@@ -29,6 +29,7 @@ public class CalibrateArms extends LinearOpMode {
     AxonSlider axonSlider;
     boolean hangCalibrated = false;
 
+
     public enum Ops {Intake_Manual_Operation,
         Test_Intake_Speeds,
         Test_Intake_Run_To_Position,
@@ -40,7 +41,7 @@ public class CalibrateArms extends LinearOpMode {
         };
     public static Ops AA_Operation = Ops.Intake_Manual_Operation;
 
-
+    public static double SLIDER_TARGET = 0;
 
     private TeamGamepad gp1 = new TeamGamepad();
     private TeamGamepad gp2 = new TeamGamepad();
@@ -63,6 +64,8 @@ public class CalibrateArms extends LinearOpMode {
         FtcDashboard dashboard = FtcDashboard.getInstance();
         //FtcDashboard.setDrawDefaultField(false); // enable to eliminate field drawing
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry()); // write telemetry to Driver Station and Dashboard
+
+
 
         teamUtil.init(this);
         teamUtil.alliance = teamUtil.Alliance.RED;
@@ -175,6 +178,9 @@ public class CalibrateArms extends LinearOpMode {
         if(gp1.wasRightTriggerPressed()){
             intake.wrist.setPosition(Intake.WRIST_MIDDLE);
         }
+        if(gp1.wasLeftTriggerPressed()){
+            intake.axonSlider.runToPosition(SLIDER_TARGET, 3000);
+        }
     }
 
     public void intakeSeekTesting() {
@@ -216,9 +222,14 @@ public class CalibrateArms extends LinearOpMode {
 
     public void intakeManualOperation() {
         if (gp1.wasUpPressed()) {
-            intake.goToSeek(1500);
+            intake.goToAndGrabAndUnloadNoWait(7000);
             //intake.flipperGoToSeek(2000);
         }
+        if (gp1.wasLeftTriggerPressed()) {
+            intake.goToSampleAndGrabNoWaitV2(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT);
+            //intake.flipperGoToSeek(2000);
+        }
+
         if (gp1.wasDownPressed()) {
             //intake.goToGrab();
             intake.flipperGoToGrab(2000);

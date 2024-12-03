@@ -22,10 +22,15 @@ public class AxonSlider {
     static public float SLIDER_UNLOAD = 0; // TODO Recalibrate
     static public float SLIDER_READY = 0;//TODO Recalibrate
 
-    public static int RTP_DEADBAND_DEGREES = 3;
+    public static int RTP_LEFT_DEADBAND_DEGREES = 32;
+    public static int RTP_RIGHT_DEADBAND_DEGREES = 22;
+    public static float RTP_MAX_SLOW_VELOCITY = .25f;
+    public static float RTP_LEFT_DEADBAND_SLOW_DEGREES = 16;
+    public static float RTP_RIGHT_DEADBAND_SLOW_DEGREES = 11;
     public static float RTP_P_COEFFICIENT = .005f;
     public static float RTP_MIN_VELOCITY = .1f;
     public static float RTP_MAX_VELOCITY = .5f;
+    public static int RTP_DELTADEGREES_THRESHOLD = 20;
     public static float POWER_ADJUSTEMENT = -.01f;
     public static float MANUAL_SLIDER_INCREMENT;
     double SLIDER_X_DEADBAND = 0.5;
@@ -105,6 +110,7 @@ public class AxonSlider {
     // This method returns when the servo is in the new position
     public void runToPosition (double target, long timeOut) {
         moving.set(true);
+
         teamUtil.log("Slider Run to Position Target: " + (int)target);
         long timeoutTime = System.currentTimeMillis()+timeOut;
         if (target > RIGHT_LIMIT || target < LEFT_LIMIT) {
@@ -114,26 +120,41 @@ public class AxonSlider {
         }
         float sliderVelocity;
         double degreesFromTarget = target-getPosition();
+        double initialDegreesFromTarget = degreesFromTarget;
+        double deltaDegrees = 0;
+        if(Math.abs(initialDegreesFromTarget)<RTP_LEFT_DEADBAND_DEGREES){
+            while (teamUtil.keepGoing(timeoutTime) && initialDegreesFromTarget<0? degreesFromTarget < -RTP_LEFT_DEADBAND_SLOW_DEGREES : degreesFromTarget>RTP_RIGHT_DEADBAND_SLOW_DEGREES) {
+                loop();
+                sliderVelocity = (float) RTP_MAX_SLOW_VELOCITY;
+                if (degreesFromTarget > 0) {
+                    sliderVelocity *= -1;
+                }
 
-        //Drift Calculation
-        double drift = 234.234*(RTP_P_COEFFICIENT)+9.6486;
-        if(target>getPosition()){
-            target-=drift;
-        }else{
-            target+=drift;
-        }
-
-        while (teamUtil.keepGoing(timeoutTime) && Math.abs(degreesFromTarget) > RTP_DEADBAND_DEGREES) {
-            loop();
-            sliderVelocity = (float) Math.min(RTP_P_COEFFICIENT * Math.abs(degreesFromTarget) + RTP_MIN_VELOCITY, RTP_MAX_VELOCITY);
-            if (degreesFromTarget > 0) {
-                sliderVelocity *= -1;
+                setAdjustedPower(sliderVelocity);
+                if (details) teamUtil.log("Degrees from Target: " + degreesFromTarget + " Power: " + sliderVelocity);
+                degreesFromTarget = target-getPosition();
             }
-
-            setAdjustedPower(sliderVelocity);
-            if (details) teamUtil.log("Degrees from Target: " + degreesFromTarget + " Power: " + sliderVelocity);
-            degreesFromTarget = target-getPosition();
         }
+        else{
+            while (teamUtil.keepGoing(timeoutTime) && initialDegreesFromTarget<0? degreesFromTarget < -RTP_LEFT_DEADBAND_DEGREES : degreesFromTarget>RTP_RIGHT_DEADBAND_DEGREES) {
+                loop();
+                //sliderVelocity = (float) Math.min(RTP_P_COEFFICIENT * Math.abs(degreesFromTarget) + RTP_MIN_VELOCITY, RTP_MAX_VELOCITY);
+                sliderVelocity = RTP_MAX_VELOCITY;
+                if (degreesFromTarget > 0) {
+                    sliderVelocity *= -1;
+                }
+                deltaDegrees = target-getPosition() - degreesFromTarget;
+                if(deltaDegrees>RTP_DELTADEGREES_THRESHOLD){
+                    teamUtil.pause(10);
+                }
+                setAdjustedPower(sliderVelocity);
+
+                if (details) teamUtil.log("Degrees from Target: " + degreesFromTarget + " Power: " + sliderVelocity);
+                degreesFromTarget = target-getPosition();
+            }
+        }
+
+
         axon.setPower(0);
         moving.set(false);
         if (System.currentTimeMillis() > timeoutTime) {

@@ -85,6 +85,7 @@ public class Intake {
     static public double FLIPPER_SAFE_POT_THRESHOLD = .1;
     static public int FLIPPER_GRAB_PAUSE = 500;
     static public long FLIPPER_GO_TO_SEEK_TIMEOUT = 2000;
+    public static double FLIPPER_GOTOUNLOAD_THRESHOLD = 0.488;
 
 
 //    static public float FLIPPER_POTENTIOMETER_SAFE = ;
@@ -170,6 +171,7 @@ public class Intake {
     static public int EXTENDER_SAFE_TO_UNLOAD_THRESHOLD = 50;
     static public int EXTENDER_GO_TO_SAMPLE_VELOCITY = 2000;
     static public int EXTENDER_TOLERANCE_SEEK = 5;
+    static public int EXTENDER_GOTOUNLOAD_THRESHOLD = 20;
 
 
     static public int TEST_EXTENDER_VAL = 1000;
@@ -419,6 +421,18 @@ public class Intake {
 
     }
 
+    public void flipperGoToUnloadNoWait(long timeOut){
+            moving.set(true);
+            teamUtil.log("Launching Thread to flipperGoToUnloadNoWait");
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    flipperGoToUnload(timeOut);
+                }
+            });
+            thread.start();
+    }
+
 
     // Go to seek position
     // Centers first then goes forward a bit
@@ -509,6 +523,44 @@ public class Intake {
         return false;
     }
 
+    public boolean goToAndGrabAndUnloadSample(long timeOut){
+        autoSeeking.set(true);
+        teamUtil.log("Launched GoToSample and Grab and Unload" );
+        timedOut.set(false);
+        long timeoutTime = System.currentTimeMillis()+timeOut;
+        if(goToSampleV4(timeOut,5000) && !timedOut.get()) {
+            flipAndRotateToSampleAndGrab(timeoutTime - System.currentTimeMillis());
+
+            if (!timedOut.get()) {
+                goToUnload(5000);
+                autoSeeking.set(false);
+                moving.set(false);
+                return true;
+            }
+
+        }
+        moving.set(false);
+        teamUtil.log("Failed to locate and grab sample" );
+        autoSeeking.set(false);
+        return false;
+    }
+
+    public void goToAndGrabAndUnloadNoWait(long timeOut) {
+        if (moving.get()) { // Intake is already moving in another thread
+            teamUtil.log("WARNING: Attempt to goToSeek while intake is moving--ignored");
+            return;
+        } else {
+            moving.set(true);
+            teamUtil.log("Launching Thread to goToAndGrabAndUnloadSample");
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    goToAndGrabAndUnloadSample(timeOut);
+                }
+            });
+            thread.start();
+        }
+    }
 
     public boolean goToSampleV2(long timeOut){
         teamUtil.log("GoToSample V2 has started");
@@ -1179,14 +1231,13 @@ public class Intake {
             timedOut.set(true);
             return;
         }
-        flipperGoToUnload(100000);
-        FlipperInSeek.set(false);
-
-        FlipperInUnload.set(true);
+        flipperGoToUnloadNoWait(3000);
         wrist.setPosition(WRIST_UNLOAD);
         extendersToPosition(EXTENDER_UNLOAD,timeoutTime-System.currentTimeMillis());
         extender.setVelocity(EXTENDER_HOLD_RETRACT_VELOCITY);
-        teamUtil.pause(GO_TO_UNLOAD_WAIT_TIME);
+        while(extender.getCurrentPosition()>EXTENDER_GOTOUNLOAD_THRESHOLD||flipperPotentiometer.getVoltage()>FLIPPER_GOTOUNLOAD_THRESHOLD){
+            teamUtil.pause(20);
+        }
         release();
         teamUtil.pause(RELEASE_WAIT_TIME);
         goToSafe();
