@@ -94,6 +94,7 @@ public class CalibrateCV extends LinearOpMode {
             teamUtil.pause(100);
 
         }
+        intake.closeCV();
     }
 }
 /*

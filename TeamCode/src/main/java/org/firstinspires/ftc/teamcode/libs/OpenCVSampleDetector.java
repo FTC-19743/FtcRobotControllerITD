@@ -115,10 +115,10 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public int yellowLowH = 10, yellowLowS = 100, yellowLowV = 170;
     static public int yellowHighH = 35, yellowHighS = 255, yellowHighV = 255;
     static public int yellowErosionFactor = 20;
-    static public int blueLowH = 90, blueLowS = 110, blueLowV = 70; // low was 10
+    static public int blueLowH = 90, blueLowS = 80, blueLowV = 70; // low was 10
     static public int blueHighH = 130, blueHighS = 255, blueHighV = 255;
     static public int blueErosionFactor = 20;
-    static public int rbyLowH = -1, rbyLowS = 150, rbyLowV = 200;
+    static public int rbyLowH = -1, rbyLowS = 150, rbyLowV = 125;
     static public int rbyHighH = 35, rbyHighS = 255, rbyHighV = 255;
     static public int redErosionFactor = 20;
     static public int redDilutionFactor = 10;
@@ -182,7 +182,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         BLURRED,
         INVERTED,
         THRESHOLD,
-        UNDISTORTED,
+        //UNDISTORTED,
         ERODED,
         EDGES,
         FINAL
@@ -485,7 +485,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                     break;
                 }
                 case THRESHOLD: { Utils.matToBitmap(thresholdMat, bmp); break;}
-                case UNDISTORTED: { Utils.matToBitmap(undistortedMat,bmp); break;}
+                //case UNDISTORTED: { Utils.matToBitmap(undistortedMat,bmp); break;}
                 case ERODED: { Utils.matToBitmap(erodedMat, bmp); break;}
                 case EDGES: { Utils.matToBitmap(edgesMat, bmp); break;}
                 default: {}

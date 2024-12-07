@@ -257,6 +257,9 @@ public class Intake {
         teamUtil.log("Initializing CV in Intake - Finished");
     }
 
+    public void closeCV () {
+        arduPortal.close();
+    }
 
     // Calibrate slider and extender.
     public void calibrate() {
