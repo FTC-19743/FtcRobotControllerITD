@@ -15,28 +15,31 @@ public class AxonSlider {
     AnalogInput axonPotentiometer;
     AtomicBoolean moving = new AtomicBoolean(false);
     public AtomicBoolean timedOut = new AtomicBoolean(false);
-    public boolean details = true;
+    public static boolean details = false;
 
-    public static int RIGHT_LIMIT = 0; //tentative
-    public static int LEFT_LIMIT = 0; //tentative
+    public static int RIGHT_LIMIT = 0; //set during calibration
+    public static int LEFT_LIMIT = 0; //set during calibration
     static public float SLIDER_UNLOAD = 0; // TODO Recalibrate
     static public float SLIDER_READY = 0;//TODO Recalibrate
 
-    public static int RTP_LEFT_DEADBAND_DEGREES = 32;
-    public static int RTP_RIGHT_DEADBAND_DEGREES = 22;
-    public static float RTP_MAX_SLOW_VELOCITY = .25f;
-    public static float RTP_LEFT_DEADBAND_SLOW_DEGREES = 16;
-    public static float RTP_RIGHT_DEADBAND_SLOW_DEGREES = 11;
-    public static float RTP_P_COEFFICIENT = .005f;
-    public static float RTP_MIN_VELOCITY = .1f;
-    public static float RTP_MAX_VELOCITY = .5f;
-    public static int RTP_DELTADEGREES_THRESHOLD = 20;
     public static float POWER_ADJUSTEMENT = -.01f;
+    public static int DEGREE_NOISE_THRESHOLD = 20;
+
+    public static float RTP_MAX_VELOCITY = .5f;
+    public static int RTP_LEFT_DEADBAND_DEGREES = 32;
+    public static int RTP_RIGHT_DEADBAND_DEGREES = 16;
+    public static int RTP_SLOW_THRESHOLD = 35;
+    public static float RTP_SLOW_VELOCITY = .1f;
+    public static int RTP_LEFT_DEADBAND_SLOW_DEGREES = 10;
+    public static int RTP_RIGHT_DEADBAND_SLOW_DEGREES = 6;
+    //public static float RTP_P_COEFFICIENT = .005f;
+    //public static float RTP_MIN_VELOCITY = .1f;
     public static float MANUAL_SLIDER_INCREMENT;
     double SLIDER_X_DEADBAND = 0.5;
     public boolean CALIBRATED = false;
 
     //292 slider degrees to 10 cm
+    // 1 mm = 3 degrees
     //LEFT IS NEGATIVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     public static float SLIDER_DEGREES_PER_CM = 29.2f;
@@ -106,63 +109,65 @@ public class AxonSlider {
         axon.setPower(power);
     }
 
+
     // Run the servo to the specified position as quickly as possible
     // This method returns when the servo is in the new position
-    public void runToPosition (double target, long timeOut) {
+    private void runToTarget (double target, float sliderVelocity, int leftDeadband, int rightDeadband, long timeOut) {
         moving.set(true);
-
-        teamUtil.log("Slider Run to Position Target: " + (int)target);
+        teamUtil.log("Slider runToTarget: " + (int)target + " at power: "+ sliderVelocity);
         long timeoutTime = System.currentTimeMillis()+timeOut;
         if (target > RIGHT_LIMIT || target < LEFT_LIMIT) {
-            teamUtil.log("ERROR: TARGET OUTSIDE OF RANGE! -- Not Moving");
+            teamUtil.log("ERROR: SLIDER TARGET OUTSIDE OF RANGE! -- Not Moving");
             moving.set(false);
             return;
         }
-        float sliderVelocity;
+        loop();
         double degreesFromTarget = target-getPosition();
+        double lastdegreesFromTarget = degreesFromTarget;
         double initialDegreesFromTarget = degreesFromTarget;
-        double deltaDegrees = 0;
-        if(Math.abs(initialDegreesFromTarget)<RTP_LEFT_DEADBAND_DEGREES){
-            while (teamUtil.keepGoing(timeoutTime) && initialDegreesFromTarget<0? degreesFromTarget < -RTP_LEFT_DEADBAND_SLOW_DEGREES : degreesFromTarget>RTP_RIGHT_DEADBAND_SLOW_DEGREES) {
+        setAdjustedPower(degreesFromTarget > 0 ? sliderVelocity * -1 : sliderVelocity); // start moving
+        while (teamUtil.keepGoing(timeoutTime) &&
+                initialDegreesFromTarget < 0 ? // while we haven't yet reached the drift threshold
+                    degreesFromTarget < -leftDeadband :
+                    degreesFromTarget > rightDeadband) {
+            loop();
+            if (details)
+                teamUtil.log("Degrees from Target: " + degreesFromTarget + " Power: " + sliderVelocity);
+            lastdegreesFromTarget = degreesFromTarget;
+            // teamutil.pause(10);
+            degreesFromTarget = target - getPosition();
+            while (teamUtil.keepGoing(timeoutTime) && Math.abs(degreesFromTarget - lastdegreesFromTarget) > DEGREE_NOISE_THRESHOLD) {
+                if (details) teamUtil.log("Ignoring Noise from Servo Potentiometer. Degrees: " + degreesFromTarget + "Last degrees: " + lastdegreesFromTarget);
+                //lastdegreesFromTarget = degreesFromTarget;
+                teamUtil.pause(10); // wait for a better reading
                 loop();
-                sliderVelocity = (float) RTP_MAX_SLOW_VELOCITY;
-                if (degreesFromTarget > 0) {
-                    sliderVelocity *= -1;
-                }
-
-                setAdjustedPower(sliderVelocity);
-                if (details) teamUtil.log("Degrees from Target: " + degreesFromTarget + " Power: " + sliderVelocity);
-                degreesFromTarget = target-getPosition();
+                degreesFromTarget = target - getPosition();
             }
         }
-        else{
-            while (teamUtil.keepGoing(timeoutTime) && initialDegreesFromTarget<0? degreesFromTarget < -RTP_LEFT_DEADBAND_DEGREES : degreesFromTarget>RTP_RIGHT_DEADBAND_DEGREES) {
-                loop();
-                //sliderVelocity = (float) Math.min(RTP_P_COEFFICIENT * Math.abs(degreesFromTarget) + RTP_MIN_VELOCITY, RTP_MAX_VELOCITY);
-                sliderVelocity = RTP_MAX_VELOCITY;
-                if (degreesFromTarget > 0) {
-                    sliderVelocity *= -1;
-                }
-                deltaDegrees = target-getPosition() - degreesFromTarget;
-                if(deltaDegrees>RTP_DELTADEGREES_THRESHOLD){
-                    teamUtil.pause(10);
-                }
-                setAdjustedPower(sliderVelocity);
-
-                if (details) teamUtil.log("Degrees from Target: " + degreesFromTarget + " Power: " + sliderVelocity);
-                degreesFromTarget = target-getPosition();
-            }
-        }
-
-
         axon.setPower(0);
         moving.set(false);
         if (System.currentTimeMillis() > timeoutTime) {
             timedOut.set(true);
-            teamUtil.log("Slider Run to Position TIMED OUT: " + (int)getPosition());
+            teamUtil.log("Slider runToTarget TIMED OUT: " + (int)getPosition());
         } else {
-            teamUtil.log("Slider Run to Position Finished at : " + (int)getPosition());
+            teamUtil.log("Slider runToTarget Finished at : " + (int)getPosition());
         }
+    }
+
+
+
+    // Run the servo to the specified position as quickly as possible
+    // This method returns when the servo is in the new position
+    public void runToPosition (double target, long timeOut) {
+        moving.set(true);
+        loop(); // update position in case it hasn't happened recently
+        teamUtil.log("Slider Run to Position Target: " + (int)target);
+        if(Math.abs(target-getPosition())<RTP_SLOW_THRESHOLD){
+            runToTarget(target, RTP_SLOW_VELOCITY, RTP_LEFT_DEADBAND_SLOW_DEGREES, RTP_RIGHT_DEADBAND_SLOW_DEGREES, timeOut);
+        } else {
+            runToTarget(target, RTP_MAX_VELOCITY, RTP_LEFT_DEADBAND_DEGREES, RTP_RIGHT_DEADBAND_DEGREES, timeOut);
+        }
+        teamUtil.log("Slider Run to Position Finished at : " + (int)getPosition());
     }
 
     public void runToPositionNoWait(double target, long timeOutTime) {

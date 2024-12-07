@@ -40,6 +40,7 @@ public class CalibrateArms extends LinearOpMode {
         Intake_Seek_Testing
         };
     public static Ops AA_Operation = Ops.Intake_Manual_Operation;
+    public static boolean useCV = true;
 
     public static double SLIDER_TARGET = 0;
 
@@ -75,8 +76,10 @@ public class CalibrateArms extends LinearOpMode {
 
         intake = new Intake();
         intake.initialize();
-        intake.initCV(true);
-        intake.startCVPipeline();
+        if (useCV) {
+            intake.initCV(true);
+            intake.startCVPipeline();
+        }
 
         teamUtil.robot.intake = intake;
         //intake.calibrate();
@@ -146,6 +149,7 @@ public class CalibrateArms extends LinearOpMode {
             //telemetry.addData("Motor Velocity", 0);
             outtake.outakeTelemetry();
             output.outputTelemetry();
+            intake.axonSlider.loop();
             intake.intakeTelemetry();
             hang.outputTelemetry();
             telemetry.update();
@@ -154,13 +158,20 @@ public class CalibrateArms extends LinearOpMode {
     }
 
     public void intakeFineManualOperation() {
+        if (gp1.wasRightBumperPressed()) {
+            intake.calibrate();
+            intake.extender.setVelocity(0);
+        }
         if (gp1.wasUpPressed()) {
-            intake.goToSampleV2(5000);
-        } if(gp1.wasLeftPressed()){
+                intake.goToSampleV2(5000);
+        }
+        if(gp1.wasLeftPressed()){
             intake.flipper.setPosition(Intake.FLIPPER_SEEK);
-        }if(gp1.wasRightPressed()){
+        }
+        if(gp1.wasRightPressed()){
             intake.flipper.setPosition(Intake.FLIPPER_GRAB);
-        }if(gp1.wasDownPressed()){
+        }
+        if(gp1.wasDownPressed()){
             intake.rotateToSample(intake.sampleDetector.rectAngle.get());
         }
         if(gp1.wasYPressed()){
