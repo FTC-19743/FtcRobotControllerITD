@@ -22,7 +22,6 @@ import org.opencv.core.RotatedRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.calib3d.Calib3d;
 
 
 import java.util.ArrayList;
@@ -48,7 +47,9 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
     static public int TARGET_X = 334;
     static public int TARGET_Y = 160;
-    static public int AREA_THRESHOLD = 2000;
+    static public int MIN_AREA_THRESHOLD = 2000;
+    static public int MAX_AREA_THRESHOLD = 13000;
+
 
     double[][] cameraMatrixData = {
             { 478.3939243528238, 0.0, 333.6082048642555 },
@@ -171,6 +172,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     public AtomicInteger rectAngle = new AtomicInteger(-1);
     public AtomicInteger rectCenterXOffset = new AtomicInteger(0);
     public AtomicInteger rectCenterYOffset = new AtomicInteger(0);
+    public AtomicInteger rectArea = new AtomicInteger(0);
 
 
 
@@ -210,6 +212,11 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     }
     public void outputTelemetry () {
         telemetry.addLine("Found One: " + foundOne.get() + "TBD");
+        if(foundOne.get()){
+            telemetry.addLine("Area of Found One: " + rectArea.get());
+        }else{
+            telemetry.addLine("None Found So No Rect Area");
+        }
     }
 
     public void sampleUp(int step) {
@@ -374,7 +381,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             // Is the closest one to the target we have seen so far?
             xDistCenter = Math.abs(rotatedRect[i].center.x - TARGET_X);
             yDistCenter = Math.abs(rotatedRect[i].center.y - TARGET_Y); // TODO, this was 140 instead of the correct TARGET_Y...
-            if (Math.hypot(xDistCenter, yDistCenter) < closestAreaSelection && rotatedRect[i].size.area() > AREA_THRESHOLD) {
+            if (Math.hypot(xDistCenter, yDistCenter) < closestAreaSelection && rotatedRect[i].size.area() > MIN_AREA_THRESHOLD&& rotatedRect[i].size.area() < MAX_AREA_THRESHOLD) {
                 closestAreaSelection = Math.hypot(xDistCenter, yDistCenter);
                 closestAreaSelectionNum = i;
             }
@@ -385,6 +392,15 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             foundOne.set(false);
             return null;
         }
+        /*
+        if(rotatedRect[closestAreaSelectionNum].size.area()>5){
+            if (details) teamUtil.log("Saw Too Big Of A Blob");
+            foundOne.set(false);
+            return null;
+        }
+
+         */
+        rectArea.set((int)rotatedRect[closestAreaSelectionNum].size.area());
 
         //Find the point with the lowest y coordinate
         Point vertices1[] = new Point[4];

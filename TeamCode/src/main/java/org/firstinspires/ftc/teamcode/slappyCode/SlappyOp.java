@@ -140,8 +140,8 @@ public class SlappyOp extends LinearOpMode {
     public void drive (float x, float y) {
         float DEADBAND = 0.1f;
         if (Math.abs(x) > DEADBAND || Math.abs(y) > DEADBAND) {
-            leftMotor.setPower((-y + x/2)/1.5);
-            rightMotor.setPower((-y - x/2)/1.5);
+            leftMotor.setPower((-y + x/2));
+            rightMotor.setPower((-y - x/2));
         } else {
             leftMotor.setPower(0);
             rightMotor.setPower(0);

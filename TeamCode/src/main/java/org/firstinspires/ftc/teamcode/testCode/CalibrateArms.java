@@ -116,6 +116,12 @@ public class CalibrateArms extends LinearOpMode {
             if (gp1.wasLeftBumperPressed()) {
                 intake.sampleDetector.configureCam(intake.arduPortal,OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE, OpenCVSampleDetector.AFOCUS, OpenCVSampleDetector.FOCUSLENGTH);
             }
+            if(gp1.wasRightJoystickFlickedUp()){
+                intake.lightsOnandOff(Intake.WHITE_NEOPIXEL,Intake.RED_NEOPIXEL,Intake.GREEN_NEOPIXEL,Intake.BLUE_NEOPIXEL,true);
+            }
+            if(gp1.wasRightJoystickFlickedDown()){
+                intake.lightsOnandOff(Intake.WHITE_NEOPIXEL,Intake.RED_NEOPIXEL,Intake.GREEN_NEOPIXEL,Intake.BLUE_NEOPIXEL,false);
+            }
 
             if (AA_Operation==Ops.Intake_Manual_Operation){
                 intakeManualOperation();
@@ -152,6 +158,7 @@ public class CalibrateArms extends LinearOpMode {
             intake.axonSlider.loop();
             intake.intakeTelemetry();
             hang.outputTelemetry();
+
             telemetry.update();
         }
 
@@ -198,12 +205,12 @@ public class CalibrateArms extends LinearOpMode {
         if (gp1.wasUpPressed()) {
             intake.lightsOnandOff(Intake.WHITE_NEOPIXEL,Intake.RED_NEOPIXEL,Intake.GREEN_NEOPIXEL,Intake.BLUE_NEOPIXEL,true);
 
-            intake.goToSampleV4(5000,5000);
+            intake.goToSampleV5(5000);
             //intake.goToSampleAndGrabV2(5000);
         } if (gp1.wasOptionsPressed()) {
             intake.lightsOnandOff(Intake.WHITE_NEOPIXEL,Intake.RED_NEOPIXEL,Intake.GREEN_NEOPIXEL,Intake.BLUE_NEOPIXEL,true);
 
-            intake.goToSampleAndGrabV2(5000);
+            intake.goToSampleAndGrabV3(5000);
             //intake.goToSampleAndGrabV2(5000);
         } if(gp1.wasLeftPressed()){
             intake.flipper.setPosition(Intake.FLIPPER_SEEK);
