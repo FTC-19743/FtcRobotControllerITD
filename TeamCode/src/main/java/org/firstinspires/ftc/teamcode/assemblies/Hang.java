@@ -25,6 +25,8 @@ public class Hang {
 
     public Servo pulley_left;
     public Servo pulley_right;
+    public Servo hook_grabber;
+
 
 
     public AtomicBoolean hangMoving = new AtomicBoolean(false);
@@ -42,6 +44,13 @@ public class Hang {
     public static float PULLEYRIGHT_HANG = 0.54f;
     public static float PULLEYRIGHT_EXTEND = 0.17f;
 
+    public static float HOOKGRABBER_STOW = 0f;
+    public static float HOOKGRABBER_GRAB = 0.12f;
+    public static float HOOKGRABBER_DEPLOY = 0.9f;
+    public static float HOOKGRABBER_RELEASE = 1f;
+
+
+
 
 
     public Hang() {
@@ -54,19 +63,36 @@ public class Hang {
         teamUtil.log("Initializing Hang");
         pulley_left = hardwareMap.get(Servo.class,"pulleyleft");
         pulley_right = hardwareMap.get(Servo.class,"pulleyright");
+        hook_grabber = hardwareMap.get(Servo.class,"hookgrabber");
 
 
 
     }
 
     public void calibrate(){
-
+        stowHookGrabber();
     }
 
 
 
     public void outputTelemetry(){
         //telemetry.addLine("Hang Current Position: " +hang.getCurrentPosition());
+    }
+
+    public void stowHookGrabber(){
+        hook_grabber.setPosition(HOOKGRABBER_STOW);
+    }
+
+    public void grabHookGrabber(){
+        hook_grabber.setPosition(HOOKGRABBER_GRAB);
+    }
+
+    public void deployHookGrabber(){
+        hook_grabber.setPosition(HOOKGRABBER_DEPLOY);
+    }
+
+    public void releaseHookGrabber(){
+        hook_grabber.setPosition(HOOKGRABBER_RELEASE);
     }
 
     public void extendHang(){

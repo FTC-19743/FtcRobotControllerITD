@@ -330,6 +330,13 @@ public class Intake {
     public void stopCVPipeline () {
         arduPortal.setProcessorEnabled(sampleDetector, false );
     }
+
+    public void restartCVPipeline(){
+        stopCVPipeline();
+        teamUtil.pause(100);
+        startCVPipeline();
+    }
+
     public boolean flipperGoToSeek(long timeout){
         teamUtil.log("flipperGoToSeek has Started. Starting Potentiometer Value: " + flipperPotentiometer.getVoltage()+ "Distance: " + Math.abs(flipperPotentiometer.getVoltage()-FLIPPER_SEEK_POT_VOLTAGE));
         long timeoutTime = System.currentTimeMillis() + timeout;
@@ -669,11 +676,24 @@ public class Intake {
         //TODO: Determine whether or not to take out
         //teamUtil.pause(50);
         extender.setVelocity(0);
-        //teamUtil.pause(225);
+        restartCVPipeline();
+
+        teamUtil.pause(100);
 
         // This shouldn't really happen, but just in case
         if(!sampleDetector.foundOne.get()){
             teamUtil.log("Found One False after Search");
+            extender.setVelocity(0);
+            moving.set(false);
+            teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
+            //stopCVPipeline(); TODO Put back in
+            return false;
+        }
+
+        if(sampleDetector.rectArea.get()>OpenCVSampleDetector.MAX_AREA_THRESHOLD){
+            teamUtil.log("Found One But Area Too Big");
+            teamUtil.log("Area Found: " + sampleDetector.rectArea.get());
+
             extender.setVelocity(0);
             moving.set(false);
             teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);

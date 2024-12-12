@@ -362,7 +362,7 @@ public class CalibrateArms extends LinearOpMode {
             output.outputLoad(4000);
         }
         if(gp1.wasYPressed()){
-            output.outputHighBucketV2();
+            //output.outputHighBucketV2();
         }
         if(gp1.wasBPressed()){
             output.outputHighBucket();
@@ -372,6 +372,10 @@ public class CalibrateArms extends LinearOpMode {
         }
         if(gp1.wasRightTriggerPressed()){
             output.calibrate();
+        }if(gp1.wasHomePressed()){
+            output.lift.setPositionPIDFCoefficients(Output.LIFT_P_COEFFICIENT);
+        }if(gp1.wasOptionsPressed()){
+            output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_TOP);
         }
     }
     public void hangManualOperation(){
@@ -379,15 +383,25 @@ public class CalibrateArms extends LinearOpMode {
             hang.calibrate();
             hangCalibrated = true;
         }
-        if(gp1.wasYPressed() && hangCalibrated){
+        if(gp1.wasYPressed()){
             hang.extendHang();
         }
-        if(gp1.wasBPressed() && hangCalibrated){
+        if(gp1.wasBPressed()){
             hang.engageHang();
         }
 
         if(gp1.wasUpPressed()){
             hang.stowHang();
+        }
+
+        if(gp1.wasLeftPressed()){
+            hang.deployHookGrabber();
+        }
+        if(gp1.wasDownPressed()){
+            hang.stowHookGrabber();
+        }
+        if(gp1.wasRightPressed()){
+            hang.grabHookGrabber();
         }
     }
 }

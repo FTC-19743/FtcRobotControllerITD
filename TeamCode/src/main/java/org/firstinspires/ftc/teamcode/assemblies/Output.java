@@ -31,19 +31,20 @@ public class Output {
 
     public boolean details;
 
-    static public int LIFT_MAX = 3070; //TODO find this number and use it in methods
-    static public int LIFT_MAX_VELOCITY = 3000;
+    static public int LIFT_MAX = 1770; //TODO find this number and use it in methods
+    static public int LIFT_MAX_VELOCITY = 2800;
     static public int LIFT_MAX_POWER = 1;
     static public int LIFT_MIN_VELOCITY = 200;
     static public int LIFT_DOWN = 2;
-    static public int LIFT_TOP_BUCKET = 3070; // TODO Determine this number
-    static public int LIFT_MIDDLE_BUCKET = 1700; // TODO Determine this number
+    static public int LIFT_TOP_BUCKET = 1770; // TODO Determine this number
+    static public int LIFT_MIDDLE_BUCKET = 880; // TODO Determine this number
+    static public double LIFT_P_COEFFICIENT = 10;
 
-    static public float BUCKET_DEPLOY_AT_BOTTOM = 0.33f;
-    static public float BUCKET_DEPLOY_AT_TOP = 0.39f;
-    static public float BUCKET_SAFE = 0.8f;
-
-    static public float BUCKET_RELOAD = 0.7f;
+    static public float BUCKET_DEPLOY_AT_BOTTOM = 0.05f;
+    static public float BUCKET_DEPLOY_AT_TOP = 0.24f;
+    static public float BUCKET_SAFE = 0.66f;
+    static public float BUCKET_READY_TO_DEPLOY = 0.35f; //TODO Possibly use for going up to buckets (optimization for driver)
+    static public float BUCKET_RELOAD = 0.66f;
 
     static public int DROP_SAMPLE_TIME = 1000;
     static public int BUCKET_LOAD_PAUSE = 0;
@@ -61,7 +62,7 @@ public class Output {
         lift = hardwareMap.get(DcMotorEx.class,"lift");
         bucket = hardwareMap.get(Servo.class,"bucket");
 
-        lift.setDirection(DcMotor.Direction.REVERSE);
+
         teamUtil.log("Intake Output");
     }
     public void calibrate(){
@@ -86,6 +87,8 @@ public class Output {
 
     public void outputTelemetry(){
         telemetry.addLine("Output Lift Position: " + lift.getCurrentPosition());
+        telemetry.addLine("Output PIDF COEFFICIENTS: " + lift.getPIDFCoefficients(DcMotor.RunMode.RUN_TO_POSITION)); //TODO TAKE OUT
+
     }
 
     public void dropSampleOutBack(){
@@ -215,7 +218,7 @@ public class Output {
 
 
     }
-
+    /*
     //Uses Run Using Encoder to bypass PID deceleration part of run up
     public void outputHighBucketV2(){
         intake = teamUtil.robot.intake;
@@ -247,4 +250,6 @@ public class Output {
 
 
     }
+
+     */
 }

@@ -17,7 +17,9 @@
             <Servo name="flipper" port="1" />
             <ContinuousRotationServo name="slider" port="2" />
             <RevBlinkinLedDriver name="blinkin" port="3"/>
+            <Servo name = "hookgrabber" port = "4"/>
             <Servo name="outakearm" port="5" />
+
 
             <AnalogInput name = "grabberPotentiometer" port ="2"/>
             <AnalogInput name = "sweeperPotentiometer" port ="3"/>

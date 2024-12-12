@@ -175,10 +175,11 @@ public class Robot {
     }
 
     public void calibrate() {
+        hang.calibrate();
+
         outtake.firstCalibrate();
         output.calibrate();
         intake.calibrate();
-        hang.calibrate();
         outtake.secondCalibrate();
     }
 

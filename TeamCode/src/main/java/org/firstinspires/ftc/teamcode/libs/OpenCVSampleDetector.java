@@ -381,7 +381,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             // Is the closest one to the target we have seen so far?
             xDistCenter = Math.abs(rotatedRect[i].center.x - TARGET_X);
             yDistCenter = Math.abs(rotatedRect[i].center.y - TARGET_Y); // TODO, this was 140 instead of the correct TARGET_Y...
-            if (Math.hypot(xDistCenter, yDistCenter) < closestAreaSelection && rotatedRect[i].size.area() > MIN_AREA_THRESHOLD&& rotatedRect[i].size.area() < MAX_AREA_THRESHOLD) {
+            if (Math.hypot(xDistCenter, yDistCenter) < closestAreaSelection && rotatedRect[i].size.area() > MIN_AREA_THRESHOLD) {
                 closestAreaSelection = Math.hypot(xDistCenter, yDistCenter);
                 closestAreaSelectionNum = i;
             }
