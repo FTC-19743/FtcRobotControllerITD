@@ -43,7 +43,7 @@ public class CalibrateCV extends LinearOpMode {
             if (gp1.wasLeftBumperPressed()) {
                 intake.sampleDetector.configureCam(intake.arduPortal, OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE, OpenCVSampleDetector.AFOCUS, OpenCVSampleDetector.FOCUSLENGTH);
             }
-            if (gp1.wasOptionsPressed()) {
+            if (gp1.wasHomePressed()) {
                 intake.arduPortal.saveNextFrameRaw(String.format(Locale.US, "CameraFrameCapture-%06d", frameCount++));
             }
 
@@ -97,16 +97,3 @@ public class CalibrateCV extends LinearOpMode {
         intake.closeCV();
     }
 }
-/*
-            if (intake.sampleDetector.samplePixel != null) {
-                telemetry.addLine("Pixel HSV: " + ((int) intake.sampleDetector.samplePixel[0]) + ", " + ((int) intake.sampleDetector.samplePixel[1]) + ", " + ((int) intake.sampleDetector.samplePixel[2]));
-            } else {
-                telemetry.addLine("No Pixel Sample");
-            }
-            if (intake.sampleDetector.samplePixel.val != null) {
-                telemetry.addLine("Pixel HSV: " + ((int) intake.sampleDetector.samplePixel.val[0]) + ", " + ((int) intake.sampleDetector.samplePixel.val[1]) + ", " + ((int) intake.sampleDetector.samplePixel.val[2]));
-            } else {
-                telemetry.addLine("No Pixel Sample");
-            }
-
- */

@@ -583,5 +583,9 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             }
 
         }
+        // TODO  figure out how to save a processed frame (Android canvas) to the local storage (SDCard)
+        // TODO: set up an Atomic boolean to trigger this behavior for a single frame?
     }
+
+
 }
