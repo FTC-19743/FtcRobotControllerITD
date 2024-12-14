@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -16,6 +17,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.libs.Blinkin;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 
+import java.nio.channels.OverlappingFileLockException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Config
@@ -26,6 +28,8 @@ public class Hang {
     public Servo pulley_left;
     public Servo pulley_right;
     public Servo hook_grabber;
+    public DcMotorEx hang_Right;
+    public DcMotorEx hang_Left;
 
 
 
@@ -34,20 +38,26 @@ public class Hang {
 
     public static int HANG_EXTEND = 3100;
     public static int HANG_ENGAGE = 800;
-    public static int HANG_VELOCITY = 3000;
+    public static int HANG_VELOCITY = 2800;
 
-    public static float PULLEYLEFT_STOW = 0.4f;
+    public static float PULLEYLEFT_STOW = 0.34f;
     public static float PULLEYLEFT_HANG = 0.44f;
     public static float PULLEYLEFT_EXTEND = 0.86f;
 
-    public static float PULLEYRIGHT_STOW = 0.61f;
+    public static float PULLEYRIGHT_STOW = 0.66f;
     public static float PULLEYRIGHT_HANG = 0.54f;
     public static float PULLEYRIGHT_EXTEND = 0.17f;
 
     public static float HOOKGRABBER_STOW = 0f;
-    public static float HOOKGRABBER_GRAB = 0.12f;
-    public static float HOOKGRABBER_DEPLOY = 0.9f;
+    public static float HOOKGRABBER_GRAB = 0.135f;
+    public static float HOOKGRABBER_READY = 0.25f;
+    public static float HOOKGRABBER_DEPLOY = 0.84f;
     public static float HOOKGRABBER_RELEASE = 1f;
+
+    public static double HANG_HOLD_POWER = 0.1;
+    public boolean hanging = false;
+    public static float JOYSTICK_Y_DEADBAND = .1f;
+    public static float JOYSTICK_X_DEADBAND = .4f;
 
 
 
@@ -64,6 +74,15 @@ public class Hang {
         pulley_left = hardwareMap.get(Servo.class,"pulleyleft");
         pulley_right = hardwareMap.get(Servo.class,"pulleyright");
         hook_grabber = hardwareMap.get(Servo.class,"hookgrabber");
+        ((PwmControl)hook_grabber).setPwmRange(new PwmControl.PwmRange(500,2500)); // expand range on GoBilda Torque Servo
+
+        hang_Left = hardwareMap.get(DcMotorEx.class,"hangLeft");
+        hang_Right = hardwareMap.get(DcMotorEx.class,"hangRight");
+        hang_Left.setTargetPosition(hang_Left.getCurrentPosition());
+        hang_Right.setTargetPosition(hang_Right.getCurrentPosition());
+        hang_Left.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        hang_Right.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        hang_Left.setDirection(DcMotorSimple.Direction.REVERSE);
 
 
 
@@ -76,7 +95,7 @@ public class Hang {
 
 
     public void outputTelemetry(){
-        //telemetry.addLine("Hang Current Position: " +hang.getCurrentPosition());
+        telemetry.addLine("Hang Current Position: " +  hang_Left.getCurrentPosition() + " "+ hang_Right.getCurrentPosition());
     }
 
     public void stowHookGrabber(){
@@ -85,6 +104,10 @@ public class Hang {
 
     public void grabHookGrabber(){
         hook_grabber.setPosition(HOOKGRABBER_GRAB);
+    }
+
+    public void readyHookGrabber(){
+        hook_grabber.setPosition(HOOKGRABBER_READY);
     }
 
     public void deployHookGrabber(){
@@ -123,5 +146,31 @@ public class Hang {
 
         teamUtil.log("Hang Extended");
         hangMoving.set(false);
+    }
+
+    public void joystickDrive(float x, float y) {
+        if (Math.abs(y)> JOYSTICK_Y_DEADBAND) { // actively moving pulleys
+            hanging = false;
+            float unadjustedPower = y * -1;
+            float velocityAdjust = 0 ;
+            if (Math.abs(x) > JOYSTICK_X_DEADBAND) { // uneven velocity to the two motors
+                velocityAdjust = Math.abs(x) - JOYSTICK_X_DEADBAND; // range 0 to (1-deadband)
+                velocityAdjust = x > 0 ? velocityAdjust : velocityAdjust * -1;
+            }
+            hang_Left.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            hang_Right.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            hang_Left.setVelocity(HANG_VELOCITY * (unadjustedPower + velocityAdjust));
+            hang_Right.setVelocity(HANG_VELOCITY * (unadjustedPower - velocityAdjust));
+        } else {
+            if (!hanging) { // we were just moving so switch to hanging mode
+                hanging = true;
+                hang_Left.setTargetPosition(hang_Left.getCurrentPosition());
+                hang_Right.setTargetPosition(hang_Right.getCurrentPosition());
+                hang_Left.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                hang_Right.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                hang_Left.setVelocity(HANG_VELOCITY);
+                hang_Right.setVelocity(HANG_VELOCITY);
+            } // do nothing if we were already hanging
+        }
     }
 }

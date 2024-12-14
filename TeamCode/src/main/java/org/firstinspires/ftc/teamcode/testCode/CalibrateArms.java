@@ -44,6 +44,10 @@ public class CalibrateArms extends LinearOpMode {
 
     public static double SLIDER_TARGET = 0;
 
+    public static int HANG_ITERATOR = 100;
+    public static int HANG_VELOCITY = 2800;
+
+
     private TeamGamepad gp1 = new TeamGamepad();
     private TeamGamepad gp2 = new TeamGamepad();
 
@@ -113,7 +117,7 @@ public class CalibrateArms extends LinearOpMode {
             gp1.loop();
             gp2.loop();
 
-            if (gp1.wasLeftBumperPressed()) {
+            if (gp1.wasOptionsPressed()) {
                 intake.sampleDetector.configureCam(intake.arduPortal,OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE, OpenCVSampleDetector.AFOCUS, OpenCVSampleDetector.FOCUSLENGTH);
             }
             if(gp1.wasRightJoystickFlickedUp()){
@@ -358,6 +362,12 @@ public class CalibrateArms extends LinearOpMode {
             teamUtil.log("In OutputManualOperation");
             output.dropSampleOutBack();
         }
+        if(gp1.wasLeftPressed()){
+            output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_TOP);
+        }
+        if(gp1.wasRightPressed()){
+            output.bucket.setPosition(Output.BUCKET_READY_TO_DEPLOY);
+        }
         if(gp1.wasDownPressed()){
             output.outputLoad(4000);
         }
@@ -389,19 +399,25 @@ public class CalibrateArms extends LinearOpMode {
         if(gp1.wasBPressed()){
             hang.engageHang();
         }
-
-        if(gp1.wasUpPressed()){
+        if(gp1.wasAPressed()){
             hang.stowHang();
         }
 
-        if(gp1.wasLeftPressed()){
+        if(gp1.wasUpPressed()){
             hang.deployHookGrabber();
         }
         if(gp1.wasDownPressed()){
             hang.stowHookGrabber();
         }
+        if(gp1.wasLeftPressed()){
+            hang.readyHookGrabber();
+        }
         if(gp1.wasRightPressed()){
             hang.grabHookGrabber();
         }
-    }
+        if(gp1.wasHomePressed()){
+            hang.releaseHookGrabber();
+        }
+        hang.joystickDrive(gamepad1.left_stick_x, gamepad1.left_stick_y);
+     }
 }

@@ -13,6 +13,9 @@
             <goBILDA5202SeriesMotor name="extender" port="3" />
             <goBILDA5202SeriesMotor name="lift" port="0" />
 
+            <goBILDA5202SeriesMotor name="hangLeft" port="1" />
+            <goBILDA5202SeriesMotor name="hangRight" port="2" />
+
             <Servo name="outakewrist" port="0" />
             <Servo name="flipper" port="1" />
             <ContinuousRotationServo name="slider" port="2" />

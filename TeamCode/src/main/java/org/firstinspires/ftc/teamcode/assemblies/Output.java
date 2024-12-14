@@ -31,12 +31,12 @@ public class Output {
 
     public boolean details;
 
-    static public int LIFT_MAX = 1770; //TODO find this number and use it in methods
+    static public int LIFT_MAX = 1770;
     static public int LIFT_MAX_VELOCITY = 2800;
     static public int LIFT_MAX_POWER = 1;
     static public int LIFT_MIN_VELOCITY = 200;
     static public int LIFT_DOWN = 2;
-    static public int LIFT_TOP_BUCKET = 1770; // TODO Determine this number
+    static public int LIFT_TOP_BUCKET = 1750;
     static public int LIFT_MIDDLE_BUCKET = 880; // TODO Determine this number
     static public double LIFT_P_COEFFICIENT = 10;
 
@@ -47,7 +47,7 @@ public class Output {
     static public float BUCKET_RELOAD = 0.66f;
 
     static public int DROP_SAMPLE_TIME = 1000;
-    static public int BUCKET_LOAD_PAUSE = 0;
+    static public int BUCKET_LOAD_PAUSE = 200;
 
 
 
@@ -146,6 +146,7 @@ public class Output {
             lift.setVelocity(LIFT_MAX_VELOCITY);
             long timeOutTime2 = System.currentTimeMillis() + timeout;
             while (teamUtil.keepGoing(timeOutTime2)&&lift.getCurrentPosition() > LIFT_DOWN+10) {
+                teamUtil.pause(50);
             }
             lift.setVelocity(0);
             bucket.setPosition(BUCKET_RELOAD);
@@ -211,7 +212,7 @@ public class Output {
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             lift.setTargetPosition(LIFT_TOP_BUCKET);
             lift.setVelocity(LIFT_MAX_VELOCITY);
-            teamUtil.log("outputHighBucket Completed");
+            teamUtil.log("outputHighBucket Completed"); // TODO: The lift is still moving right now...is this OK?
             outputLiftAtBottom.set(false);
             outputMoving.set(false);
         }
