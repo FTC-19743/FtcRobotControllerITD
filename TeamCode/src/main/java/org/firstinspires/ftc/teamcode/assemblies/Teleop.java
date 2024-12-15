@@ -147,8 +147,7 @@ public class Teleop extends LinearOpMode {
                robot.outtake.deployArm();
             }
             if(armsGamepad.wasDownPressed()){
-                robot.outtake.outtakeGrab();
-                robot.output.dropSampleOutBackNoWait();
+                robot.dropSampleOutBackAndArmGrabNoWait(3000);
             }
             if(armsGamepad.wasLeftPressed()){
                 robot.outtake.outtakeRest();
@@ -188,7 +187,7 @@ public class Teleop extends LinearOpMode {
                 if((robot.drive.getHeadingODO()>45&&robot.drive.getHeadingODO()<135)||(robot.drive.getHeadingODO()>225&&robot.drive.getHeadingODO()<315)){
                     robot.intake.goToAndGrabAndUnloadNoWait(7000);
                 }else{
-                    robot.intake.goToSampleAndGrabNoWaitV2(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT);
+                    robot.intake.goToSampleAndGrabNoWaitV3(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT);
                 }
                 extenderSliderUnlocked = false;
                   //TODO Tune timeout
@@ -196,11 +195,19 @@ public class Teleop extends LinearOpMode {
             }
             if ((armsGamepad.wasYPressed())&&extenderSliderUnlocked&&!robot.intake.autoSeeking.get()) { //Grab Yellow
                 robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
-                robot.intake.goToSampleAndGrabNoWaitV2(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT); //TODO Tune timeout
+                if((robot.drive.getHeadingODO()>45&&robot.drive.getHeadingODO()<135)||(robot.drive.getHeadingODO()>225&&robot.drive.getHeadingODO()<315)){
+                    robot.intake.goToAndGrabAndUnloadNoWait(7000);
+                }else{
+                    robot.intake.goToSampleAndGrabNoWaitV3(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT);
+                }
             }
             if ((armsGamepad.wasXPressed()&&teamUtil.alliance == teamUtil.Alliance.BLUE)&&extenderSliderUnlocked&&!robot.intake.autoSeeking.get()) { //Grab Blue
                 robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
-                robot.intake.goToSampleAndGrabNoWaitV2(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT); //TODO Tune timeout
+                if((robot.drive.getHeadingODO()>45&&robot.drive.getHeadingODO()<135)||(robot.drive.getHeadingODO()>225&&robot.drive.getHeadingODO()<315)){
+                    robot.intake.goToAndGrabAndUnloadNoWait(7000);
+                }else{
+                    robot.intake.goToSampleAndGrabNoWaitV3(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT);
+                }
             }
 
 

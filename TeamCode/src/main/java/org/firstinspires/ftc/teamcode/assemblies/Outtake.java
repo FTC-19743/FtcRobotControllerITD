@@ -14,11 +14,12 @@ public class Outtake {
     Telemetry telemetry;
     public Servo outakewrist;
     public Servo outakearm;
-    AnalogInput outakePotentiometer;
+    public AnalogInput outakePotentiometer;
 
 
     static public float ARM_UP = 0.2f;
     static public float ARM_DOWN = .78f;
+    static public float ARM_BUCKET_SAFE = .55f;
     static public float WRIST_GRAB = 0.17f;
     static public float WRIST_RELEASE = .84f;
     static public float ARM_REST = .26f;
@@ -27,6 +28,7 @@ public class Outtake {
     static public double POTENTIOMETER_OUTPUT_CLEAR = 2.183;
     static public double POTENTIOMETER_SAFE = 2.38;
     static public double POTENTIOMETER_RELEASE = 2.566;
+    static public double POTENTIOMETER_BUCKET_SAFE = 1.5;
     static public double POTENTIOMETER_ATTACH = 3.15;
     static public double POTENTIOMETER_GRAB = .83;
     static public float ARM_START = 0.85f;

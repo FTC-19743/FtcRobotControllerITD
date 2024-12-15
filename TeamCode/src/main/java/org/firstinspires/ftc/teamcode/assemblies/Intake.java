@@ -74,8 +74,8 @@ public class Intake {
     static public float FLIPPER_SEEK = 0.38f;
     static public double FLIPPER_SEEK_POT_VOLTAGE = 2.008;
     static public double FLIPPER_SEEK_POT_THRESHOLD = .1;
-    static public float FLIPPER_UNLOAD = 0.89f;
-    static public double FLIPPER_UNLOAD_POT_VOLTAGE = 0.488;
+    static public float FLIPPER_UNLOAD = 0.91f;
+    static public double FLIPPER_UNLOAD_POT_VOLTAGE = 0.8;
     static public double FLIPPER_UNLOAD_POT_THRESHOLD = 0.1;
     static public float FLIPPER_GRAB = 0.21f;
     static public double FLIPPER_GRAB_POT_VOLTAGE = 2.485;
@@ -161,14 +161,15 @@ public class Intake {
     static public int EXTENDER_MM_DEADBAND = 5;
     static public int EXTENDER_P_COEFFICIENT = 4;
     static public int EXTENDER_THRESHOLD = 30;
-    static public int EXTENDER_UNLOAD = 5;
+    static public int EXTENDER_UNLOAD = 75;
+    static public int EXTENDER_CALIBRATE = 5;
     static public int EXTENDER_START_SEEK = 300; // TODO Determine this number
     static public int EXTENDER_CRAWL_INCREMENT = 30;
     static public int EXTENDER_FAST_INCREMENT = 100;
     static public int EXTENDER_MIN = 100;
     static public int EXTENDER_TOLERANCE_RETRACT = 15;
     static public int EXTENDER_RETRACT_TIMEOUT = 3000;
-    static public int EXTENDER_SAFE_TO_UNLOAD_THRESHOLD = 50;
+    static public int EXTENDER_SAFE_TO_UNLOAD_THRESHOLD = 100;
     static public int EXTENDER_GO_TO_SAMPLE_VELOCITY = 2000;
     static public int EXTENDER_TOLERANCE_SEEK = 5;
     static public int EXTENDER_GOTOUNLOAD_THRESHOLD = 20;
@@ -301,7 +302,7 @@ public class Intake {
         teamUtil.pause(500); // let it "relax" just a bit
         extender.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         extender.setTargetPositionTolerance(EXTENDER_TOLERANCE_RETRACT);// make that our zero position
-        extender.setTargetPosition(EXTENDER_UNLOAD);
+        extender.setTargetPosition(EXTENDER_CALIBRATE);
         extender.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
         extender.setVelocity(EXTENDER_HOLD_RETRACT_VELOCITY);
 
@@ -639,7 +640,7 @@ public class Intake {
 
 
     public boolean goToSampleV5(long timeOut){
-        teamUtil.log("GoToSample V4 has started");
+        teamUtil.log("GoToSample V5 has started");
         long timeoutTime = System.currentTimeMillis() + timeOut;
         long startTime = System.currentTimeMillis();
         boolean details = true;
@@ -686,7 +687,7 @@ public class Intake {
             extender.setVelocity(0);
             moving.set(false);
             teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
-            //stopCVPipeline(); TODO Put back in
+            stopCVPipeline();
             return false;
         }
 
@@ -697,7 +698,7 @@ public class Intake {
             extender.setVelocity(0);
             moving.set(false);
             teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
-            //stopCVPipeline(); TODO Put back in
+            stopCVPipeline();
             return false;
         }
 
@@ -921,6 +922,7 @@ public class Intake {
         axonSlider.runToPosition(axonSlider.SLIDER_UNLOAD, timeOut);
         if (axonSlider.timedOut.get()) {
             timedOut.set(true);
+            moving.set(false);
             return;
         }
         flipperGoToUnloadNoWait(3000);

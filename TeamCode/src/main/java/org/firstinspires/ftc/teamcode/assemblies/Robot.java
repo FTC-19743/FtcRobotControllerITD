@@ -491,6 +491,37 @@ public class Robot {
         return 0;
     }
 
+    public boolean dropSampleOutBackAndArmGrab(long timeout){
+        //TODO Implement Timeout
+        if(outtake.outakePotentiometer.getVoltage()>Outtake.POTENTIOMETER_BUCKET_SAFE){
+            outtake.outakearm.setPosition(Outtake.ARM_BUCKET_SAFE);
+        }
+        else{
+            teamUtil.log("WARNING: attempted to move with outtake in the way");
+            return false;
+        }
+        output.dropSampleOutBack();
+        outtake.outtakeGrab();
+        return true;
+    }
+
+    public void dropSampleOutBackAndArmGrabNoWait(long timeout){
+        if(output.outputMoving.get()){
+            teamUtil.log("WARNING: Attempt to dropSampleOutBackAndArmGrabNoWait while output is moving--ignored");
+        }
+        else{
+            teamUtil.log("Launching Thread to dropSampleOutBackNoWait");
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    dropSampleOutBackAndArmGrab(timeout);
+                }
+
+            });
+            thread.start();
+        }
+    }
+
 
 }
 

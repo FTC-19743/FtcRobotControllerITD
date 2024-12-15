@@ -356,6 +356,9 @@ public class CalibrateArms extends LinearOpMode {
         if(gp1.wasAPressed()){
             outtake.outakewrist.setPosition(Outtake.WRIST_RELEASE);
         }
+        if(gp1.wasBPressed()){
+            dropSampleOutBackAndArmGrab(2000);
+        }
     }
     public void outputManualOperation(){
         if(gp1.wasUpPressed()){
@@ -420,4 +423,18 @@ public class CalibrateArms extends LinearOpMode {
         }
         hang.joystickDrive(gamepad1.left_stick_x, gamepad1.left_stick_y);
      }
+
+    public boolean dropSampleOutBackAndArmGrab(long timeout){
+        //TODO Implement Timeout
+        if(outtake.outakePotentiometer.getVoltage()>Outtake.POTENTIOMETER_BUCKET_SAFE){
+            outtake.outakearm.setPosition(Outtake.ARM_BUCKET_SAFE);
+        }
+        else{
+            teamUtil.log("WARNING: attempted to move with outtake in the way");
+            return false;
+        }
+        output.dropSampleOutBack();
+        outtake.outtakeGrab();
+        return true;
+    }
 }

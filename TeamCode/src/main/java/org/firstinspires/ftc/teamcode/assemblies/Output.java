@@ -40,13 +40,15 @@ public class Output {
     static public int LIFT_MIDDLE_BUCKET = 880; // TODO Determine this number
     static public double LIFT_P_COEFFICIENT = 10;
 
-    static public float BUCKET_DEPLOY_AT_BOTTOM = 0.05f;
+    static public float BUCKET_DEPLOY_AT_BOTTOM = 0.1f;
     static public float BUCKET_DEPLOY_AT_TOP = 0.24f;
     static public float BUCKET_SAFE = 0.66f;
     static public float BUCKET_READY_TO_DEPLOY = 0.35f; //TODO Possibly use for going up to buckets (optimization for driver)
-    static public float BUCKET_RELOAD = 0.66f;
+    static public float BUCKET_RELOAD = 0.7f; //was .66
+    static public float BUCKET_TRAVEL = 0.4f;
 
     static public int DROP_SAMPLE_TIME = 1000;
+    static public int DROP_SAMPLE_TIME_2 = 1000;
     static public int BUCKET_LOAD_PAUSE = 200;
 
 
@@ -80,7 +82,7 @@ public class Output {
         lift.setPower(0);
         lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         lift.setTargetPosition(lift.getCurrentPosition());
-        lift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         teamUtil.log("Calibrate Intake Final: Extender: "+lift.getCurrentPosition());
         outputLiftAtBottom.set(true);
     }
@@ -96,7 +98,6 @@ public class Output {
         if(outputLiftAtBottom.get()){
             bucket.setPosition(BUCKET_DEPLOY_AT_BOTTOM);
 
-
         }else{
             bucket.setPosition(BUCKET_DEPLOY_AT_TOP);
 
@@ -104,6 +105,7 @@ public class Output {
         teamUtil.pause(DROP_SAMPLE_TIME);
         if(outputLiftAtBottom.get()){
             bucket.setPosition(BUCKET_RELOAD);
+            teamUtil.pause((DROP_SAMPLE_TIME_2));
         }
         else{
             bucket.setPosition(BUCKET_SAFE);
@@ -133,7 +135,7 @@ public class Output {
     public void outputLoad(long timeout){
         intake = teamUtil.robot.intake;
         outtake = teamUtil.robot.outtake;
-
+        lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         if(intake.FlipperInUnload.get()||outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_OUTPUT_CLEAR){
             teamUtil.log("Couldn't run Output Load Because Stuff is in the way");
         }
@@ -208,7 +210,7 @@ public class Output {
             }
         }else{
             outputMoving.set(true);
-            bucket.setPosition(BUCKET_SAFE);
+            bucket.setPosition(BUCKET_TRAVEL);
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             lift.setTargetPosition(LIFT_TOP_BUCKET);
             lift.setVelocity(LIFT_MAX_VELOCITY);
@@ -219,6 +221,8 @@ public class Output {
 
 
     }
+
+
     /*
     //Uses Run Using Encoder to bypass PID deceleration part of run up
     public void outputHighBucketV2(){

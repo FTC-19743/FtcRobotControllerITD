@@ -80,7 +80,7 @@ public class AxonSlider {
         RIGHT_LIMIT = getPosition();
         LEFT_LIMIT = getPosition()-739;
         SLIDER_READY = getPosition()-375;
-        SLIDER_UNLOAD = getPosition()-321;
+        SLIDER_UNLOAD = getPosition()-361;
         teamUtil.log("RIGHT LIMIT: " + RIGHT_LIMIT);
         teamUtil.log("LEFT LIMIT: " + LEFT_LIMIT);
         teamUtil.log("SLIDER READY: " + SLIDER_READY);
@@ -159,6 +159,7 @@ public class AxonSlider {
     // Run the servo to the specified position as quickly as possible
     // This method returns when the servo is in the new position
     public void runToPosition (double target, long timeOut) {
+        timedOut.set(false);
         moving.set(true);
         loop(); // update position in case it hasn't happened recently
         teamUtil.log("Slider Run to Position Target: " + (int)target);
