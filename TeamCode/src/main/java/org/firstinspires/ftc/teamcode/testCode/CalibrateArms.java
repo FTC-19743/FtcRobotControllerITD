@@ -36,6 +36,7 @@ public class CalibrateArms extends LinearOpMode {
         Outtake_Manual_Operation,
         Output_Manual_Operation,
         Hang_Manual_Operation,
+        Hang_Manual_2,
         Intake_Fine_Manual_Operation,
         Intake_Seek_Testing
         };
@@ -59,6 +60,7 @@ public class CalibrateArms extends LinearOpMode {
             case Outtake_Manual_Operation: outtakeManualOperation();break;
             case Output_Manual_Operation: outputManualOperation();break;
             case Hang_Manual_Operation: hangManualOperation();break;
+            case Hang_Manual_2: hangManualOperation2();break;
             case Intake_Fine_Manual_Operation: intakeFineManualOperation();break;
             case Intake_Seek_Testing: intakeSeekTesting();break;
 
@@ -139,6 +141,8 @@ public class CalibrateArms extends LinearOpMode {
                 outputManualOperation();
             } else if (AA_Operation==Ops.Hang_Manual_Operation){
                 hangManualOperation();
+            } else if (AA_Operation==Ops.Hang_Manual_2){
+                hangManualOperation2();
             } else if (AA_Operation==Ops.Intake_Fine_Manual_Operation) {
                 intakeFineManualOperation();
             }
@@ -214,7 +218,7 @@ public class CalibrateArms extends LinearOpMode {
         } if (gp1.wasOptionsPressed()) {
             intake.lightsOnandOff(Intake.WHITE_NEOPIXEL,Intake.RED_NEOPIXEL,Intake.GREEN_NEOPIXEL,Intake.BLUE_NEOPIXEL,true);
 
-            intake.goToSampleAndGrabV3(5000);
+            intake.goToSampleAndGrabV3(false);
             //intake.goToSampleAndGrabV2(5000);
         } if(gp1.wasLeftPressed()){
             intake.flipper.setPosition(Intake.FLIPPER_SEEK);
@@ -244,7 +248,7 @@ public class CalibrateArms extends LinearOpMode {
 
     public void intakeManualOperation() {
         if (gp1.wasUpPressed()) {
-            intake.goToAndGrabAndUnloadNoWait(7000);
+            intake.goToSampleAndGrabV3(true);
             //intake.flipperGoToSeek(2000);
         }
         if (gp1.wasLeftTriggerPressed()) {
@@ -423,6 +427,64 @@ public class CalibrateArms extends LinearOpMode {
         }
         hang.joystickDrive(gamepad1.left_stick_x, gamepad1.left_stick_y);
      }
+
+    public void hangManualOperation2(){
+        if(gp1.wasAPressed()){
+            pickUpHooks();
+        }
+        if(gp1.wasYPressed()){
+            readyToPlaceHooks();
+        }
+        if(gp1.wasBPressed()){
+            placeHooks();
+        }
+        if(gp1.wasAPressed()){
+        }
+
+        if(gp1.wasUpPressed()){
+            hang.deployHookGrabber();
+        }
+        if(gp1.wasDownPressed()){
+            hang.stowHookGrabber();
+        }
+        if(gp1.wasLeftPressed()){
+            hang.readyHookGrabber();
+        }
+        if(gp1.wasRightPressed()){
+            hang.grabHookGrabber();
+        }
+        if(gp1.wasHomePressed()){
+            hang.releaseHookGrabber();
+        }
+        hang.joystickDrive(gamepad1.left_stick_x, gamepad1.left_stick_y);
+    }
+    public void pickUpHooks(){
+        output.lift.setVelocity(Output.LIFT_MAX_VELOCITY);
+        output.lift.setTargetPosition(Output.LIFT_SAFE_FOR_HOOK_HOLDER);
+        teamUtil.pause(1000);
+        hang.hook_grabber.setPosition(Hang.HOOKGRABBER_READY);
+        teamUtil.pause(500);
+        output.lift.setTargetPosition(Output.LIFT_PICKUP_FOR_HOOK_HOLDER);
+        teamUtil.pause(1000);
+        hang.hook_grabber.setPosition(Hang.HOOKGRABBER_GRAB);
+    }
+
+    public void readyToPlaceHooks(){
+        hang.hook_grabber.setPosition(Hang.HOOKGRABBER_READY);
+        teamUtil.pause(2000);
+        output.lift.setVelocity(Output.LIFT_MAX_VELOCITY);
+        output.lift.setTargetPosition(Output.LIFT_ABOVE_BAR);
+        teamUtil.pause(2000);
+        hang.hook_grabber.setPosition(Hang.HOOKGRABBER_DEPLOY);
+    }
+
+    public void placeHooks(){
+        output.lift.setVelocity(300);
+        output.lift.setTargetPosition(Output.LIFT_ONTO_BAR);
+        teamUtil.pause(3000);
+        hang.hook_grabber.setPosition(Hang.HOOKGRABBER_DEPLOY);
+    }
+
 
     public boolean dropSampleOutBackAndArmGrab(long timeout){
         //TODO Implement Timeout

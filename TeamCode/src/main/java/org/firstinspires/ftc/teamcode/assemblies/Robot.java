@@ -107,6 +107,7 @@ public class Robot {
     static public int D13_GRAB_SPECIMEN_END_VELOCITY = 300;
     static public int D14_SPECIMEN_GRAB_TIME = 500;
     static public int D15_CYCLE_SPECIMEN_ADJUSTMENT = 100;
+    static public int D16_WRIST_CALLBACK = -600;
 
 
 
@@ -412,7 +413,13 @@ public class Robot {
         BasicDrive.MIN_STRAFE_START_VELOCITY = 2000;
         BasicDrive.MIN_START_VELOCITY = 1000;
         //Moves robot from the observation zone to the middle of the field
-        drive.strafeHoldingStraightEncoder(BasicDrive.MAX_VELOCITY,D01_WALL_TO_MIDFIELD_Y,D00_WALL_TO_MIDFIELD_X,0,D02_TRANSITION_VELOCITY_FAST,null,0,5000);
+        drive.strafeHoldingStraightEncoder(BasicDrive.MAX_VELOCITY,D01_WALL_TO_MIDFIELD_Y,D00_WALL_TO_MIDFIELD_X,0,D02_TRANSITION_VELOCITY_FAST,
+                new BasicDrive.ActionCallback() {
+                    @Override
+                    public void action() {
+                        outtake.outakewrist.setPosition(Outtake.WRIST_RELEASE);
+                    }
+                },D16_WRIST_CALLBACK,5000);
         outtake.deployArm();
 
         //moves robot from the middle of the field to scoring the specimen
@@ -495,6 +502,7 @@ public class Robot {
         //TODO Implement Timeout
         if(outtake.outakePotentiometer.getVoltage()>Outtake.POTENTIOMETER_BUCKET_SAFE){
             outtake.outakearm.setPosition(Outtake.ARM_BUCKET_SAFE);
+            outtake.outakewrist.setPosition(Outtake.WRIST_GRAB);
         }
         else{
             teamUtil.log("WARNING: attempted to move with outtake in the way");
@@ -520,6 +528,32 @@ public class Robot {
             });
             thread.start();
         }
+    }
+
+    public void pickUpHooks(){
+        output.lift.setVelocity(Output.LIFT_MAX_VELOCITY);
+        output.lift.setTargetPosition(Output.LIFT_SAFE_FOR_HOOK_HOLDER);
+        teamUtil.pause(1000);
+        hang.hook_grabber.setPosition(Hang.HOOKGRABBER_READY);
+        teamUtil.pause(1000);
+
+        output.lift.setTargetPosition(Output.LIFT_PICKUP_FOR_HOOK_HOLDER);
+        hang.hook_grabber.setPosition(Hang.HOOKGRABBER_GRAB);
+    }
+
+    public void readyToPlaceHooks(){
+        output.lift.setVelocity(Output.LIFT_MAX_VELOCITY);
+        output.lift.setTargetPosition(Output.LIFT_ABOVE_BAR);
+        hang.hook_grabber.setPosition(Hang.HOOKGRABBER_DEPLOY);
+
+    }
+
+    public void placeHooks(){
+        output.lift.setVelocity(Output.LIFT_MAX_VELOCITY);
+
+        output.lift.setTargetPosition(Output.LIFT_ONTO_BAR);
+
+        hang.hook_grabber.setPosition(Hang.HOOKGRABBER_DEPLOY);
     }
 
 

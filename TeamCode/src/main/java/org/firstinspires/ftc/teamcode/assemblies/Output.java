@@ -37,6 +37,13 @@ public class Output {
     static public int LIFT_MIN_VELOCITY = 200;
     static public int LIFT_DOWN = 2;
     static public int LIFT_TOP_BUCKET = 1750;
+    static public int LIFT_SAFE_FOR_HOOK_HOLDER= 150; // TODO FIND OUT
+    static public int LIFT_PICKUP_FOR_HOOK_HOLDER= 5; // TODO FIND OUT
+    static public int LIFT_ABOVE_BAR= 1160; // TODO FIND OUT
+    static public int LIFT_ONTO_BAR= 950; // TODO FIND OUT
+
+
+
     static public int LIFT_MIDDLE_BUCKET = 880; // TODO Determine this number
     static public double LIFT_P_COEFFICIENT = 10;
 
@@ -44,11 +51,11 @@ public class Output {
     static public float BUCKET_DEPLOY_AT_TOP = 0.24f;
     static public float BUCKET_SAFE = 0.66f;
     static public float BUCKET_READY_TO_DEPLOY = 0.35f; //TODO Possibly use for going up to buckets (optimization for driver)
-    static public float BUCKET_RELOAD = 0.7f; //was .66
-    static public float BUCKET_TRAVEL = 0.4f;
+    static public float BUCKET_RELOAD = 0.66f; //was .66
+    static public float BUCKET_TRAVEL = 0.5f;
 
-    static public int DROP_SAMPLE_TIME = 1000;
-    static public int DROP_SAMPLE_TIME_2 = 1000;
+    static public int DROP_SAMPLE_TIME = 500;
+    static public int DROP_SAMPLE_TIME_2 = 500;
     static public int BUCKET_LOAD_PAUSE = 200;
 
 
@@ -187,6 +194,8 @@ public class Output {
             teamUtil.log("Couldn't Put Output Low Bucket");
         }else{
             outputMoving.set(true);
+            bucket.setPosition(BUCKET_TRAVEL);
+
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             lift.setTargetPosition(LIFT_MIDDLE_BUCKET);
             lift.setVelocity(LIFT_MAX_VELOCITY);

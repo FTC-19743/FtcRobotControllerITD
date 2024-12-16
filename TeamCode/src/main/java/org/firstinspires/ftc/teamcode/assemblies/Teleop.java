@@ -20,6 +20,7 @@ public class Teleop extends LinearOpMode {
     boolean endgame = false;
     double EXTENDER_Y_DEADBAND = 0.3;
     double SLIDER_X_DEADBAND = 0.3;
+    boolean lowBucketToggle= false;
 
 
     // Internal state
@@ -105,7 +106,7 @@ public class Teleop extends LinearOpMode {
         //TODO: FIX ALL STATE MANAGEMENT
         waitForStart();
 
-        boolean extenderSliderUnlocked = false;
+
         robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
         while (opModeIsActive()){
             driverGamepad.loop();
@@ -157,56 +158,48 @@ public class Teleop extends LinearOpMode {
 
             if (armsGamepad.wasAPressed()&&!robot.intake.autoSeeking.get()) {
                 if(robot.intake.extender.getCurrentPosition()<Intake.EXTENDER_SAFE_TO_UNLOAD_THRESHOLD){
-                    robot.intake.unloadNoWait(5000);
-                    extenderSliderUnlocked = false;
+                    robot.intake.unloadNoWait(2000);
                 }
-
-            }
-            if (armsGamepad.wasRightJoystickFlickedDown()&&!robot.intake.autoSeeking.get()) {
-                if((robot.drive.getHeadingODO()>45&&robot.drive.getHeadingODO()<135)||(robot.drive.getHeadingODO()>225&&robot.drive.getHeadingODO()<315)){
-                    robot.intake.goToUnloadNoWait(3000);
-                }else{
-                    robot.intake.extenderSafeRetractNoWait(5000);
+                else{
+                    robot.intake.extenderSafeRetractNoWait(4000);
                 }
-                extenderSliderUnlocked = false;
             }
-            if (driverGamepad.wasLeftTriggerPressed()&&!robot.intake.autoSeeking.get()) {
-                robot.intake.goToSeekNoWait(3000);
-                extenderSliderUnlocked = true;
-            } //ABOVE WAS ARMS GAMEPAD RIGHT FLICK UP
 
 
-            if ((Math.abs(armsGamepad.gamepad.left_stick_y) > EXTENDER_Y_DEADBAND)&&extenderSliderUnlocked&&!robot.intake.autoSeeking.get()) {
+
+
+
+            if ((Math.abs(armsGamepad.gamepad.left_stick_y) > EXTENDER_Y_DEADBAND)&&!robot.intake.autoSeeking.get()) {
                 robot.intake.manualY(armsGamepad.gamepad.left_stick_y);
             }
-            if(extenderSliderUnlocked&&!robot.intake.autoSeeking.get()) robot.intake.manualX(armsGamepad.gamepad.left_stick_x);
+            if(!robot.intake.autoSeeking.get()) robot.intake.manualX(armsGamepad.gamepad.left_stick_x);
 
 
-            if ((armsGamepad.wasBPressed()&&teamUtil.alliance == teamUtil.Alliance.RED)&&extenderSliderUnlocked&&!robot.intake.autoSeeking.get()) { //Grab Red
+            if ((armsGamepad.wasBPressed()&&teamUtil.alliance == teamUtil.Alliance.RED)&&!robot.intake.autoSeeking.get()) { //Grab Red
                 robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
                 if((robot.drive.getHeadingODO()>45&&robot.drive.getHeadingODO()<135)||(robot.drive.getHeadingODO()>225&&robot.drive.getHeadingODO()<315)){
-                    robot.intake.goToAndGrabAndUnloadNoWait(7000);
+                    robot.intake.goToSampleAndGrabNoWaitV3(true);
                 }else{
-                    robot.intake.goToSampleAndGrabNoWaitV3(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT);
+                    robot.intake.goToSampleAndGrabNoWaitV3(false);
                 }
-                extenderSliderUnlocked = false;
+
                   //TODO Tune timeout
 
             }
-            if ((armsGamepad.wasYPressed())&&extenderSliderUnlocked&&!robot.intake.autoSeeking.get()) { //Grab Yellow
+            if ((armsGamepad.wasYPressed())&&!robot.intake.autoSeeking.get()) { //Grab Yellow
                 robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
                 if((robot.drive.getHeadingODO()>45&&robot.drive.getHeadingODO()<135)||(robot.drive.getHeadingODO()>225&&robot.drive.getHeadingODO()<315)){
-                    robot.intake.goToAndGrabAndUnloadNoWait(7000);
+                    robot.intake.goToSampleAndGrabNoWaitV3(true);
                 }else{
-                    robot.intake.goToSampleAndGrabNoWaitV3(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT);
+                    robot.intake.goToSampleAndGrabNoWaitV3(false);
                 }
             }
-            if ((armsGamepad.wasXPressed()&&teamUtil.alliance == teamUtil.Alliance.BLUE)&&extenderSliderUnlocked&&!robot.intake.autoSeeking.get()) { //Grab Blue
+            if ((armsGamepad.wasXPressed()&&teamUtil.alliance == teamUtil.Alliance.BLUE)&&!robot.intake.autoSeeking.get()) { //Grab Blue
                 robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
                 if((robot.drive.getHeadingODO()>45&&robot.drive.getHeadingODO()<135)||(robot.drive.getHeadingODO()>225&&robot.drive.getHeadingODO()<315)){
-                    robot.intake.goToAndGrabAndUnloadNoWait(7000);
+                    robot.intake.goToSampleAndGrabNoWaitV3(true);
                 }else{
-                    robot.intake.goToSampleAndGrabNoWaitV3(Intake.GO_TO_SAMPLE_AND_GRAB_NO_WAIT_TIMEOUT);
+                    robot.intake.goToSampleAndGrabNoWaitV3(false);
                 }
             }
 
@@ -215,9 +208,21 @@ public class Teleop extends LinearOpMode {
             if (armsGamepad.wasRightTriggerPressed()) {
                 robot.output.dropSampleOutBackNoWait();
             }
+            if(armsGamepad.wasHomePressed()){
+                if(lowBucketToggle){
+                    lowBucketToggle=false;
+                }else{
+                    lowBucketToggle=true;
 
+                }
+            }
             if (armsGamepad.wasLeftTriggerPressed()) {
-                robot.output.outputHighBucket();
+                if(!lowBucketToggle){
+                    robot.output.outputHighBucket();
+                }else{
+                    robot.output.outputLowBucket();
+
+                }
             }
             if (armsGamepad.wasLeftBumperPressed()) {
                 robot.output.outputLoadNoWait(4000);
@@ -235,6 +240,7 @@ public class Teleop extends LinearOpMode {
 
             robot.outputTelemetry();
             robot.drive.odo.update();
+            telemetry.addLine("Low Bucket Toggled: " + lowBucketToggle);
             telemetry.update();
 
 
