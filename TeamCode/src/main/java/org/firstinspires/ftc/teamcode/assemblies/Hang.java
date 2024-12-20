@@ -40,13 +40,13 @@ public class Hang {
     public static int HANG_ENGAGE = 800;
     public static int HANG_VELOCITY = 2800;
 
-    public static float PULLEYLEFT_STOW = 0.34f;
-    public static float PULLEYLEFT_HANG = 0.44f;
-    public static float PULLEYLEFT_EXTEND = 0.86f;
+    public static float PULLEYLEFT_STOW = 0.32f;
+    public static float PULLEYLEFT_HANG = 0.42f;
+    public static float PULLEYLEFT_EXTEND = 0.75f;
 
-    public static float PULLEYRIGHT_STOW = 0.66f;
-    public static float PULLEYRIGHT_HANG = 0.54f;
-    public static float PULLEYRIGHT_EXTEND = 0.17f;
+    public static float PULLEYRIGHT_STOW = 0.76f;
+    public static float PULLEYRIGHT_HANG = 0.68f;
+    public static float PULLEYRIGHT_EXTEND = 0.35f;
 
     public static float HOOKGRABBER_STOW = 0f;
     public static float HOOKGRABBER_GRAB = 0.135f;

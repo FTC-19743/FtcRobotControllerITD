@@ -30,6 +30,11 @@ public class CalibrateArms extends LinearOpMode {
     boolean hangCalibrated = false;
 
 
+
+
+
+
+
     public enum Ops {Intake_Manual_Operation,
         Test_Intake_Speeds,
         Test_Intake_Run_To_Position,
@@ -42,6 +47,22 @@ public class CalibrateArms extends LinearOpMode {
         };
     public static Ops AA_Operation = Ops.Intake_Manual_Operation;
     public static boolean useCV = true;
+
+    public static int PICK_UP_HOOKS_PAUSE_1 = 400;
+    public static int PICK_UP_HOOKS_PAUSE_2 = 200;
+    public static int PICK_UP_HOOKS_PAUSE_3 = 250;
+
+    public static int READY_TO_PLACE_HOOKS_PAUSE_1 = 1000;
+    public static int READY_TO_PLACE_HOOKS_VELOCITY = 1400;
+
+    public static int DEPLOY_HOOKS_PAUSE_1 = 1500;
+    public static int DEPLOY_HOOKS_PAUSE_2 = 500;
+    public static int DEPLOY_HOOKS_PAUSE_3 = 500;
+    public static int DEPLOY_HOOKS_PAUSE_4 = 500;
+    public static int DEPLOY_HOOKS_PAUSE_5 = 500;
+
+
+
 
     public static double SLIDER_TARGET = 0;
 
@@ -438,8 +459,23 @@ public class CalibrateArms extends LinearOpMode {
         if(gp1.wasBPressed()){
             placeHooks();
         }
-        if(gp1.wasAPressed()){
+        if(gp1.wasLeftBumperPressed()){
+            output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_BOTTOM);
+
+        }if(gp1.wasRightBumperPressed()){
+            output.bucket.setPosition(Output.BUCKET_RELOAD);
+
         }
+        if(gp2.wasYPressed()){
+            hang.extendHang();
+        }
+        if(gp2.wasBPressed()){
+            hang.engageHang();
+        }
+        if(gp2.wasAPressed()){
+            hang.stowHang();
+        }
+
 
         if(gp1.wasUpPressed()){
             hang.deployHookGrabber();
@@ -459,30 +495,39 @@ public class CalibrateArms extends LinearOpMode {
         hang.joystickDrive(gamepad1.left_stick_x, gamepad1.left_stick_y);
     }
     public void pickUpHooks(){
+        intake.flipper.setPosition(Intake.FLIPPER_SAFE);
+        outtake.outakearm.setPosition(Outtake.ARM_ENGAGE);
         output.lift.setVelocity(Output.LIFT_MAX_VELOCITY);
+        hang.extendHang();
+
+
         output.lift.setTargetPosition(Output.LIFT_SAFE_FOR_HOOK_HOLDER);
-        teamUtil.pause(1000);
+        teamUtil.pause(PICK_UP_HOOKS_PAUSE_1);
         hang.hook_grabber.setPosition(Hang.HOOKGRABBER_READY);
-        teamUtil.pause(500);
+        teamUtil.pause(PICK_UP_HOOKS_PAUSE_2);
         output.lift.setTargetPosition(Output.LIFT_PICKUP_FOR_HOOK_HOLDER);
-        teamUtil.pause(1000);
+        teamUtil.pause(PICK_UP_HOOKS_PAUSE_3);
         hang.hook_grabber.setPosition(Hang.HOOKGRABBER_GRAB);
     }
 
     public void readyToPlaceHooks(){
         hang.hook_grabber.setPosition(Hang.HOOKGRABBER_READY);
-        teamUtil.pause(2000);
-        output.lift.setVelocity(Output.LIFT_MAX_VELOCITY);
+        teamUtil.pause(READY_TO_PLACE_HOOKS_PAUSE_1);
+        output.lift.setVelocity(READY_TO_PLACE_HOOKS_VELOCITY);
         output.lift.setTargetPosition(Output.LIFT_ABOVE_BAR);
-        teamUtil.pause(2000);
         hang.hook_grabber.setPosition(Hang.HOOKGRABBER_DEPLOY);
     }
 
     public void placeHooks(){
-        output.lift.setVelocity(300);
+        output.lift.setVelocity(400);
         output.lift.setTargetPosition(Output.LIFT_ONTO_BAR);
-        teamUtil.pause(3000);
-        hang.hook_grabber.setPosition(Hang.HOOKGRABBER_DEPLOY);
+        teamUtil.pause(DEPLOY_HOOKS_PAUSE_1);
+        output.lift.setVelocity(2000);
+
+        output.lift.setTargetPosition(Output.LIFT_DOWN+30);
+
+
+        //hang.hook_grabber.setPosition(Hang.HOOKGRABBER_DEPLOY);
     }
 
 

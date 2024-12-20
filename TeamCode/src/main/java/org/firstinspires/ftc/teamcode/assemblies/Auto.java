@@ -168,6 +168,29 @@ public class Auto extends LinearOpMode {
                 teamUtil.telemetry.update();
             }
         }
+
+        while (!gamepad.wasAPressed()) {
+            gamepad.loop();
+            teamUtil.telemetry.addLine("Press Up To Extend Hang");
+            teamUtil.telemetry.addLine("Press Down To Stow Hang");
+
+            if(gamepad.wasUpPressed()){
+                robot.hang.extendHang();
+            }
+            if(gamepad.wasDownPressed()){
+                robot.hang.stowHang();
+            }
+
+            teamUtil.telemetry.addLine("Alliance: " + teamUtil.alliance);
+            teamUtil.telemetry.addLine("Side: " + teamUtil.SIDE);
+            teamUtil.telemetry.addLine("Specimen: " + specimen);
+            teamUtil.telemetry.addLine("Press Up to Add Specimen");
+            teamUtil.telemetry.addLine("Delay: " + delay);
+            teamUtil.telemetry.addLine("Press X to Move On");
+
+            teamUtil.telemetry.update();
+        }
+
         robot.initCV(false); // no live stream enabled means better FPS
 
 
