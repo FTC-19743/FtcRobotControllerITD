@@ -21,6 +21,9 @@ public class Teleop extends LinearOpMode {
     double EXTENDER_Y_DEADBAND = 0.3;
     double SLIDER_X_DEADBAND = 0.3;
     boolean lowBucketToggle= false;
+    int optionsPresses = 0;
+    boolean hangManualControl= false;
+
 
 
     // Internal state
@@ -90,6 +93,10 @@ public class Teleop extends LinearOpMode {
 
 
         robot.drive.setHeading(0);
+
+        optionsPresses=0;
+        hangManualControl = false;
+
         while (!opModeIsActive()) {
             driverGamepad.loop();
             if(driverGamepad.wasRightBumperPressed()||driverGamepad.wasLeftBumperPressed()){
@@ -121,12 +128,7 @@ public class Teleop extends LinearOpMode {
                 robot.drive.setHeading(0);
             }
 
-            robot.drive.universalDriveJoystickV2(
-                    driverGamepad.gamepad.left_stick_x,
-                    driverGamepad.gamepad.left_stick_y,
-                    driverGamepad.gamepad.right_stick_x,
-                    driverGamepad.gamepad.right_trigger > .5,driverGamepad.gamepad.left_trigger > .5,
-                    robot.drive.getHeading());
+
 
             if(driverGamepad.wasYPressed()){
                 robot.drive.setHeldHeading(0);
@@ -229,12 +231,41 @@ public class Teleop extends LinearOpMode {
             }
 
             //HANG
-            if (driverGamepad.wasUpPressed()) {
-                robot.hang.extendHang();
-            }
+
             if (driverGamepad.wasDownPressed()) {
                 robot.hang.engageHang();
+            }if (driverGamepad.wasUpPressed()) {
+                robot.hang.extendHang();
             }
+            if(armsGamepad.wasOptionsPressed()){
+                optionsPresses+=1;
+                if(optionsPresses==1){
+                    robot.getReadyToHangNoWait();
+                }if(optionsPresses==2){
+                    robot.placeHooksNoWait();
+                    hangManualControl=true;
+                }
+            }
+            if(hangManualControl){
+                robot.drive.stopMotors();
+                robot.hang.joystickDriveV2(gamepad1.left_stick_x, gamepad1.left_stick_y);
+                if (robot.hang.stringsTensioned) {
+                    robot.output.bucket.setPosition(Output.BUCKET_RELOAD); // rotate bucket to avoid bars while climbing
+                }
+                //break out
+                if(driverGamepad.wasHomePressed()){
+                    hangManualControl=false;
+                }
+            }else{
+                //drive
+                robot.drive.universalDriveJoystickV2(
+                        driverGamepad.gamepad.left_stick_x,
+                        driverGamepad.gamepad.left_stick_y,
+                        driverGamepad.gamepad.right_stick_x,
+                        driverGamepad.gamepad.right_trigger > .5,driverGamepad.gamepad.left_trigger > .5,
+                        robot.drive.getHeading());
+            }
+
 
 
 

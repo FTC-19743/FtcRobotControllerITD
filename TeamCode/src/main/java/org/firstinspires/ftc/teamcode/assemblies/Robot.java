@@ -23,6 +23,16 @@ public class Robot {
     public Hang hang;
     public Blinkin blinkin;
 
+    public static int PICK_UP_HOOKS_PAUSE_1 = 450;
+    public static int PICK_UP_HOOKS_PAUSE_2 = 300;
+    public static int PICK_UP_HOOKS_PAUSE_3 = 250;
+    public static int PICK_UP_HOOKS_PAUSE_4 = 1000;
+
+    public static int READY_TO_PLACE_HOOKS_PAUSE_1 = 1000;
+    public static int READY_TO_PLACE_HOOKS_VELOCITY = 1400;
+    public static int PLACE_HOOKS_VELOCITY = 400;
+
+
     static public int A01_PLACE_SPECIMEN_X = 732;
     public static int A02_PLACE_SPECIMEN_Y = -50;
     static public int A03_MOVE_TO_SAMPLE_Y = 873;
@@ -531,29 +541,84 @@ public class Robot {
     }
 
     public void pickUpHooks(){
+        intake.flipper.setPosition(Intake.FLIPPER_SAFE);
+        outtake.outakearm.setPosition(Outtake.ARM_ENGAGE);
         output.lift.setVelocity(Output.LIFT_MAX_VELOCITY);
-        output.lift.setTargetPosition(Output.LIFT_SAFE_FOR_HOOK_HOLDER);
-        teamUtil.pause(1000);
-        hang.hook_grabber.setPosition(Hang.HOOKGRABBER_READY);
-        teamUtil.pause(1000);
+        hang.extendHang();
 
+
+        output.lift.setTargetPosition(Output.LIFT_SAFE_FOR_HOOK_HOLDER);
+        teamUtil.pause(PICK_UP_HOOKS_PAUSE_1);
+        hang.hook_grabber.setPosition(Hang.HOOKGRABBER_READY);
+        teamUtil.pause(PICK_UP_HOOKS_PAUSE_2);
         output.lift.setTargetPosition(Output.LIFT_PICKUP_FOR_HOOK_HOLDER);
+        teamUtil.pause(PICK_UP_HOOKS_PAUSE_3);
         hang.hook_grabber.setPosition(Hang.HOOKGRABBER_GRAB);
+        teamUtil.pause(PICK_UP_HOOKS_PAUSE_4);
+
     }
 
     public void readyToPlaceHooks(){
-        output.lift.setVelocity(Output.LIFT_MAX_VELOCITY);
+        hang.hook_grabber.setPosition(Hang.HOOKGRABBER_READY);
+        teamUtil.pause(READY_TO_PLACE_HOOKS_PAUSE_1);
+        output.lift.setVelocity(READY_TO_PLACE_HOOKS_VELOCITY);
         output.lift.setTargetPosition(Output.LIFT_ABOVE_BAR);
         hang.hook_grabber.setPosition(Hang.HOOKGRABBER_DEPLOY);
-
     }
 
     public void placeHooks(){
-        output.lift.setVelocity(Output.LIFT_MAX_VELOCITY);
-
+        output.lift.setVelocity(PLACE_HOOKS_VELOCITY);
         output.lift.setTargetPosition(Output.LIFT_ONTO_BAR);
+        while (output.lift.getCurrentPosition() > Output.LIFT_ONTO_BAR+10) { // wait for hooks to be released
+            teamUtil.pause(50);
+        }
+        output.lift.setVelocity(Output.LIFT_MAX_VELOCITY); // Run to near bottom
+        output.lift.setTargetPosition(Output.LIFT_DOWN+30);
+        while (output.lift.getCurrentPosition() > Output.LIFT_DOWN+40) {
+            teamUtil.pause(50);
+        }
+        output.lift.setVelocity(0); // Turn off lift motor at bottom
+        output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_BOTTOM); // rotate bucket to avoid string while tensioning
 
-        hang.hook_grabber.setPosition(Hang.HOOKGRABBER_DEPLOY);
+    }
+
+    public void getReadyToHang() {
+        pickUpHooks();
+        readyToPlaceHooks();
+    }
+
+    public void getReadyToHangNoWait() {
+        if (hang.hangMoving.get()) { // Intake is already moving in another thread
+            teamUtil.log("WARNING: Attempt to getReadyToHang while hang is moving--ignored");
+            return;
+        } else {
+            teamUtil.log("Launching Thread to getReadyToHang");
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    getReadyToHang();
+                }
+            });
+            thread.start();
+        }
+
+    }
+
+    public void placeHooksNoWait() {
+        if (hang.hangMoving.get()) { // Intake is already moving in another thread
+            teamUtil.log("WARNING: Attempt to placeHooks while hang is moving--ignored");
+            return;
+        } else {
+            teamUtil.log("Launching Thread to placeHooks");
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    placeHooks();
+                }
+            });
+            thread.start();
+        }
+
     }
 
 

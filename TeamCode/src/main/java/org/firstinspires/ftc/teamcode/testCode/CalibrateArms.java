@@ -48,12 +48,13 @@ public class CalibrateArms extends LinearOpMode {
     public static Ops AA_Operation = Ops.Intake_Manual_Operation;
     public static boolean useCV = true;
 
-    public static int PICK_UP_HOOKS_PAUSE_1 = 400;
-    public static int PICK_UP_HOOKS_PAUSE_2 = 200;
+    public static int PICK_UP_HOOKS_PAUSE_1 = 450;
+    public static int PICK_UP_HOOKS_PAUSE_2 = 300;
     public static int PICK_UP_HOOKS_PAUSE_3 = 250;
 
     public static int READY_TO_PLACE_HOOKS_PAUSE_1 = 1000;
     public static int READY_TO_PLACE_HOOKS_VELOCITY = 1400;
+    public static int PLACE_HOOKS_VELOCITY = 400;
 
     public static int DEPLOY_HOOKS_PAUSE_1 = 1500;
     public static int DEPLOY_HOOKS_PAUSE_2 = 500;
@@ -451,7 +452,7 @@ public class CalibrateArms extends LinearOpMode {
 
     public void hangManualOperation2(){
         if(gp1.wasAPressed()){
-            pickUpHooks();
+            getReadyToHang();
         }
         if(gp1.wasYPressed()){
             readyToPlaceHooks();
@@ -475,6 +476,8 @@ public class CalibrateArms extends LinearOpMode {
         if(gp2.wasAPressed()){
             hang.stowHang();
         }
+        if(gp1.wasOptionsPressed()){
+        }
 
 
         if(gp1.wasUpPressed()){
@@ -492,7 +495,11 @@ public class CalibrateArms extends LinearOpMode {
         if(gp1.wasHomePressed()){
             hang.releaseHookGrabber();
         }
-        hang.joystickDrive(gamepad1.left_stick_x, gamepad1.left_stick_y);
+        hang.joystickDriveV2(gamepad1.left_stick_x, gamepad1.left_stick_y);
+        if (hang.stringsTensioned) {
+            output.bucket.setPosition(Output.BUCKET_RELOAD); // rotate bucket to avoid bars while climbing
+        }
+
     }
     public void pickUpHooks(){
         intake.flipper.setPosition(Intake.FLIPPER_SAFE);
@@ -508,6 +515,8 @@ public class CalibrateArms extends LinearOpMode {
         output.lift.setTargetPosition(Output.LIFT_PICKUP_FOR_HOOK_HOLDER);
         teamUtil.pause(PICK_UP_HOOKS_PAUSE_3);
         hang.hook_grabber.setPosition(Hang.HOOKGRABBER_GRAB);
+        teamUtil.pause(PICK_UP_HOOKS_PAUSE_2);
+
     }
 
     public void readyToPlaceHooks(){
@@ -518,16 +527,25 @@ public class CalibrateArms extends LinearOpMode {
         hang.hook_grabber.setPosition(Hang.HOOKGRABBER_DEPLOY);
     }
 
+    public void getReadyToHang() {
+        pickUpHooks();
+        readyToPlaceHooks();
+    }
+
     public void placeHooks(){
-        output.lift.setVelocity(400);
+        output.lift.setVelocity(PLACE_HOOKS_VELOCITY);
         output.lift.setTargetPosition(Output.LIFT_ONTO_BAR);
-        teamUtil.pause(DEPLOY_HOOKS_PAUSE_1);
-        output.lift.setVelocity(2000);
-
+        while (output.lift.getCurrentPosition() > Output.LIFT_ONTO_BAR+10) { // wait for hooks to be released
+            teamUtil.pause(50);
+        }
+        output.lift.setVelocity(Output.LIFT_MAX_VELOCITY); // Run to near bottom
         output.lift.setTargetPosition(Output.LIFT_DOWN+30);
+        while (output.lift.getCurrentPosition() > Output.LIFT_DOWN+40) {
+            teamUtil.pause(50);
+        }
+        output.lift.setVelocity(0); // Turn off lift motor at bottom
+        output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_BOTTOM); // rotate bucket to avoid string while tensioning
 
-
-        //hang.hook_grabber.setPosition(Hang.HOOKGRABBER_DEPLOY);
     }
 
 

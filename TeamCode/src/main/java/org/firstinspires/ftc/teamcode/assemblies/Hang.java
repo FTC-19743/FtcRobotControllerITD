@@ -56,10 +56,14 @@ public class Hang {
 
     public static double HANG_HOLD_POWER = 0.1;
     public boolean hanging = false;
+    public boolean hangingL = false;
+    public boolean hangingR = false;
+    int startString = 0;
     public static float JOYSTICK_Y_DEADBAND = .1f;
-    public static float JOYSTICK_X_DEADBAND = .4f;
+    public static float JOYSTICK_X_DEADBAND = .7f;
 
-
+    public static double STRINGS_TENSIONED = 2000;
+    public boolean stringsTensioned = false;
 
 
 
@@ -80,11 +84,11 @@ public class Hang {
         hang_Right = hardwareMap.get(DcMotorEx.class,"hangRight");
         hang_Left.setTargetPosition(hang_Left.getCurrentPosition());
         hang_Right.setTargetPosition(hang_Right.getCurrentPosition());
+        startString = hang_Left.getCurrentPosition();
         hang_Left.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         hang_Right.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         hang_Left.setDirection(DcMotorSimple.Direction.REVERSE);
-
-
+        stringsTensioned = false;
 
     }
 
@@ -171,6 +175,65 @@ public class Hang {
                 hang_Left.setVelocity(HANG_VELOCITY);
                 hang_Right.setVelocity(HANG_VELOCITY);
             } // do nothing if we were already hanging
+        }
+    }
+
+    public void joystickDriveV2(float x, float y) {
+        if (hang_Left.getCurrentPosition()> (STRINGS_TENSIONED-startString)) {
+            stringsTensioned = true;
+        }
+        if (Math.abs(y)> JOYSTICK_Y_DEADBAND && x > JOYSTICK_X_DEADBAND) { // actively moving Left side only
+            if (!hangingR) { // do nothing if we were already hanging
+                hangingR = true; // put right motor into hanging mode
+                hang_Right.setTargetPosition(hang_Right.getCurrentPosition());
+                hang_Right.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                hang_Right.setVelocity(HANG_VELOCITY);
+            }
+            hangingL = false;
+            hang_Left.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            hang_Left.setVelocity(HANG_VELOCITY * y * -1 );
+        } else if (Math.abs(y)> JOYSTICK_Y_DEADBAND && x < -JOYSTICK_X_DEADBAND) { // actively moving Right side only
+            if (!hangingL) { // do nothing if we were already hanging
+                hangingL = true; // put left motor into hanging mode
+                hang_Left.setTargetPosition(hang_Left.getCurrentPosition());
+                hang_Left.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                hang_Left.setVelocity(HANG_VELOCITY);
+            }
+            hangingR = false;
+            hang_Right.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            hang_Right.setVelocity(HANG_VELOCITY * y * -1 );
+        } else if (Math.abs(y)> JOYSTICK_Y_DEADBAND) { // Actively moving both motors
+            hangingL = false;
+            hang_Left.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            if(y<-0.8){
+                hang_Left.setVelocity(3000);
+
+            }else{
+                hang_Left.setVelocity(HANG_VELOCITY * y * -1 );
+
+            }
+            hangingR = false;
+            hang_Right.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            if(y<-0.8){
+                hang_Right.setVelocity(3000);
+
+            }else{
+                hang_Right.setVelocity(HANG_VELOCITY * y * -1 );
+
+            }
+        } else { // Joystick neutral
+            if (!hangingL) { // do nothing if we were already hanging
+                hangingL = true; // put left motor into hanging mode
+                hang_Left.setTargetPosition(hang_Left.getCurrentPosition());
+                hang_Left.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                hang_Left.setVelocity(HANG_VELOCITY);
+            }
+            if (!hangingR) { // do nothing if we were already hanging
+                hangingR = true; // put right motor into hanging mode
+                hang_Right.setTargetPosition(hang_Right.getCurrentPosition());
+                hang_Right.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                hang_Right.setVelocity(HANG_VELOCITY);
+            }
         }
     }
 }
