@@ -82,7 +82,7 @@ public class SlappyOp extends LinearOpMode {
 
 
         }
-        setManualExposure(exposure,gain);
+        //setManualExposure(exposure,gain);
         waitForStart();
 
         while (opModeIsActive()) {
@@ -95,6 +95,7 @@ public class SlappyOp extends LinearOpMode {
             } else {
                 armMotor.setPower(0);
             }
+            /*
             if (gamepad.wasYPressed() && !trackingAprilTags) {
                 trackingAprilTags = true;
                 setManualExposure(1,30);
@@ -107,9 +108,18 @@ public class SlappyOp extends LinearOpMode {
             }
             if (trackingAprilTags) {
                 trackAprilTags();
-            } else {
+
+
+            }
+            else {
+
                 turnHead(gamepad.gamepad.left_trigger, gamepad.gamepad.right_trigger);
             }
+            */
+            turnHead(gamepad.gamepad.left_trigger, gamepad.gamepad.right_trigger);
+
+
+
             if (gamepad.wasLeftBumperPressed()) {
                 openHatch();
             }
@@ -118,7 +128,7 @@ public class SlappyOp extends LinearOpMode {
             }
             telemetry.update();
         }
-        visionPortal.close();
+        //visionPortal.close();
     }
 
     public void setUp() {
@@ -128,13 +138,15 @@ public class SlappyOp extends LinearOpMode {
         armMotor = hardwareMap.get(DcMotorEx.class, "am");
         headServo = hardwareMap.get(Servo.class,"headServo");
         hatchServo = hardwareMap.get(Servo.class,"hatchServo");
-
+        /*
         aprilTag = new AprilTagProcessor.Builder().build();
         VisionPortal.Builder builder = new VisionPortal.Builder();
         builder.setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"));
         builder.addProcessor(aprilTag);
         visionPortal = builder.build();
         teamUtil.pause(1500);
+
+         */
         //setManualExposure(8,200); // Make April tag processor more responsive
     }
     public void drive (float x, float y) {

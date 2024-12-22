@@ -119,9 +119,7 @@ public class Teleop extends LinearOpMode {
             driverGamepad.loop();
             armsGamepad.loop();
 
-            if(driverGamepad.wasHomePressed()){
-                endgame=true;
-            }
+
 
             ////////// Drive
             if (driverGamepad.gamepad.right_stick_button && driverGamepad.gamepad.left_stick_button) {
@@ -255,6 +253,7 @@ public class Teleop extends LinearOpMode {
                 //break out
                 if(driverGamepad.wasHomePressed()){
                     hangManualControl=false;
+                    optionsPresses=0;
                 }
             }else{
                 //drive
@@ -269,9 +268,12 @@ public class Teleop extends LinearOpMode {
 
 
 
+
+
             robot.outputTelemetry();
             robot.drive.odo.update();
             telemetry.addLine("Low Bucket Toggled: " + lowBucketToggle);
+            telemetry.addLine("Hang Manual: " + hangManualControl);
             telemetry.update();
 
 

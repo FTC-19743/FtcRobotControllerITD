@@ -206,7 +206,7 @@ public class Hang {
             hangingL = false;
             hang_Left.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             if(y<-0.8){
-                hang_Left.setVelocity(3000);
+                hang_Left.setVelocity(4000);
 
             }else{
                 hang_Left.setVelocity(HANG_VELOCITY * y * -1 );
@@ -215,7 +215,7 @@ public class Hang {
             hangingR = false;
             hang_Right.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             if(y<-0.8){
-                hang_Right.setVelocity(3000);
+                hang_Right.setVelocity(4000);
 
             }else{
                 hang_Right.setVelocity(HANG_VELOCITY * y * -1 );
