@@ -237,7 +237,7 @@ public class CalibrateArms extends LinearOpMode {
 
             intake.goToSampleV5(5000);
             //intake.goToSampleAndGrabV2(5000);
-        } if (gp1.wasOptionsPressed()) {
+        } if (gp1.wasRightBumperPressed()) {
             intake.lightsOnandOff(Intake.WHITE_NEOPIXEL,Intake.RED_NEOPIXEL,Intake.GREEN_NEOPIXEL,Intake.BLUE_NEOPIXEL,true);
 
             intake.goToSampleAndGrabV3(false);
@@ -361,6 +361,24 @@ public class CalibrateArms extends LinearOpMode {
             while(intake.extender.isBusy()){
                 ;
             }
+        }
+        if(gp1.wasHomePressed()){
+            intake.extender.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            intake.extender.setPower(-1);
+            long startTime = System.currentTimeMillis();
+            double maxVelo=0;
+            while(intake.extender.getCurrentPosition()>Intake.EXTENDER_MIN+100){
+                if(Math.abs(intake.extender.getVelocity())>maxVelo){
+                    maxVelo=intake.extender.getVelocity();
+
+                }
+            }
+            intake.extender.setPower(0);
+            long elapsedTime = System.currentTimeMillis()-startTime;
+
+            teamUtil.log("Max Velocity: " + maxVelo);
+            teamUtil.log("Elapsed Time: " + elapsedTime);
+
         }
         if (gp1.wasAPressed()) {
             intake.axonSlider.calibrate(-0.3f, 1);

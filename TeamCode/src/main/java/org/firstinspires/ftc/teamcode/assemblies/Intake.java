@@ -594,6 +594,8 @@ public class Intake {
             teamUtil.log("Starting YPos :  " + extender.getCurrentPosition());
             teamUtil.log("Target XPos :  " + xPos);
             teamUtil.log("Target YPos :  " + yPos);
+            teamUtil.log("Target Angle :  " + rotation);
+
         }
 
         extender.setTargetPosition((int)yPos);
