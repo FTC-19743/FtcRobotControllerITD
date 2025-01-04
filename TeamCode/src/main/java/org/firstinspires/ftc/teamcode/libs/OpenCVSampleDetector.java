@@ -3,13 +3,17 @@ package org.firstinspires.ftc.teamcode.libs;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ImageFormat;
 import android.graphics.Paint;
+import android.media.Image;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibration;
+import org.firstinspires.ftc.vision.VisionPortal;
+import org.firstinspires.ftc.vision.VisionProcessor;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
@@ -26,6 +30,8 @@ import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -35,6 +41,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class OpenCVSampleDetector extends OpenCVProcesser {
     HardwareMap hardwareMap;
     Telemetry telemetry;
+
+
 
     Scalar BLACK = new Scalar(0, 0, 0);
     Scalar GREEN = new Scalar(0, 255, 0);
@@ -169,13 +177,6 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     public AtomicBoolean outsideUseableCameraRange = new AtomicBoolean(false);
     // TODO: Data about the located Sample
 
-    public AtomicInteger rectAngle = new AtomicInteger(-1);
-    public AtomicInteger rectCenterXOffset = new AtomicInteger(0);
-    public AtomicInteger rectCenterYOffset = new AtomicInteger(0);
-    public AtomicInteger rectArea = new AtomicInteger(0);
-
-
-
 
     public boolean viewingPipeline = false;
     enum Stage {
@@ -196,6 +197,30 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         RotatedRect[] rots;
         List<MatOfPoint> contours;
     }
+
+    //old atomic integers
+    public AtomicInteger rectAngle = new AtomicInteger(-1);
+    public AtomicInteger rectCenterXOffset = new AtomicInteger(0);
+    public AtomicInteger rectCenterYOffset = new AtomicInteger(0);
+    public AtomicInteger rectArea = new AtomicInteger(0);
+
+
+
+
+    public BlockingQueue<ImageData> imageDataQueue;
+
+    public static class ImageData {
+        public int rectAngle1 =-1;
+        public int rectCenterXOffset = 0;
+        public int rectCenterYOffset = 0;
+        public int rectArea = 0;
+    }
+
+
+
+
+
+
 
     public OpenCVSampleDetector() {
         hardwareMap = teamUtil.theOpMode.hardwareMap;
@@ -251,6 +276,25 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     public void reset() {
         foundOne.set(false);
     }
+
+
+    //TODO: find where to turn processor on/off
+    public ImageData getNextFrameData(long timeOut){
+
+        imageDataQueue.clear();
+
+        ImageData imgData = null;
+        while(imgData==null&&teamUtil.keepGoing(timeOut)){
+            teamUtil.pause(50);
+            imgData = imageDataQueue.poll();
+        }
+        if(imgData==null){
+            teamUtil.log("Timed Out; No New Data Found");
+        }
+
+        return imgData;
+    }
+
     @Override
     public Object processFrame(Mat frame, long captureTimeNanos) {
         boolean details = false;
@@ -463,15 +507,40 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             outsideUseableCameraRange.set(false);
             foundOne.set(true);
 
+            // old data setting
             rectCenterYOffset.set(-1 * ((int) rotatedRect[closestAreaSelectionNum].center.y - TARGET_Y));
             rectCenterXOffset.set((int) rotatedRect[closestAreaSelectionNum].center.x - TARGET_X);
             rectAngle.set((int) realAngle);
+            rectArea.set((int) rotatedRect[closestAreaSelectionNum].size.area());
+
+
+
+            ImageData imgData = new ImageData();
+            imgData.rectAngle1 = 5;
+            imgData.rectCenterXOffset = 5;
+            imgData.rectCenterYOffset = 5;
+            imgData.rectArea = 5;
+
+            imageDataQueue.add(imgData);
+
+
+
+
+
+
+
+
+
             targetIndex = closestAreaSelectionNum;
+
+
 
             if (details) teamUtil.log("Real Angle" + realAngle + "Lowest: " + vertices1[lowestPixel].x + "," + vertices1[lowestPixel].y+"Closest: " + vertices1[closestPixel].x+ "," +vertices1[closestPixel].y);
 
 
         }
+
+
         //return rotatedRect;
         Context context = new Context();
         context.rots = rotatedRect;

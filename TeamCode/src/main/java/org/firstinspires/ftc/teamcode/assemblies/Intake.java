@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.assemblies;
 import static androidx.core.math.MathUtils.clamp;
 
 import android.graphics.Color;
+import android.graphics.Path;
 import android.util.Size;
 
 import com.acmerobotics.dashboard.config.Config;
@@ -24,6 +25,7 @@ import org.firstinspires.ftc.teamcode.libs.teamUtil;
 import org.firstinspires.ftc.vision.VisionPortal;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.BlockingQueue;
 
 @Config // Makes Static data members available in Dashboard
 public class Intake {
@@ -45,11 +47,18 @@ public class Intake {
 
     public OpenCVSampleDetector sampleDetector = new OpenCVSampleDetector();
 
+
+
+
     public AtomicBoolean moving = new AtomicBoolean(false);
     public AtomicBoolean timedOut = new AtomicBoolean(false);
     public AtomicBoolean FlipperInUnload = new AtomicBoolean(false);
     public AtomicBoolean FlipperInSeek = new AtomicBoolean(true);
     public AtomicBoolean autoSeeking = new AtomicBoolean(false);
+
+
+
+
 
     public static final int NUM_PIXELS = 12;
     public static final int BYTES_PER_PIXEL=4; // RGBW neo pixel device
@@ -684,10 +693,16 @@ public class Intake {
 
 
         while (teamUtil.keepGoing(timeoutTime)) {
+            //old data setting
             boolean foundOne = sampleDetector.foundOne.get();
             int rectCenterXOffset = sampleDetector.rectCenterXOffset.get();
             int rectCenterYOffset = sampleDetector.rectCenterYOffset.get();
             int rectAngle = sampleDetector.rectAngle.get();
+
+
+
+
+
             boolean lastJumpStartedInGrabZone = inGrabZone(rectCenterXOffset, rectCenterYOffset);
             if(!foundOne){
                 teamUtil.log("Found One False During Jumps");
@@ -1023,6 +1038,8 @@ public class Intake {
         teamUtil.log("RotateToSample has started");
         double factor = 0.003722;
         if(rotation<0){
+
+
         }
         else {
             if(rotation<90){
