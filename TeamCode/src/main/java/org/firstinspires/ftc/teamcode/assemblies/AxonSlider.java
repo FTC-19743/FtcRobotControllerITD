@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.assemblies;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.hardware.digitalchickenlabs.OctoQuad;
+import com.qualcomm.hardware.digitalchickenlabs.OctoQuadBase;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -13,25 +15,31 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class AxonSlider {
     public CRServo axon;
     AnalogInput axonPotentiometer;
+    public OctoQuad octoquad;
+    public final int ODO_SLIDER  = 0; // Intake Slider octoquad port
+
     AtomicBoolean moving = new AtomicBoolean(false);
     public AtomicBoolean timedOut = new AtomicBoolean(false);
     public static boolean details = false;
 
     public static int RIGHT_LIMIT = 0; //set during calibration
     public static int LEFT_LIMIT = 0; //set during calibration
-    static public float SLIDER_UNLOAD = 0; // TODO Recalibrate
-    static public float SLIDER_READY = 0;//TODO Recalibrate
+    static public float SLIDER_UNLOAD = 0; //set during calibration
+    static public float SLIDER_READY = 0; //set during calibration
+    public static int LEFT_LIMIT_OFFSET = -739; //set during calibration
+    static public float SLIDER_UNLOAD_OFFSET = -361; //set during calibration
+    static public float SLIDER_READY_OFFSET = -375; //set during calibration
 
     public static float POWER_ADJUSTEMENT = -.01f;
     public static int DEGREE_NOISE_THRESHOLD = 20;
 
     public static float RTP_MAX_VELOCITY = .5f;
-    public static int RTP_LEFT_DEADBAND_DEGREES = 32;
-    public static int RTP_RIGHT_DEADBAND_DEGREES = 16;
-    public static int RTP_SLOW_THRESHOLD = 35;
-    public static float RTP_SLOW_VELOCITY = .1f;
-    public static int RTP_LEFT_DEADBAND_SLOW_DEGREES = 10;
-    public static int RTP_RIGHT_DEADBAND_SLOW_DEGREES = 6;
+    public static int RTP_LEFT_DEADBAND_DEGREES = 32; // TODO Recalibrate
+    public static int RTP_RIGHT_DEADBAND_DEGREES = 16; // TODO Recalibrate
+    public static int RTP_SLOW_THRESHOLD = 35; // TODO Recalibrate
+    public static float RTP_SLOW_VELOCITY = .1f; // TODO Recalibrate
+    public static int RTP_LEFT_DEADBAND_SLOW_DEGREES = 10; // TODO Recalibrate
+    public static int RTP_RIGHT_DEADBAND_SLOW_DEGREES = 6; // TODO Recalibrate
     //public static float RTP_P_COEFFICIENT = .005f;
     //public static float RTP_MIN_VELOCITY = .1f;
     public static float MANUAL_SLIDER_INCREMENT;
@@ -51,11 +59,18 @@ public class AxonSlider {
     public void init(HardwareMap hardwareMap, String servoName, String sensorName){
         teamUtil.log("Init AxonSlider");
         axon = hardwareMap.crservo.get(servoName);
+        octoquad = hardwareMap.get(OctoQuad.class, "octoquad");
+        octoquad.setSingleEncoderDirection(ODO_SLIDER,  OctoQuad.EncoderDirection.FORWARD); // RIGHT IS POSITIVE, LEFT IS NEGATIVE
         axonPotentiometer = hardwareMap.analogInput.get(sensorName);
         lastDegrees360 = getDegrees360();
         axonRotations=0; // presumes we are in the middle rotation.  Run Calibrate to be sure.
     }
 
+    public void calibrateEncoder(float power) {
+        // TODO: Create a new version of calibrate that uses the octoquad encoder instead of the potentiometer
+        // TODO: Then comment out the old version and update all the calls to it
+
+    }
     // Flipper must be in a safe position for travel to the far right side
     // Leaves the slider on the far left
     public void calibrate (float power, int rotations) {
@@ -78,15 +93,20 @@ public class AxonSlider {
         lastDegrees360 = getDegrees360();
 
         RIGHT_LIMIT = getPosition();
-        LEFT_LIMIT = getPosition()-739;
-        SLIDER_READY = getPosition()-375;
-        SLIDER_UNLOAD = getPosition()-361;
+        LEFT_LIMIT = getPosition()+ LEFT_LIMIT_OFFSET;
+        SLIDER_READY = getPosition()+ SLIDER_READY_OFFSET;
+        SLIDER_UNLOAD = getPosition()+ SLIDER_UNLOAD_OFFSET;
         teamUtil.log("RIGHT LIMIT: " + RIGHT_LIMIT);
         teamUtil.log("LEFT LIMIT: " + LEFT_LIMIT);
         teamUtil.log("SLIDER READY: " + SLIDER_READY);
         teamUtil.log("SLIDER UNLOAD: " + SLIDER_UNLOAD);
 
         CALIBRATED = true;
+    }
+
+
+    public int getPositionEncoder() {
+        return octoquad.readSinglePosition(ODO_SLIDER);
     }
 
     // Return the computed absolute position of the servo by using the number
@@ -109,6 +129,11 @@ public class AxonSlider {
         axon.setPower(power);
     }
 
+
+    private void runToTargetEncoder (double target, float sliderVelocity, int leftDeadband, int rightDeadband, long timeOut) {
+        // TODO: Create a new version of runToTarget that uses the octoquad encoder instead of the potentiometer (getPositionEncoder())
+        // TODO: Then modify run to position to use runToTargetEncoder
+    }
 
     // Run the servo to the specified position as quickly as possible
     // This method returns when the servo is in the new position
@@ -190,11 +215,11 @@ public class AxonSlider {
 
     public void manualSliderControl(double joystick) {
         if(Math.abs(joystick)>SLIDER_X_DEADBAND){
-            double power = Math.abs(joystick)-0.5; //TODO MAke linear
+            double power = Math.abs(joystick)-0.5; //TODO MAke linear   (Coach: Isn't this linear already?  There might be something wierd here if the Deadband is less than .5?!)
             loop();
 
             if(joystick<0){
-                if (Math.abs(getPosition()-LEFT_LIMIT)<40) {
+                if (Math.abs(getPosition()-LEFT_LIMIT)<40) { // TODO: What is this magic number?! Recalibrate for Encoder?
                     setAdjustedPower(0);
                 }
                 else{

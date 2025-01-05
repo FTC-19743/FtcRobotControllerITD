@@ -46,7 +46,7 @@ public class CalibrateArms extends LinearOpMode {
         Intake_Seek_Testing
         };
     public static Ops AA_Operation = Ops.Intake_Manual_Operation;
-    public static boolean useCV = true;
+    public static boolean useCV = false;
 
     public static int PICK_UP_HOOKS_PAUSE_1 = 450;
     public static int PICK_UP_HOOKS_PAUSE_2 = 300;
@@ -130,6 +130,8 @@ public class CalibrateArms extends LinearOpMode {
 
         gp1.initilize(true); // Game Pads can be plugged into the computer
         gp2.initilize(false);
+        telemetry.addLine("Ready to start");
+        telemetry.update();
 
         waitForStart();
 

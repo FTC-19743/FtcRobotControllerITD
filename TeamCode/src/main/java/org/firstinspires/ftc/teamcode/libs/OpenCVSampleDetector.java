@@ -50,7 +50,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
     public final int WIDTH = 640;
     public final int HEIGHT = 480;
-    Rect obscureRect = new Rect(0,300,WIDTH,HEIGHT-300);
+    static public int OBSCURE_HEIGHT = 460;
     Rect cropRect = new Rect(0, 0, WIDTH, HEIGHT);
 
     static public int TARGET_X = 334;
@@ -318,6 +318,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
         Mat redDilutionElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2 * redDilutionFactor + 1, 2 * redDilutionFactor + 1),
                 new Point(redDilutionFactor, redDilutionFactor));
+        Rect obscureRect = new Rect(0,OBSCURE_HEIGHT,WIDTH,HEIGHT-OBSCURE_HEIGHT);
 
         Imgproc.rectangle(frame, obscureRect, BLACK, -1); // Cover view of robot
 
@@ -521,7 +522,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             imgData.rectCenterYOffset = 5;
             imgData.rectArea = 5;
 
-            imageDataQueue.add(imgData);
+            //imageDataQueue.add(imgData);
 
 
 

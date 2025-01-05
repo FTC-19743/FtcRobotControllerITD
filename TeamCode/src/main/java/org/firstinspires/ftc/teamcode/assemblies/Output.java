@@ -161,10 +161,10 @@ public class Output {
             bucket.setPosition(BUCKET_RELOAD);
 
             outputLiftAtBottom.set(true);
+            teamUtil.log("Go To Load: Finished");
+
         }
         outputMoving.set(false);
-
-
     }
 
     public void outputLoadNoWait(long timeout){

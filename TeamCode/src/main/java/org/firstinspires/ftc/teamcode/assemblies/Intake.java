@@ -1169,6 +1169,7 @@ public class Intake {
                 + " Angle: " + sampleDetector.rectAngle.get());
 
         telemetry.addLine("Intake Extender Position: " + extender.getCurrentPosition());
+        telemetry.addLine("Slider Encoder: " + axonSlider.octoquad.readSinglePosition(axonSlider.ODO_SLIDER));
         telemetry.addLine("Axon Slider Position : " + axonSlider.getPosition() + " (0-360): " + (int)axonSlider.getDegrees360() + " Voltage: " + axonSlider.axonPotentiometer.getVoltage());
         telemetry.addLine("Flipper: " + flipperPotentiometer.getVoltage() + "V Grabber: " + grabberPotentiometer.getVoltage() + "V Sweeper: " + sweeperPotentiometer.getVoltage() + "V");
     }
