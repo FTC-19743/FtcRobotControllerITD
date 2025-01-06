@@ -510,15 +510,8 @@ public class Robot {
 
     public boolean dropSampleOutBackAndArmGrab(long timeout){
         //TODO Implement Timeout
-        if(outtake.outakePotentiometer.getVoltage()>Outtake.POTENTIOMETER_BUCKET_SAFE){
-            outtake.outakearm.setPosition(Outtake.ARM_BUCKET_SAFE);
-            outtake.outakewrist.setPosition(Outtake.WRIST_GRAB);
-        }
-        else{
-            teamUtil.log("WARNING: attempted to move with outtake in the way");
-            return false;
-        }
-        output.dropSampleOutBack();
+
+        output.dropSampleOutBackNoWait();
         outtake.outtakeGrab();
         return true;
     }

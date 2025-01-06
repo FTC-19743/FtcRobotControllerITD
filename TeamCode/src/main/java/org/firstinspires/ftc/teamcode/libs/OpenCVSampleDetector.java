@@ -15,6 +15,7 @@ import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibra
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.VisionProcessor;
 import org.opencv.android.Utils;
+import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -330,16 +331,14 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         switch (targetColor) {
             case YELLOW:
                 Core.inRange(blurredMat, yellowLowHSV, yellowHighHSV, thresholdMat);
-                //Calib3d.undistort(thresholdMat,undistortedMat,cameraMatrix,distCoeffs);
+                Calib3d.undistort(thresholdMat,undistortedMat,cameraMatrix,distCoeffs);
 
-                //Imgproc.morphologyEx(thresholdMat, closedMat,Imgproc.MORPH_CLOSE, closeElement);
                 Imgproc.erode(thresholdMat, erodedMat, yellowErosionElement);
                 break;
             case BLUE:
                 Core.inRange(blurredMat, blueLowHSV, blueHighHSV, thresholdMat);
-                //Calib3d.undistort(thresholdMat,undistortedMat,cameraMatrix,distCoeffs);
+                Calib3d.undistort(thresholdMat,undistortedMat,cameraMatrix,distCoeffs);
 
-                //Imgproc.morphologyEx(thresholdMat, closedMat,Imgproc.MORPH_CLOSE, closeElement);
                 Imgproc.erode(thresholdMat, erodedMat, blueErosionElement);
                 break;
             case RED:
@@ -367,7 +366,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                 }
                 Core.subtract(thresholdMatAll, thresholdMatYB,  thresholdMat);
 
-                //Calib3d.undistort(thresholdMat,undistortedMat,cameraMatrix,distCoeffs);
+                Calib3d.undistort(thresholdMat,undistortedMat,cameraMatrix,distCoeffs);
 
                 Imgproc.erode(thresholdMat, erodedMat, redErosionElement);
 

@@ -157,7 +157,7 @@ public class Teleop extends LinearOpMode {
 
 
             if (armsGamepad.wasAPressed()&&!robot.intake.autoSeeking.get()) {
-                if(robot.intake.extender.getCurrentPosition()<Intake.EXTENDER_SAFE_TO_UNLOAD_THRESHOLD){
+                if(robot.intake.extender.getCurrentPosition()<Intake.EXTENDER_GO_TO_SEEK_THRESHOLD){
                     robot.intake.unloadNoWait(2000);
                 }
                 else{

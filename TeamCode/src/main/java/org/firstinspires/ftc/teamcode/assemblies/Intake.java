@@ -86,8 +86,8 @@ public class Intake {
     static public float FLIPPER_UNLOAD = 0.91f;
     static public double FLIPPER_UNLOAD_POT_VOLTAGE = 0.8;
     static public double FLIPPER_UNLOAD_POT_THRESHOLD = 0.1;
-    static public float FLIPPER_GRAB = 0.21f;
-    static public double FLIPPER_GRAB_POT_VOLTAGE = 2.485;
+    static public float FLIPPER_GRAB = 0.225f;
+    static public double FLIPPER_GRAB_POT_VOLTAGE = 2.457;
     static public double FLIPPER_GRAB_POT_THRESHOLD = .01;
     static public float FLIPPER_SAFE = .7f;
     static public double FLIPPER_SAFE_POT_VOLTAGE = 1.045;
@@ -155,33 +155,37 @@ public class Intake {
 
     static public float MM_PER_PIX_Y = 0.5625f;
     static public float MM_PER_PIX_X = 0.59375f;
-    static public float MM_PER_EXTENDER_TIC = 0.3168f;
+    static public float MM_PER_EXTENDER_TIC = 0.64935f;
     static public float MM_PER_SLIDER_DEGREE = 0.33333f;
 
     static public float PIX_PER_MM_Y = 1/MM_PER_PIX_Y;
     static public float PIX_PER_MM_X = 1/MM_PER_PIX_X;
     static public float EXTENDER_TIC_PER_MM = 1/MM_PER_EXTENDER_TIC;
 
-    static public int EXTENDER_MAX = 1500; //TODO find this number and use it in movement methods
-    static public int EXTENDER_MAX_VELOCITY = 1500;
+    static public int EXTENDER_MAX = 610; //TODO find this number and use it in movement methods
+    static public int EXTENDER_MAX_VELOCITY = 1600;
     static public int EXTENDER_MAX_RETRACT_VELOCITY = 2000;
     static public int EXTENDER_MIN_VELOCITY = 50;
-    static public int EXTENDER_HOLD_RETRACT_VELOCITY = 200;
+    static public int EXTENDER_HOLD_RETRACT_VELOCITY = 1000;
     static public int EXTENDER_MM_DEADBAND = 5;
     static public int EXTENDER_P_COEFFICIENT = 4;
     static public int EXTENDER_THRESHOLD = 30;
-    static public int EXTENDER_UNLOAD = 140;
+    static public int EXTENDER_UNLOAD = 5;
     static public int EXTENDER_CALIBRATE = 5;
-    static public int EXTENDER_START_SEEK = 300; // TODO Determine this number
+    static public int EXTENDER_START_SEEK = 60; // TODO Determine this number
     static public int EXTENDER_CRAWL_INCREMENT = 30;
-    static public int EXTENDER_FAST_INCREMENT = 200;
-    static public int EXTENDER_MIN = 100;
-    static public int EXTENDER_TOLERANCE_RETRACT = 15;
+    static public int EXTENDER_FAST_INCREMENT = 100;
+    static public int EXTENDER_MIN = 10;
+    static public int EXTENDER_TOLERANCE_RETRACT = 4;
     static public int EXTENDER_RETRACT_TIMEOUT = 3000;
-    static public int EXTENDER_SAFE_TO_UNLOAD_THRESHOLD = 180;
-    static public int EXTENDER_GO_TO_SAMPLE_VELOCITY = 2000;
-    static public int EXTENDER_TOLERANCE_SEEK = 5;
+    static public int EXTENDER_SAFE_TO_UNLOAD_THRESHOLD = 6;
+    static public int EXTENDER_GO_TO_SAMPLE_VELOCITY = 757;
+    static public int EXTENDER_TOLERANCE_SEEK = 3;
     static public int EXTENDER_GOTOUNLOAD_THRESHOLD = 20;
+    static public float EXTENDER_CALIBRATE_POWER = -0.2f;
+    static public float EXTENDER_SEEK_VELOCITY = 600;
+    static public float EXTENDER_GO_TO_SEEK_THRESHOLD = 20;
+
 
 
     static public int TEST_EXTENDER_VAL = 1000;
@@ -294,12 +298,12 @@ public class Intake {
         grabberReady();
 
         // Calibrate the slider and run to center
-        axonSlider.calibrate(-.3f,1);
-        axonSlider.runToPosition(AxonSlider.SLIDER_UNLOAD, 1500);
+        axonSlider.calibrateEncoder(-.2f);
+        axonSlider.runToEncoderPosition(AxonSlider.SLIDER_UNLOAD, 1500);
         goToSafe();
 
         extender.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        extender.setPower(-.2);
+        extender.setPower(EXTENDER_CALIBRATE_POWER);
         int lastExtenderPosition = extender.getCurrentPosition();
         teamUtil.pause(250);
         while (extender.getCurrentPosition() != lastExtenderPosition) {
@@ -464,7 +468,7 @@ public class Intake {
         flipperGoToSeek(FLIPPER_GO_TO_SEEK_TIMEOUT);
         wrist.setPosition(WRIST_MIDDLE);
         grabberReady();
-        axonSlider.runToPosition(axonSlider.SLIDER_READY, timeOut);
+        axonSlider.runToEncoderPosition(axonSlider.SLIDER_READY, timeOut);
 
         if (axonSlider.timedOut.get()) {
             timedOut.set(true);
@@ -608,7 +612,7 @@ public class Intake {
         }
 
         extender.setTargetPosition((int)yPos);
-        axonSlider.runToPosition(xPos, timeOut); // will not return until done
+        axonSlider.runToEncoderPosition(xPos, timeOut); // will not return until done
         while(extender.isBusy() && teamUtil.keepGoing(timeoutTime)){
             teamUtil.pause(10);
         }
@@ -633,7 +637,7 @@ public class Intake {
 
         sampleDetector.reset();
         startCVPipeline();
-        axonSlider.manualSliderControl(0);
+        axonSlider.manualSliderControlWithEncoder(0);
         lightsOnandOff(WHITE_NEOPIXEL,RED_NEOPIXEL,GREEN_NEOPIXEL,BLUE_NEOPIXEL,true);
         teamUtil.pause(100); // What are we waiting for here?
 
@@ -652,7 +656,7 @@ public class Intake {
         // Move extender out quickly until we see a target
         //teamUtil.pause(100);
 
-        extender.setVelocity(EXTENDER_MAX_VELOCITY);//Tune increment
+        extender.setVelocity(EXTENDER_SEEK_VELOCITY);//Tune increment
         //teamUtil.pause(100);
 
         while(teamUtil.keepGoing(timeoutTime)&&!sampleDetector.foundOne.get()&&extender.getCurrentPosition()<EXTENDER_MAX-10) {
@@ -735,6 +739,7 @@ public class Intake {
 
         teamUtil.theBlinkin.setSignal(Blinkin.Signals.DARK_GREEN);
         teamUtil.log("GoToSample has finished--At Block");
+
         return true;
     }
 
@@ -863,7 +868,7 @@ public class Intake {
         FlipperInUnload.set(false);
 
         wrist.setPosition(WRIST_MIDDLE);
-        axonSlider.runToPosition(axonSlider.SLIDER_UNLOAD, timeOut);
+        axonSlider.runToEncoderPosition(axonSlider.SLIDER_UNLOAD, timeOut);
         timedOut.set(axonSlider.timedOut.get());
         moving.set(false);
         teamUtil.log("goToSafeRetract--Finished");
@@ -915,7 +920,7 @@ public class Intake {
         moving.set(true);
         timedOut.set(false);
         flipperGoToSeekNoWait(2000);
-        axonSlider.runToPosition(axonSlider.SLIDER_UNLOAD, timeOut);
+        axonSlider.runToEncoderPosition(axonSlider.SLIDER_UNLOAD, timeOut);
         if (axonSlider.timedOut.get()) {
             timedOut.set(true);
             moving.set(false);
@@ -938,7 +943,7 @@ public class Intake {
 //        flipper.setPosition(FLIPPER_UNLOAD);
 //        FlipperInSeek.set(false);
 //        FlipperInUnload.set(true);
-        axonSlider.runToPosition(AxonSlider.SLIDER_UNLOAD,2000);
+        axonSlider.runToEncoderPosition(AxonSlider.SLIDER_UNLOAD,2000);
         flipperGoToUnload(1000);
         wrist.setPosition(WRIST_UNLOAD);
         teamUtil.pause(UNLOAD_WAIT_TIME);
@@ -1087,7 +1092,7 @@ public class Intake {
             extender.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
             if(Math.abs(joystickValue) < 0.85){
                 if(joystickValue<0){
-                    if(extender.getCurrentPosition()<EXTENDER_SAFE_TO_UNLOAD_THRESHOLD){
+                    if(flipperPotentiometer.getVoltage()<FLIPPER_SEEK_POT_VOLTAGE){
                         goToSeekNoExtenders();
 
                     }
@@ -1109,7 +1114,7 @@ public class Intake {
             }
             else{
                 if(joystickValue<0){
-                    if(extender.getCurrentPosition()<EXTENDER_SAFE_TO_UNLOAD_THRESHOLD){
+                    if(flipperPotentiometer.getVoltage()<FLIPPER_SEEK_POT_VOLTAGE){
                         goToSeekNoExtenders();
                     }
                     if(details)teamUtil.log("Elev Manual: " + (EXTENDER_FAST_INCREMENT));
@@ -1134,10 +1139,10 @@ public class Intake {
     public void manualX(double joystick){
         if(!moving.get()){
             if(FlipperInSeek.get()){
-                axonSlider.manualSliderControl(joystick);
+                axonSlider.manualSliderControlWithEncoder(joystick);
             }
             else{
-                axonSlider.manualSliderControl(0);
+                axonSlider.manualSliderControlWithEncoder(0);
             }
         }
 
@@ -1170,7 +1175,9 @@ public class Intake {
 
         telemetry.addLine("Intake Extender Position: " + extender.getCurrentPosition());
         telemetry.addLine("Slider Encoder: " + axonSlider.octoquad.readSinglePosition(axonSlider.ODO_SLIDER));
-        telemetry.addLine("Axon Slider Position : " + axonSlider.getPosition() + " (0-360): " + (int)axonSlider.getDegrees360() + " Voltage: " + axonSlider.axonPotentiometer.getVoltage());
+        //telemetry.addLine("Axon Slider Position : " + axonSlider.getPosition() + " (0-360): " + (int)axonSlider.getDegrees360() + " Voltage: " + axonSlider.axonPotentiometer.getVoltage());
+        telemetry.addLine("Axon Slider Position : " + axonSlider.getPositionEncoder());
+
         telemetry.addLine("Flipper: " + flipperPotentiometer.getVoltage() + "V Grabber: " + grabberPotentiometer.getVoltage() + "V Sweeper: " + sweeperPotentiometer.getVoltage() + "V");
     }
 

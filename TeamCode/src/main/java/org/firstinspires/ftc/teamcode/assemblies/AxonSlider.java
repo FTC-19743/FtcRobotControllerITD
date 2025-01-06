@@ -22,24 +22,25 @@ public class AxonSlider {
     public AtomicBoolean timedOut = new AtomicBoolean(false);
     public static boolean details = false;
 
+    public static int OUTSIDE_AVOIDANCE_THRESHOLD = 40; // for manual control
     public static int RIGHT_LIMIT = 0; //set during calibration
-    public static int LEFT_LIMIT = 0; //set during calibration
-    static public float SLIDER_UNLOAD = 0; //set during calibration
-    static public float SLIDER_READY = 0; //set during calibration
-    public static int LEFT_LIMIT_OFFSET = -739; //set during calibration
-    static public float SLIDER_UNLOAD_OFFSET = -361; //set during calibration
-    static public float SLIDER_READY_OFFSET = -375; //set during calibration
+    public static int LEFT_LIMIT = -18380; //set during calibration
+    static public float SLIDER_UNLOAD = -9420; //set during calibration
+    static public float SLIDER_READY = -9420; //set during calibration
+    public static int LEFT_LIMIT_OFFSET = -739; // TODO Recalibrate
+    static public float SLIDER_UNLOAD_OFFSET = -361;// TODO Recalibrate
+    static public float SLIDER_READY_OFFSET = -375; // TODO Recalibrate
 
     public static float POWER_ADJUSTEMENT = -.01f;
     public static int DEGREE_NOISE_THRESHOLD = 20;
 
     public static float RTP_MAX_VELOCITY = .5f;
-    public static int RTP_LEFT_DEADBAND_DEGREES = 32; // TODO Recalibrate
-    public static int RTP_RIGHT_DEADBAND_DEGREES = 16; // TODO Recalibrate
-    public static int RTP_SLOW_THRESHOLD = 35; // TODO Recalibrate
-    public static float RTP_SLOW_VELOCITY = .1f; // TODO Recalibrate
-    public static int RTP_LEFT_DEADBAND_SLOW_DEGREES = 10; // TODO Recalibrate
-    public static int RTP_RIGHT_DEADBAND_SLOW_DEGREES = 6; // TODO Recalibrate
+    public static int RTP_LEFT_DEADBAND_DEGREES = 490; // TODO Recalibrate
+    public static int RTP_RIGHT_DEADBAND_DEGREES = 545; // TODO Recalibrate
+    public static int RTP_SLOW_THRESHOLD = 1500; // TODO Recalibrate
+    public static float RTP_SLOW_VELOCITY = .07f; // TODO Recalibrate
+    public static int RTP_LEFT_DEADBAND_SLOW_DEGREES = 58; // TODO Recalibrate
+    public static int RTP_RIGHT_DEADBAND_SLOW_DEGREES = 85; // TODO Recalibrate
     //public static float RTP_P_COEFFICIENT = .005f;
     //public static float RTP_MIN_VELOCITY = .1f;
     public static float MANUAL_SLIDER_INCREMENT;
@@ -47,10 +48,10 @@ public class AxonSlider {
     public boolean CALIBRATED = false;
 
     //292 slider degrees to 10 cm
-    // 1 mm = 3 degrees
+    // 1 mm = 51.2727 tics
     //LEFT IS NEGATIVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    public static float SLIDER_DEGREES_PER_CM = 29.2f;
+    public static float SLIDER_TICS_PER_MM = 29.2f;
     public static float CM_PER_SLIDER_DEGREE = 0.03425f;
 
     public static int axonRotations = 0; // The number of full rotations postive or negative the servo has traveled from its center range
@@ -69,8 +70,34 @@ public class AxonSlider {
     public void calibrateEncoder(float power) {
         // TODO: Create a new version of calibrate that uses the octoquad encoder instead of the potentiometer
         // TODO: Then comment out the old version and update all the calls to it
+        CALIBRATED = false;
+        teamUtil.log("Calibrating Intake Slider");
+        axon.setPower(power);
+        int lastPosition = getPositionEncoder();
+        teamUtil.pause(250);
+        while ((int)getPositionEncoder() != lastPosition) {
+            lastPosition = getPositionEncoder();
+            if (details) teamUtil.log("Calibrate Intake (With OctoQuad Encoder): Slider: " + getPositionEncoder());
+            teamUtil.pause(50);
+        }
+        axon.setPower(0);
+        teamUtil.log("Calibrate Intake Slider Done");
+
+        teamUtil.log("Calibrate POS: " + getPositionEncoder());
+        teamUtil.pause(250);
+
+        octoquad.resetMultiplePositions(ODO_SLIDER);
+
+
+        teamUtil.log("RIGHT LIMIT: " + RIGHT_LIMIT);
+        teamUtil.log("LEFT LIMIT: " + LEFT_LIMIT);
+        teamUtil.log("SLIDER READY: " + SLIDER_READY);
+        teamUtil.log("SLIDER UNLOAD: " + SLIDER_UNLOAD);
+
+        CALIBRATED = true;
 
     }
+    /*
     // Flipper must be in a safe position for travel to the far right side
     // Leaves the slider on the far left
     public void calibrate (float power, int rotations) {
@@ -104,6 +131,8 @@ public class AxonSlider {
         CALIBRATED = true;
     }
 
+     */
+
 
     public int getPositionEncoder() {
         return octoquad.readSinglePosition(ODO_SLIDER);
@@ -133,8 +162,42 @@ public class AxonSlider {
     private void runToTargetEncoder (double target, float sliderVelocity, int leftDeadband, int rightDeadband, long timeOut) {
         // TODO: Create a new version of runToTarget that uses the octoquad encoder instead of the potentiometer (getPositionEncoder())
         // TODO: Then modify run to position to use runToTargetEncoder
+        moving.set(true);
+        teamUtil.log("Slider runToTargetEncoder: " + (int)target + " at power: "+ sliderVelocity);
+        long timeoutTime = System.currentTimeMillis()+timeOut;
+        if (target > RIGHT_LIMIT || target < LEFT_LIMIT) {
+            teamUtil.log("ERROR: SLIDER TARGET OUTSIDE OF RANGE! -- Not Moving");
+            moving.set(false);
+            return;
+        }
+
+        double ticsFromTarget = target-getPositionEncoder();
+        double lastTicsFromTarget = ticsFromTarget;
+        double initialTicsFromTarget = ticsFromTarget;
+        setAdjustedPower(ticsFromTarget > 0 ? sliderVelocity * -1 : sliderVelocity); // start moving
+        while (teamUtil.keepGoing(timeoutTime) &&
+                initialTicsFromTarget < 0 ? // while we haven't yet reached the drift threshold
+                ticsFromTarget < -leftDeadband :
+                ticsFromTarget > rightDeadband) {
+
+            if (details)
+                teamUtil.log("Tics from Target: " + ticsFromTarget + " Power: " + sliderVelocity);
+            lastTicsFromTarget = ticsFromTarget;
+            // teamutil.pause(10);
+            ticsFromTarget = target - getPositionEncoder();
+
+        }
+        axon.setPower(0);
+        moving.set(false);
+        if (System.currentTimeMillis() > timeoutTime) {
+            timedOut.set(true);
+            teamUtil.log("Slider runToTarget TIMED OUT: " + (int)getPositionEncoder());
+        } else {
+            teamUtil.log("Slider runToTarget Finished at : " + (int)getPositionEncoder());
+        }
     }
 
+    /*
     // Run the servo to the specified position as quickly as possible
     // This method returns when the servo is in the new position
     private void runToTarget (double target, float sliderVelocity, int leftDeadband, int rightDeadband, long timeOut) {
@@ -179,8 +242,10 @@ public class AxonSlider {
         }
     }
 
+     */
 
 
+/*
     // Run the servo to the specified position as quickly as possible
     // This method returns when the servo is in the new position
     public void runToPosition (double target, long timeOut) {
@@ -196,6 +261,22 @@ public class AxonSlider {
         teamUtil.log("Slider Run to Position Finished at : " + (int)getPosition());
     }
 
+ */
+
+    // Run the servo to the specified position as quickly as possible
+    // This method returns when the servo is in the new position
+    public void runToEncoderPosition (double target, long timeOut) {
+        timedOut.set(false);
+        moving.set(true);
+        teamUtil.log("Slider Run to Position Target Encoder : " + (int)target);
+        if(Math.abs(target-getPositionEncoder())<RTP_SLOW_THRESHOLD){
+            runToTargetEncoder(target, RTP_SLOW_VELOCITY, RTP_LEFT_DEADBAND_SLOW_DEGREES, RTP_RIGHT_DEADBAND_SLOW_DEGREES, timeOut);
+        } else {
+            runToTargetEncoder(target, RTP_MAX_VELOCITY, RTP_LEFT_DEADBAND_DEGREES, RTP_RIGHT_DEADBAND_DEGREES, timeOut);
+        }
+        teamUtil.log("Slider Run to Position Target Encoder Finished at : " + (int)getPosition());
+    }
+/*
     public void runToPositionNoWait(double target, long timeOutTime) {
         if (moving.get()) { // Slider is already running in another thread
             teamUtil.log("WARNING: Attempt to AxonSlider.RunToPosition while slider is moving--ignored");
@@ -213,6 +294,25 @@ public class AxonSlider {
         }
     }
 
+ */
+
+    public void runToEncoderPositionNoWait(double target, long timeOutTime) {
+        if (moving.get()) { // Slider is already running in another thread
+            teamUtil.log("WARNING: Attempt to AxonSlider.RunToPosition while slider is moving--ignored");
+            return;
+        } else {
+            moving.set(true);
+            teamUtil.log("Launching Thread to AxonSlider.RunToPosition");
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    runToEncoderPosition(target, timeOutTime);
+                }
+            });
+            thread.start();
+        }
+    }
+    /*
     public void manualSliderControl(double joystick) {
         if(Math.abs(joystick)>SLIDER_X_DEADBAND){
             double power = Math.abs(joystick)-0.5; //TODO MAke linear   (Coach: Isn't this linear already?  There might be something wierd here if the Deadband is less than .5?!)
@@ -227,6 +327,36 @@ public class AxonSlider {
                 }
             }else if (joystick>0){
                 if (Math.abs(getPosition()-RIGHT_LIMIT)<40){
+                    setAdjustedPower(0);
+                }else{
+                    setAdjustedPower(-(float)power);
+                }
+            }else{
+                setAdjustedPower(0);
+            }
+
+        }
+        else{
+            setAdjustedPower(0);
+        }
+    }
+
+     */
+
+    public void manualSliderControlWithEncoder(double joystick) {
+        if(Math.abs(joystick)>SLIDER_X_DEADBAND){
+            double power = Math.abs(joystick)-SLIDER_X_DEADBAND; //TODO MAke linear   (Coach: Isn't this linear already?  There might be something wierd here if the Deadband is less than .5?!)
+            loop();
+
+            if(joystick<0){
+                if (Math.abs(getPositionEncoder()-LEFT_LIMIT)<OUTSIDE_AVOIDANCE_THRESHOLD) { // TODO: What is this magic number?! Recalibrate for Encoder?
+                    setAdjustedPower(0);
+                }
+                else{
+                    setAdjustedPower((float)power);
+                }
+            }else if (joystick>0){
+                if (Math.abs(getPositionEncoder()-RIGHT_LIMIT)<OUTSIDE_AVOIDANCE_THRESHOLD){
                     setAdjustedPower(0);
                 }else{
                     setAdjustedPower(-(float)power);

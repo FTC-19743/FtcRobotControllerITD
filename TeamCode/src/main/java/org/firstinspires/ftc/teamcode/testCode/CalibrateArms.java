@@ -26,7 +26,6 @@ public class CalibrateArms extends LinearOpMode {
     Outtake outtake;
     Output output;
     Hang hang;
-    AxonSlider axonSlider;
     boolean hangCalibrated = false;
 
 
@@ -43,7 +42,8 @@ public class CalibrateArms extends LinearOpMode {
         Hang_Manual_Operation,
         Hang_Manual_2,
         Intake_Fine_Manual_Operation,
-        Intake_Seek_Testing
+        Intake_Seek_Testing,
+        Test_Axon_Slider
         };
     public static Ops AA_Operation = Ops.Intake_Manual_Operation;
     public static boolean useCV = false;
@@ -85,6 +85,7 @@ public class CalibrateArms extends LinearOpMode {
             case Hang_Manual_2: hangManualOperation2();break;
             case Intake_Fine_Manual_Operation: intakeFineManualOperation();break;
             case Intake_Seek_Testing: intakeSeekTesting();break;
+            case Test_Axon_Slider: testAxonSlider();break;
 
         }
     }
@@ -122,7 +123,6 @@ public class CalibrateArms extends LinearOpMode {
         output.initalize();
         //output.calibrate();
 
-        axonSlider = new AxonSlider();
 
         hang = new Hang();
         hang.initalize();
@@ -172,6 +172,8 @@ public class CalibrateArms extends LinearOpMode {
             }
             else if (AA_Operation==Ops.Intake_Seek_Testing) {
                 intakeSeekTesting();
+            }else if (AA_Operation==Ops.Test_Axon_Slider){
+                testAxonSlider();
             }
 
             // Drawing stuff on the field
@@ -229,7 +231,7 @@ public class CalibrateArms extends LinearOpMode {
             intake.wrist.setPosition(Intake.WRIST_MIDDLE);
         }
         if(gp1.wasLeftTriggerPressed()){
-            intake.axonSlider.runToPosition(SLIDER_TARGET, 3000);
+            intake.axonSlider.runToEncoderPosition(SLIDER_TARGET, 3000);
         }
     }
 
@@ -351,15 +353,15 @@ public class CalibrateArms extends LinearOpMode {
         }
 
         if (gp1.wasYPressed()) {
-            //intake.axonSlider.runToPosition(AxonSlider.SLIDER_UNLOAD, 1500);
+            //intake.axonSlider.runToEncoderPosition(AxonSlider.SLIDER_UNLOAD, 1500);
             intake.goToSafeRetractNoWait(4000);
         }
         if (gp1.wasBPressed()) {
-            //intake.axonSlider.runToPosition(AxonSlider.SLIDER_READY, 1500);
+            intake.axonSlider.runToEncoderPosition(AxonSlider.SLIDER_READY, 1500);
             intake.extender.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             intake.extender.setVelocity(Intake.EXTENDER_TEST_VELOCITY);
             intake.extender.setTargetPosition(Intake.TEST_EXTENDER_VAL);
-            intake.axonSlider.runToPosition(Intake.TEST_SLIDER_VAL, 1500);
+            intake.axonSlider.runToEncoderPosition(Intake.TEST_SLIDER_VAL, 1500);
             while(intake.extender.isBusy()){
                 ;
             }
@@ -383,7 +385,7 @@ public class CalibrateArms extends LinearOpMode {
 
         }
         if (gp1.wasAPressed()) {
-            intake.axonSlider.calibrate(-0.3f, 1);
+            intake.axonSlider.calibrateEncoder(-0.3f);
         }
         if (gp1.wasXPressed()){
             intake.calibrate();
@@ -521,6 +523,21 @@ public class CalibrateArms extends LinearOpMode {
         }
 
     }
+
+    public void testAxonSlider(){
+        if(gp1.wasAPressed()){
+            intake.axonSlider.calibrateEncoder(-.2f);
+        }
+        if(gp1.wasYPressed()){
+        }
+        if(gp1.wasBPressed()){
+        }
+        if(gp1.wasLeftBumperPressed()){
+
+        }
+    }
+
+
     public void pickUpHooks(){
         intake.flipper.setPosition(Intake.FLIPPER_SAFE);
         outtake.outakearm.setPosition(Outtake.ARM_ENGAGE);
