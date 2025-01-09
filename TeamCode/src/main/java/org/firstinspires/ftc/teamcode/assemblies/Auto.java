@@ -231,7 +231,7 @@ public class Auto extends LinearOpMode {
         long startTime = System.currentTimeMillis();
         teamUtil.pause(delay);
         if(teamUtil.SIDE == teamUtil.Side.BASKET){
-            robot.autoV1Bucket(blocks, ascent);
+            //robot.autoV1Bucket(blocks, ascent);
         }else{
             robot.autoV2Specimen(specimen);
         }

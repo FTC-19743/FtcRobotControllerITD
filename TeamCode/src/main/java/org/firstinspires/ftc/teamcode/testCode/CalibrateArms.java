@@ -43,7 +43,8 @@ public class CalibrateArms extends LinearOpMode {
         Hang_Manual_2,
         Intake_Fine_Manual_Operation,
         Intake_Seek_Testing,
-        Test_Axon_Slider
+        Test_Axon_Slider,
+        Jump_To_Test
         };
     public static Ops AA_Operation = Ops.Intake_Manual_Operation;
     public static boolean useCV = false;
@@ -86,6 +87,7 @@ public class CalibrateArms extends LinearOpMode {
             case Intake_Fine_Manual_Operation: intakeFineManualOperation();break;
             case Intake_Seek_Testing: intakeSeekTesting();break;
             case Test_Axon_Slider: testAxonSlider();break;
+            case Jump_To_Test: testJumpTo();break;
 
         }
     }
@@ -174,6 +176,8 @@ public class CalibrateArms extends LinearOpMode {
                 intakeSeekTesting();
             }else if (AA_Operation==Ops.Test_Axon_Slider){
                 testAxonSlider();
+            }else if (AA_Operation==Ops.Jump_To_Test){
+                testJumpTo();
             }
 
             // Drawing stuff on the field
@@ -192,6 +196,11 @@ public class CalibrateArms extends LinearOpMode {
             intake.axonSlider.loop();
             intake.intakeTelemetry();
             hang.outputTelemetry();
+            telemetry.addLine("Y Offset MM: " + intake.yPixelsToMM(intake.sampleDetector.rectCenterYOffset.get()));
+            telemetry.addLine("X Offset MM: " + intake.xPixelsToMM(intake.sampleDetector.rectCenterXOffset.get()));
+            telemetry.addLine("Tolerance: " + intake.extender.getPIDFCoefficients(DcMotor.RunMode.RUN_TO_POSITION));
+
+
 
             telemetry.update();
         }
@@ -204,7 +213,7 @@ public class CalibrateArms extends LinearOpMode {
             intake.extender.setVelocity(0);
         }
         if (gp1.wasUpPressed()) {
-                intake.goToSampleV2(5000);
+                //intake.goToSampleV2(5000);
         }
         if(gp1.wasLeftPressed()){
             intake.flipper.setPosition(Intake.FLIPPER_SEEK);
@@ -314,10 +323,10 @@ public class CalibrateArms extends LinearOpMode {
             intake.grabberReady();
         }
         if (gp1.wasAPressed()) {
-            intake.goToSampleV2(5000);
+            //intake.goToSampleV2(5000);
         }
         if(gp1.wasRightBumperPressed()){
-            intake.goToSampleAndGrab(5000);
+            //intake.goToSampleAndGrab(5000);
         }
         if(gp1.wasRightTriggerPressed()){
             intake.calibrate();
@@ -538,6 +547,23 @@ public class CalibrateArms extends LinearOpMode {
     }
 
 
+    public void testJumpTo(){
+        if(gp1.wasUpPressed()){
+            intake.runOutToSample(10000);
+        }
+        if(gp1.wasDownPressed()){
+            intake.jumpToSampleV5(intake.sampleDetector.rectCenterXOffset.get(),intake.sampleDetector.rectCenterYOffset.get(),intake.sampleDetector.rectAngle.get(),5000);
+
+        }
+        if(gp1.wasBPressed()){
+            intake.restartCVPipeline();
+        }
+        if(gp1.wasLeftBumperPressed()){
+            intake.calibrate();
+        }
+    }
+
+
     public void pickUpHooks(){
         intake.flipper.setPosition(Intake.FLIPPER_SAFE);
         outtake.outakearm.setPosition(Outtake.ARM_ENGAGE);
@@ -568,6 +594,8 @@ public class CalibrateArms extends LinearOpMode {
         pickUpHooks();
         readyToPlaceHooks();
     }
+
+
 
     public void placeHooks(){
         output.lift.setVelocity(PLACE_HOOKS_VELOCITY);

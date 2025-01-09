@@ -242,10 +242,13 @@ public class Robot {
         intake.goToSeekNoWait(2000);
         drive.moveTo(BasicDrive.MAX_VELOCITY,A03_MOVE_TO_SAMPLE_Y,A04_MOVE_TO_SAMPLE_X, 0,0, null,0, 5000);
         intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
+        /*
         if(!intake.goToSampleAndGrab(5000)){
             teamUtil.log("FAILED to intake sample.  Giving up");
             return false;
         }
+
+         */
 
 
         dropSampleInHighBucket(1);
@@ -270,10 +273,13 @@ public class Robot {
         intake.goToSeekNoWait(2000);
         drive.moveTo(BasicDrive.MAX_VELOCITY, A08_MOVE_TO_SAMPLE_Y, A04_MOVE_TO_SAMPLE_X,0,0, null,0, 5000);
 
+        /*
         if(!intake.goToSampleAndGrab(5000)){
             teamUtil.log("FAILED to intake sample.  Giving up");
             return false;
         }
+
+         */
 
         dropSampleInHighBucket(2);
         if(blocks==2){
@@ -300,10 +306,13 @@ public class Robot {
         intake.goToSeekNoWait(2000);
 
         drive.moveTo(BasicDrive.MAX_VELOCITY, A18_TRUSS_MOVEMENT_Y,A17_TRUSS_MOVEMENT_X,270,0,null,0,4000);
+        /*
         if(!intake.goToSampleAndGrab(5000)){
             teamUtil.log("FAILED to intake sample.  Giving up");
             return false;
         }
+
+         */
         sampleInBucketAndDeployNoWait();
         drive.moveTo(BasicDrive.MAX_VELOCITY, A16_TRUSS_MOVEMENT_Y,A15_TRUSS_MOVEMENT_X,270,A20_BACKOUT_FROM_TRUSS_END_VELOCITY,null,0,4000);
         dropSampleInHighBucket(3);
@@ -386,11 +395,13 @@ public class Robot {
 
         if(teamUtil.alliance == RED) intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
         else intake.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
-
+        /*
         if(!intake.goToSampleAndGrab(5000)){
             teamUtil.log("FAILED to intake sample.  Giving up");
             return false;
         }
+
+         */
         intake.goToUnload(5000);
         drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, B11_WALL_SPECIMEN_X, B12_WALL_SPECIMEN_Y,0,200,null,0,4000);
         output.dropSampleOutBackNoWait();

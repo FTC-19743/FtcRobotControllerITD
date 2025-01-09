@@ -125,6 +125,7 @@ public class testAutoPaths extends LinearOpMode {
                 robot.autoV2Specimen(BLOCKS);
                 elapsedTime = System.currentTimeMillis()-startTime;
             }
+            /*
             if(driverGamepad.wasOptionsPressed()){
                 robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
                 robot.drive.setRobotPosition(robot.B07_GO_TO_SAMPLE_X,robot.B08_GO_TO_SAMPLE_Y,0);
@@ -137,6 +138,8 @@ public class testAutoPaths extends LinearOpMode {
                 robot.drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, robot.B11_WALL_SPECIMEN_X, robot.B12_WALL_SPECIMEN_Y,0,200,null,0,4000);
                 robot.output.dropSampleOutBackNoWait();
             }
+
+             */
 
             if(driverGamepad.wasStartPressed()){
                 //robot.intake.putFlickerDown();

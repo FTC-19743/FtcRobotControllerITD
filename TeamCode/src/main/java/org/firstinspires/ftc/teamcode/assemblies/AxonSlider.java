@@ -51,7 +51,7 @@ public class AxonSlider {
     // 1 mm = 51.2727 tics
     //LEFT IS NEGATIVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    public static float SLIDER_TICS_PER_MM = 29.2f;
+    public static float SLIDER_TICS_PER_MM = 51.2f;
     public static float CM_PER_SLIDER_DEGREE = 0.03425f;
 
     public static int axonRotations = 0; // The number of full rotations postive or negative the servo has traveled from its center range
@@ -274,7 +274,7 @@ public class AxonSlider {
         } else {
             runToTargetEncoder(target, RTP_MAX_VELOCITY, RTP_LEFT_DEADBAND_DEGREES, RTP_RIGHT_DEADBAND_DEGREES, timeOut);
         }
-        teamUtil.log("Slider Run to Position Target Encoder Finished at : " + (int)getPosition());
+        teamUtil.log("Slider Run to Position Target Encoder Finished at : " + (int)getPositionEncoder());
     }
 /*
     public void runToPositionNoWait(double target, long timeOutTime) {

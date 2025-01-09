@@ -182,11 +182,11 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     public boolean viewingPipeline = false;
     enum Stage {
         RAW_IMAGE,
+        UNDISTORTED,
         HSV,
         BLURRED,
         INVERTED,
         THRESHOLD,
-        //UNDISTORTED,
         ERODED,
         EDGES,
         FINAL
@@ -215,6 +215,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         public int rectCenterXOffset = 0;
         public int rectCenterYOffset = 0;
         public int rectArea = 0;
+        //TODO ROTATION BUG WAS RETURNING NEGATIVE ANGLE
     }
 
 
@@ -321,9 +322,14 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                 new Point(redDilutionFactor, redDilutionFactor));
         Rect obscureRect = new Rect(0,OBSCURE_HEIGHT,WIDTH,HEIGHT-OBSCURE_HEIGHT);
 
-        Imgproc.rectangle(frame, obscureRect, BLACK, -1); // Cover view of robot
+        Calib3d.undistort(frame,undistortedMat,cameraMatrix,distCoeffs);
 
-        Imgproc.cvtColor(frame, HSVMat, Imgproc.COLOR_RGB2HSV); // convert to HSV
+
+        Imgproc.rectangle(undistortedMat, obscureRect, BLACK, -1); // Cover view of robot
+
+
+
+        Imgproc.cvtColor(undistortedMat, HSVMat, Imgproc.COLOR_RGB2HSV); // convert to HSV
 
         Imgproc.blur(HSVMat, blurredMat, blurFactorSize); // get rid of noise
 
@@ -331,13 +337,11 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         switch (targetColor) {
             case YELLOW:
                 Core.inRange(blurredMat, yellowLowHSV, yellowHighHSV, thresholdMat);
-                Calib3d.undistort(thresholdMat,undistortedMat,cameraMatrix,distCoeffs);
 
                 Imgproc.erode(thresholdMat, erodedMat, yellowErosionElement);
                 break;
             case BLUE:
                 Core.inRange(blurredMat, blueLowHSV, blueHighHSV, thresholdMat);
-                Calib3d.undistort(thresholdMat,undistortedMat,cameraMatrix,distCoeffs);
 
                 Imgproc.erode(thresholdMat, erodedMat, blueErosionElement);
                 break;
@@ -365,8 +369,6 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                     }
                 }
                 Core.subtract(thresholdMatAll, thresholdMatYB,  thresholdMat);
-
-                Calib3d.undistort(thresholdMat,undistortedMat,cameraMatrix,distCoeffs);
 
                 Imgproc.erode(thresholdMat, erodedMat, redErosionElement);
 
@@ -570,7 +572,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                     break;
                 }
                 case THRESHOLD: { Utils.matToBitmap(thresholdMat, bmp); break;}
-                //case UNDISTORTED: { Utils.matToBitmap(undistortedMat,bmp); break;}
+                case UNDISTORTED: { Utils.matToBitmap(undistortedMat,bmp); break;}
                 case ERODED: { Utils.matToBitmap(erodedMat, bmp); break;}
                 case EDGES: { Utils.matToBitmap(edgesMat, bmp); break;}
                 default: {}
