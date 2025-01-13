@@ -17,6 +17,7 @@ public class CalibrateCV extends LinearOpMode {
     private TeamGamepad gp1 = new TeamGamepad();
     private TeamGamepad gp2 = new TeamGamepad();
     int frameCount = 0;
+    OpenCVSampleDetector.FrameData frameData = null;
 
 
     public void runOpMode() {
@@ -36,9 +37,15 @@ public class CalibrateCV extends LinearOpMode {
         telemetry.update();
         waitForStart();
 
+        OpenCVSampleDetector.FrameData newFrame;
         while (opModeIsActive()){
             gp1.loop();
             gp2.loop();
+
+            // Get updated frame data from detector if available
+            if (intake.sampleDetector.frameDataQueue.peek()!=null) {
+                frameData = intake.sampleDetector.frameDataQueue.peek();
+            }
 
             if (gp1.wasLeftBumperPressed()) {
                 intake.sampleDetector.configureCam(intake.arduPortal, OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE, OpenCVSampleDetector.AFOCUS, OpenCVSampleDetector.FOCUSLENGTH);
