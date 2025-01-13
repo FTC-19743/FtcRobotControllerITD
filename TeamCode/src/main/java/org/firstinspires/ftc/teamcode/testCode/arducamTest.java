@@ -140,6 +140,7 @@ public class arducamTest extends LinearOpMode
         armBuilder.addProcessor(sampleDetector);
 
         arduPortal = armBuilder.build();
+        sampleDetector.setVisionPortal(arduPortal);
         //stopStreaming(arduPortal);
         //arduPortal.setProcessorEnabled(findPixelProcesser,false);
 

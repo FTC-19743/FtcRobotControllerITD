@@ -3,9 +3,7 @@ package org.firstinspires.ftc.teamcode.libs;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ImageFormat;
 import android.graphics.Paint;
-import android.media.Image;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -13,7 +11,6 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibration;
 import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.VisionProcessor;
 import org.opencv.android.Utils;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Core;
@@ -31,11 +28,10 @@ import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import java.util.concurrent.atomic.AtomicLong;
 
 
 @Config // Makes Static data members available in Dashboard
@@ -179,9 +175,30 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
     public AtomicBoolean foundOne = new AtomicBoolean(false);
     public AtomicBoolean processedFrame = new AtomicBoolean(false);
+    public AtomicLong processTime = new AtomicLong(0);
+    private long startProcessingTime = 0;
 
     public AtomicBoolean outsideUseableCameraRange = new AtomicBoolean(false);
-    // TODO: Data about the located Sample
+    // Data about the located Sample
+    //old atomic integers
+    public AtomicInteger rectAngle = new AtomicInteger(-1);
+    public AtomicInteger rectCenterXOffset = new AtomicInteger(0);
+    public AtomicInteger rectCenterYOffset = new AtomicInteger(0);
+    public AtomicInteger rectArea = new AtomicInteger(0);
+
+
+
+    public static class FrameData {
+        public int rectAngle =-1;
+        public int rectCenterXOffset = 0;
+        public int rectCenterYOffset = 0;
+        public int rectArea = 0;
+        public long captureTime = 0;
+        public long processingTime = 0;
+        public long processingTime2 = 0;
+
+    }
+    public ConcurrentLinkedQueue<FrameData> frameDataQueue = new ConcurrentLinkedQueue<FrameData>();
 
 
     public boolean viewingPipeline = false;
@@ -199,35 +216,12 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     private Stage stageToRenderToViewport = Stage.UNDISTORTED;
     private Stage[] stages = Stage.values();
 
+    private VisionPortal myPortal;
+
     class Context {
         RotatedRect[] rots;
         List<MatOfPoint> contours;
     }
-
-    //old atomic integers
-    public AtomicInteger rectAngle = new AtomicInteger(-1);
-    public AtomicInteger rectCenterXOffset = new AtomicInteger(0);
-    public AtomicInteger rectCenterYOffset = new AtomicInteger(0);
-    public AtomicInteger rectArea = new AtomicInteger(0);
-
-
-
-
-    public BlockingQueue<ImageData> imageDataQueue;
-
-    public static class ImageData {
-        public int rectAngle1 =-1;
-        public int rectCenterXOffset = 0;
-        public int rectCenterYOffset = 0;
-        public int rectArea = 0;
-        //TODO ROTATION BUG WAS RETURNING NEGATIVE ANGLE
-    }
-
-
-
-
-
-
 
     public OpenCVSampleDetector() {
         hardwareMap = teamUtil.theOpMode.hardwareMap;
@@ -242,14 +236,32 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
         teamUtil.log("Initializing OpenCVSampleDetector processor - FINISHED");
     }
-    public void outputTelemetry () {
-        telemetry.addLine("Found One: " + foundOne.get() + "TBD");
-        if(foundOne.get()){
-            telemetry.addLine("Area of Found One: " + rectArea.get());
-        }else{
-            telemetry.addLine("None Found So No Rect Area");
-        }
+    public void setVisionPortal(VisionPortal portal) {
+        myPortal = portal;
+
     }
+
+    public String frameString(FrameData frame) {
+        if (frame == null) {
+            return "No Detection";
+        } else {
+            return "Detection x,y: " + frame.rectCenterXOffset + ", " + frame.rectCenterYOffset
+                    + " Angle: " + frame.rectAngle
+                    + " Area: " + frame.rectArea
+                    + " Processing Time: " + frame.processingTime
+                    //+ " Capture Time: " + frame.captureTime
+                    //+ " Processing Time2: " + frame.processingTime2
+                    ;
+         }
+    }
+
+    public void outputTelemetry () {
+        telemetry.addLine("Processed Frame: " + processedFrame.get());
+        //telemetry.addLine("queue size: "+ frameDataQueue.size());
+        telemetry.addLine(frameString(frameDataQueue.peek()));
+        //teamUtil.log(frameString(frameDataQueue.peek()));
+    }
+
 
     public void sampleUp(int step) {
         sampleY = sampleY - step;
@@ -280,26 +292,33 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     List<MatOfPoint> contours = new ArrayList<>();
     double largestArea;
 
+
     public void reset() {
+        frameDataQueue.clear(); // remove any existing frame data from queue
         foundOne.set(false);
         processedFrame.set(false);
     }
 
+    public FrameData processNextFrame(boolean waitForDetection, boolean turnOffProcessor, boolean captureImages, long timeOut){
+        boolean details = true;
+        teamUtil.log("ProcessNextFrame");
+        long timeoutTime = System.currentTimeMillis() + timeOut;
+        myPortal.setProcessorEnabled(this, true);
+        startProcessingTime = System.currentTimeMillis();
+        reset();
 
-    //TODO: find where to turn processor on/off
-    public ImageData getNextFrameData(long timeOut){
-
-        imageDataQueue.clear();
-
-        ImageData imgData = null;
-        while(imgData==null&&teamUtil.keepGoing(timeOut)){
-            teamUtil.pause(50);
-            imgData = imageDataQueue.poll();
+        FrameData imgData = null;
+        while( !(waitForDetection ? (imgData != null) : processedFrame.get()) && teamUtil.keepGoing(timeoutTime)){
+            teamUtil.pause(30);
+            imgData = frameDataQueue.poll();
         }
-        if(imgData==null){
-            teamUtil.log("Timed Out; No New Data Found");
+        if(System.currentTimeMillis()>=timeoutTime){
+            teamUtil.log("ProcessNextFrame Timed Out; No detection.");
         }
-
+        if (turnOffProcessor) {
+            myPortal.setProcessorEnabled(this, false);
+        }
+        teamUtil.log("ProcessNextFrame---Finished");
         return imgData;
     }
 
@@ -412,7 +431,9 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         Imgproc.findContours(edgesMat, contours, hierarchyMat, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE); // find contours around white areas
 
         if (contours.isEmpty()) {
+            if (details) teamUtil.log("No Contours");
             foundOne.set(false);
+            processedFrame.set(true);
             return null;
         }
 
@@ -442,6 +463,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         if (closestAreaSelectionNum == -1) { // nothing big enough
             if (details) teamUtil.log("Saw blobs but nothing big enough");
             foundOne.set(false);
+            processedFrame.set(true);
             return null;
         }
         /*
@@ -503,55 +525,42 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
          */
         if(rotatedRect[closestAreaSelectionNum].center.x<FOUND_ONE_LEFT_THRESHOLD||rotatedRect[closestAreaSelectionNum].center.x>FOUND_ONE_RIGHT_THRESHOLD){
-
-
-            teamUtil.log("OPEN CV SAMPLE DETECTOR FOUND BLOCK BUT CENTER X VALUE WAS OUTSIDE USEABLE RANGE");
-            teamUtil.log("X of Block Center: " + rotatedRect[closestAreaSelectionNum].center.x);
-            teamUtil.log("Y of Block Center: " + rotatedRect[closestAreaSelectionNum].center.y);
+            if (details) {
+                teamUtil.log("OPEN CV SAMPLE DETECTOR FOUND BLOCK BUT CENTER X VALUE WAS OUTSIDE MECHANICAL RANGE");
+                teamUtil.log("X of Block Center: " + rotatedRect[closestAreaSelectionNum].center.x);
+                teamUtil.log("Y of Block Center: " + rotatedRect[closestAreaSelectionNum].center.y);
+            }
             outsideUseableCameraRange.set(true);
             processedFrame.set(true);
             foundOne.set(false);
         }
         else{
             outsideUseableCameraRange.set(false);
-            foundOne.set(true);
             processedFrame.set(true);
+
+            FrameData imgData = new FrameData();
+            imgData.rectAngle = (int) realAngle;
+            imgData.rectCenterXOffset = (int) rotatedRect[closestAreaSelectionNum].center.x - TARGET_X;
+            imgData.rectCenterYOffset = -1 * ((int) rotatedRect[closestAreaSelectionNum].center.y - TARGET_Y);
+            imgData.rectArea = (int) rotatedRect[closestAreaSelectionNum].size.area();
+            imgData.captureTime = captureTimeNanos/1000000;
+            imgData.processingTime = System.currentTimeMillis() - startProcessingTime;
+            imgData.processingTime2 = System.currentTimeMillis() - imgData.captureTime;
+            frameDataQueue.clear(); // Only one object in the queue at a time for now.
+            frameDataQueue.add(imgData);
+            if (details) teamUtil.log("adding detection to queue. size: " + frameDataQueue.size());
 
             // old data setting
             rectCenterYOffset.set(-1 * ((int) rotatedRect[closestAreaSelectionNum].center.y - TARGET_Y));
             rectCenterXOffset.set((int) rotatedRect[closestAreaSelectionNum].center.x - TARGET_X);
             rectAngle.set((int) realAngle);
             rectArea.set((int) rotatedRect[closestAreaSelectionNum].size.area());
-
-
-
-            ImageData imgData = new ImageData();
-            imgData.rectAngle1 = 5;
-            imgData.rectCenterXOffset = 5;
-            imgData.rectCenterYOffset = 5;
-            imgData.rectArea = 5;
-
-            //imageDataQueue.add(imgData);
-
-
-
-
-
-
-
-
+            foundOne.set(true);
 
             targetIndex = closestAreaSelectionNum;
-
-
-
             if (details) teamUtil.log("Real Angle" + realAngle + "Lowest: " + vertices1[lowestPixel].x + "," + vertices1[lowestPixel].y+"Closest: " + vertices1[closestPixel].x+ "," +vertices1[closestPixel].y);
-
-
         }
 
-
-        //return rotatedRect;
         Context context = new Context();
         context.rots = rotatedRect;
         context.contours = contours;
