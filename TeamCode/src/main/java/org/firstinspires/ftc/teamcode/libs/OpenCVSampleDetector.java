@@ -55,7 +55,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public double CAMERA_OFFSET_Y = TARGET_Y-HEIGHT/2f;
     static public double CAMERA_OFFSET_X = TARGET_X-WIDTH/2f;
     static public int MIN_AREA_THRESHOLD = 2000;
-    static public int MAX_AREA_THRESHOLD = 13000;
+    static public int MAX_AREA_THRESHOLD = 15000; // was 13000 for meet #2 build
     static public int GOLDILOCKS_ZONE_RADIUS = 100;
 
 
@@ -107,6 +107,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public int TEMPERATURE = 2800;
 
     static public int blurFactor = 10;
+    static public boolean undistort = true;
 
     /* 4 leds (Meet 1)
     static public int yellowLowH = 15, yellowLowS = 85, yellowLowV = 150;
@@ -124,11 +125,11 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public int yellowLowH = 10, yellowLowS = 100, yellowLowV = 170;
     static public int yellowHighH = 35, yellowHighS = 255, yellowHighV = 255;
     static public int yellowErosionFactor = 20;
-    static public int blueLowH = 90, blueLowS = 80, blueLowV = 70; // low was 10
+    static public int blueLowH = 90, blueLowS = 80, blueLowV = 90; // lowv was 70 meet #2 build
     static public int blueHighH = 130, blueHighS = 255, blueHighV = 255;
     static public int blueErosionFactor = 20;
     static public int rbyLowH = -1, rbyLowS = 150, rbyLowV = 125;
-    static public int rbyHighH = 35, rbyHighS = 255, rbyHighV = 255;
+    static public int rbyHighH = 180, rbyHighS = 255, rbyHighV = 255;
     static public int redErosionFactor = 20;
     static public int redDilutionFactor = 10;
 
@@ -207,11 +208,9 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         UNDISTORTED,
         HSV,
         BLURRED,
-        INVERTED,
         THRESHOLD,
         ERODED,
         EDGES,
-        FINAL
     }
     private Stage stageToRenderToViewport = Stage.UNDISTORTED;
     private Stage[] stages = Stage.values();
@@ -347,15 +346,14 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                 new Point(redDilutionFactor, redDilutionFactor));
         Rect obscureRect = new Rect(0,OBSCURE_HEIGHT,WIDTH,HEIGHT-OBSCURE_HEIGHT);
 
-        Calib3d.undistort(frame,undistortedMat,cameraMatrix,distCoeffs);
-
+        if (undistort) {
+            Calib3d.undistort(frame,undistortedMat,cameraMatrix,distCoeffs);
+        } else {
+            undistortedMat = frame.clone();
+        }
 
         Imgproc.rectangle(undistortedMat, obscureRect, BLACK, -1); // Cover view of robot
-
-
-
         Imgproc.cvtColor(undistortedMat, HSVMat, Imgproc.COLOR_RGB2HSV); // convert to HSV
-
         Imgproc.blur(HSVMat, blurredMat, blurFactorSize); // get rid of noise
 
 
@@ -373,13 +371,15 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             case RED:
                 Core.inRange(blurredMat, rbyLowHSV, rbyHighHSV, thresholdMatAll); // Get Red and Yellow
 
-                Core.inRange(blurredMat, yellowLowHSV, yellowHighHSV, thresholdMat);
-                Imgproc.erode(thresholdMat, erodedMat, yellowErosionElement); // Get yellow eroded rects
+                Core.inRange(blurredMat, yellowLowHSV, yellowHighHSV, thresholdMatYellow);
+                Core.inRange(blurredMat, blueLowHSV, blueHighHSV, thresholdMatBlue);
+                Core.add(thresholdMatYellow, thresholdMatBlue,  thresholdMatYB);
+                Imgproc.erode(thresholdMatYB, erodedMat, yellowErosionElement); // Get yellow and blue eroded rects
                 Imgproc.Canny(erodedMat, edgesMat, 100, 300); // find edges
-                thresholdMatYB = thresholdMat.clone();
+                //thresholdMatYB = thresholdMat.clone();
                 thresholdMatYB.setTo(new Scalar(0));
                 contours.clear(); // empty the list from last time
-                Imgproc.findContours(edgesMat, contours, hierarchyMat, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE); // find contours around yellow rects
+                Imgproc.findContours(edgesMat, contours, hierarchyMat, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE); // find contours around yellow/blue rects
                 if (!contours.isEmpty()) {
                     MatOfPoint2f[] contoursPoly = new MatOfPoint2f[contours.size()];
                     RotatedRect[] boundRect = new RotatedRect[contours.size()];
@@ -578,21 +578,13 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         if (viewingPipeline) {
             Bitmap bmp = Bitmap.createBitmap(HSVMat.cols(), HSVMat.rows(), Bitmap.Config.ARGB_8888);
             switch (stageToRenderToViewport) {
+                case UNDISTORTED: { Utils.matToBitmap(undistortedMat,bmp); break;}
                 case HSV: { Utils.matToBitmap(HSVMat, bmp); break; }
                 case BLURRED: { Utils.matToBitmap(blurredMat, bmp); break;}
-                case INVERTED: {
-                    if (targetColor == TargetColor.RED) {
-                        Utils.matToBitmap(thresholdMatAll, bmp);
-                    } else {
-                        Utils.matToBitmap(thresholdMat, bmp);
-                    }
-                    break;
-                }
                 case THRESHOLD: { Utils.matToBitmap(thresholdMat, bmp); break;}
-                case UNDISTORTED: { Utils.matToBitmap(undistortedMat,bmp); break;}
                 case ERODED: { Utils.matToBitmap(erodedMat, bmp); break;}
                 case EDGES: { Utils.matToBitmap(edgesMat, bmp); break;}
-                default: {}
+                default: {/*RAW image is already on canvas*/}
             }
             Bitmap resizedBitmap = Bitmap.createScaledBitmap(bmp, (int)(WIDTH*scaleBmpPxToCanvasPx), (int)(HEIGHT*scaleBmpPxToCanvasPx), false);
             canvas.drawBitmap(resizedBitmap, 0,0,null);

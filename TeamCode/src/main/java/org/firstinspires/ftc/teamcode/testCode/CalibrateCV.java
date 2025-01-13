@@ -51,7 +51,8 @@ public class CalibrateCV extends LinearOpMode {
                 intake.sampleDetector.configureCam(intake.arduPortal, OpenCVSampleDetector.APEXPOSURE, OpenCVSampleDetector.AEPRIORITY, OpenCVSampleDetector.EXPOSURE, OpenCVSampleDetector.GAIN, OpenCVSampleDetector.WHITEBALANCEAUTO, OpenCVSampleDetector.TEMPERATURE, OpenCVSampleDetector.AFOCUS, OpenCVSampleDetector.FOCUSLENGTH);
             }
             if (gp1.wasHomePressed()) {
-                intake.arduPortal.saveNextFrameRaw(String.format(Locale.US, "CameraFrameCapture-%06d", frameCount++));
+                OpenCVSampleDetector.undistort = !OpenCVSampleDetector.undistort;
+                //intake.arduPortal.saveNextFrameRaw(String.format(Locale.US, "CameraFrameCapture-%06d", frameCount++));
             }
 
             if (gp1.wasRightBumperPressed()) {
