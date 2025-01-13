@@ -47,7 +47,7 @@ public class CalibrateArms extends LinearOpMode {
         Jump_To_Test
         };
     public static Ops AA_Operation = Ops.Intake_Manual_Operation;
-    public static boolean useCV = false;
+    public static boolean useCV = true;
 
     public static int PICK_UP_HOOKS_PAUSE_1 = 450;
     public static int PICK_UP_HOOKS_PAUSE_2 = 300;
@@ -249,6 +249,7 @@ public class CalibrateArms extends LinearOpMode {
             intake.lightsOnandOff(Intake.WHITE_NEOPIXEL,Intake.RED_NEOPIXEL,Intake.GREEN_NEOPIXEL,Intake.BLUE_NEOPIXEL,true);
 
             intake.goToSampleV5(5000);
+            intake.restartCVPipeline();
             //intake.goToSampleAndGrabV2(5000);
         } if (gp1.wasRightBumperPressed()) {
             intake.lightsOnandOff(Intake.WHITE_NEOPIXEL,Intake.RED_NEOPIXEL,Intake.GREEN_NEOPIXEL,Intake.BLUE_NEOPIXEL,true);
@@ -549,17 +550,32 @@ public class CalibrateArms extends LinearOpMode {
 
     public void testJumpTo(){
         if(gp1.wasUpPressed()){
-            intake.runOutToSample(10000);
+            intake.goToSampleAndGrabV3(false);
         }
         if(gp1.wasDownPressed()){
-            intake.jumpToSampleV5(intake.sampleDetector.rectCenterXOffset.get(),intake.sampleDetector.rectCenterYOffset.get(),intake.sampleDetector.rectAngle.get(),5000);
+            intake.goToSampleV5(5000);
 
+        }if(gp1.wasLeftPressed()){
+            intake.flipper.setPosition(Intake.FLIPPER_GRAB);
+        }if(gp1.wasRightPressed()){
+            intake.flipper.setPosition(Intake.FLIPPER_SEEK);
+        }
+        if(gp1.wasAPressed()){
+            intake.flipAndRotateToSampleAndGrab(2000);
         }
         if(gp1.wasBPressed()){
             intake.restartCVPipeline();
         }
         if(gp1.wasLeftBumperPressed()){
             intake.calibrate();
+        }
+
+        if (gp1.gamepad.left_stick_y < -.25) {
+            intake.extender.setVelocity(Intake.EXTENDER_MAX_VELOCITY);
+        } else if (gp1.gamepad.left_stick_y > .25) {
+            intake.extender.setVelocity(-Intake.EXTENDER_MAX_VELOCITY);
+        } else {
+            intake.extender.setVelocity(0);
         }
     }
 

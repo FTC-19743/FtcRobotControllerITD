@@ -48,7 +48,7 @@ public class Output {
     static public double LIFT_P_COEFFICIENT = 10;
 
     static public float BUCKET_DEPLOY_AT_BOTTOM = 0.12f;
-    static public float BUCKET_DEPLOY_AT_TOP = 0.22f;
+    static public float BUCKET_DEPLOY_AT_TOP = 0.18f;
     static public float BUCKET_SAFE = 0.66f;
     static public float BUCKET_READY_TO_DEPLOY = 0.35f; //TODO Possibly use for going up to buckets (optimization for driver)
     static public float BUCKET_RELOAD = 0.66f; //was .66

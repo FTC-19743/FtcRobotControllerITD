@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.assemblies;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -9,7 +10,7 @@ import org.firstinspires.ftc.teamcode.libs.Blinkin;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 
-
+@Config
 @TeleOp(name = "Teleop", group = "LinearOpMode")
 public class Teleop extends LinearOpMode {
 
@@ -23,6 +24,7 @@ public class Teleop extends LinearOpMode {
     boolean lowBucketToggle= false;
     int optionsPresses = 0;
     boolean hangManualControl= false;
+    public static boolean initCV= false;
 
 
 
@@ -76,7 +78,7 @@ public class Teleop extends LinearOpMode {
         armsGamepad.initilize(false);
         robot = new Robot();
         robot.initialize();
-        robot.initCV(false);// TODO: false for competition
+        robot.initCV(initCV);// TODO: false for competition
 
         if (!teamUtil.justRanAuto&&!teamUtil.justRanCalibrateRobot) { // Auto already took care of this, so save time and don't move anything!
             robot.calibrate();

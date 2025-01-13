@@ -49,15 +49,18 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     Scalar GREEN = new Scalar(0, 255, 0);
 
 
-    public final int WIDTH = 640;
-    public final int HEIGHT = 480;
+    static public final int WIDTH = 640;
+    static public final int HEIGHT = 480;
     static public int OBSCURE_HEIGHT = 460;
     Rect cropRect = new Rect(0, 0, WIDTH, HEIGHT);
 
-    static public int TARGET_X = 334;
-    static public int TARGET_Y = 160;
+    static public int TARGET_X = 336;
+    static public int TARGET_Y = 176;
+    static public double CAMERA_OFFSET_Y = TARGET_Y-HEIGHT/2f;
+    static public double CAMERA_OFFSET_X = TARGET_X-WIDTH/2f;
     static public int MIN_AREA_THRESHOLD = 2000;
     static public int MAX_AREA_THRESHOLD = 13000;
+    static public int GOLDILOCKS_ZONE_RADIUS = 100;
 
 
     double[][] cameraMatrixData = {
@@ -175,6 +178,8 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     }
 
     public AtomicBoolean foundOne = new AtomicBoolean(false);
+    public AtomicBoolean processedFrame = new AtomicBoolean(false);
+
     public AtomicBoolean outsideUseableCameraRange = new AtomicBoolean(false);
     // TODO: Data about the located Sample
 
@@ -191,7 +196,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         EDGES,
         FINAL
     }
-    private Stage stageToRenderToViewport = Stage.FINAL;
+    private Stage stageToRenderToViewport = Stage.UNDISTORTED;
     private Stage[] stages = Stage.values();
 
     class Context {
@@ -277,6 +282,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
 
     public void reset() {
         foundOne.set(false);
+        processedFrame.set(false);
     }
 
 
@@ -503,11 +509,13 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             teamUtil.log("X of Block Center: " + rotatedRect[closestAreaSelectionNum].center.x);
             teamUtil.log("Y of Block Center: " + rotatedRect[closestAreaSelectionNum].center.y);
             outsideUseableCameraRange.set(true);
+            processedFrame.set(true);
             foundOne.set(false);
         }
         else{
             outsideUseableCameraRange.set(false);
             foundOne.set(true);
+            processedFrame.set(true);
 
             // old data setting
             rectCenterYOffset.set(-1 * ((int) rotatedRect[closestAreaSelectionNum].center.y - TARGET_Y));
@@ -586,7 +594,8 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         samplePaint.setColor(Color.GREEN);
         samplePaint.setStyle(Paint.Style.STROKE);
         samplePaint.setStrokeWidth(scaleCanvasDensity * 4);
-        canvas.drawRect(180,30,488,290,samplePaint);
+        canvas.drawCircle(WIDTH/2*scaleBmpPxToCanvasPx, HEIGHT/2*scaleBmpPxToCanvasPx, GOLDILOCKS_ZONE_RADIUS,samplePaint);
+
 
         canvas.drawCircle((float)TARGET_X*scaleBmpPxToCanvasPx, (float)TARGET_Y*scaleBmpPxToCanvasPx, 10,samplePaint);
         canvas.drawRect((float)sampleRect.tl().x*scaleBmpPxToCanvasPx, (float)sampleRect.tl().y*scaleBmpPxToCanvasPx, (float)sampleRect.br().x*scaleBmpPxToCanvasPx, (float)sampleRect.br().y*scaleBmpPxToCanvasPx,samplePaint);

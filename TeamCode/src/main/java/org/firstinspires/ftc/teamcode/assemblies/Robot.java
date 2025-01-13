@@ -372,6 +372,11 @@ public class Robot {
 
     }
 
+    //Collects all blocks with pivots
+    public boolean specimenCollectBlocksV2(){
+        return true;
+    }
+
     public boolean autoV1Specimen(int blocks,boolean ascent){
         teamUtil.log("Running Auto.  Alliance: " + (teamUtil.alliance == RED ? "RED" : "BLUE"));
 
@@ -417,6 +422,18 @@ public class Robot {
     }
 
     public boolean autoV2Specimen(int cycles){
+        teamUtil.log("Running Auto.  Alliance: " + (teamUtil.alliance == RED ? "RED" : "BLUE"));
+        drive.setRobotPosition(0,0,0);
+        specimenCollectBlocks();
+        for(int i = 1; i<=cycles;i++){
+            teamUtil.log("Auto V2 Specimen Cycle Number: " + i);
+            specimenCycle(i);
+        }
+        drive.stopMotors();
+        return true;
+    }
+
+    public boolean autoV3Specimen(int cycles){
         teamUtil.log("Running Auto.  Alliance: " + (teamUtil.alliance == RED ? "RED" : "BLUE"));
         drive.setRobotPosition(0,0,0);
         specimenCollectBlocks();
