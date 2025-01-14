@@ -310,7 +310,7 @@ public class CalibrateArms extends LinearOpMode {
         }
 
         if (gp1.wasRightPressed()) {
-            intake.flipAndRotateToSampleAndGrab(1500);
+            intake.flipToSampleAndGrab(1500);
             //intake.flipperGoToSafe(2000);
         }
         if (gp1.gamepad.left_stick_x < -.25) {
@@ -574,7 +574,7 @@ public class CalibrateArms extends LinearOpMode {
             intake.flipper.setPosition(Intake.FLIPPER_SEEK);
         }
         if(gp1.wasAPressed()){
-            intake.flipAndRotateToSampleAndGrab(2000);
+            intake.flipToSampleAndGrab(2000);
         }
         if(gp1.wasBPressed()){
             intake.restartCVPipeline();

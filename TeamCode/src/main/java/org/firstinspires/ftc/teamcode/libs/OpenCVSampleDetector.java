@@ -58,6 +58,15 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public int MAX_AREA_THRESHOLD = 15000; // was 13000 for meet #2 build
     static public int GOLDILOCKS_ZONE_RADIUS = 100;
 
+    public static float CAM_ANGLE_ADJUST_NEG_Y = .82f;
+    public static float CAM_ANGLE_ADJUST_POS_Y = .84f;
+    public static float CAM_ANGLE_ADJUST_POS_Y_B = -10f;
+    public static float CAM_ANGLE_ADJUST_MID_Y = .85f;
+
+    public static float CAM_ANGLE_ADJUST_NEG_X = .82f;
+    public static float CAM_ANGLE_ADJUST_NEG_X_B = 0f;
+    public static float CAM_ANGLE_ADJUST_POS_X = .84f;
+    public static float CAM_ANGLE_ADJUST_MID_X = .85f;
 
     double[][] cameraMatrixData = {
             { 478.3939243528238, 0.0, 333.6082048642555 },
@@ -193,7 +202,16 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         public int rectAngle =-1;
         public int rectCenterXOffset = 0;
         public int rectCenterYOffset = 0;
+        public int adjRectCenterXOffset = 0;
+        public int adjRectCenterYOffset = 0;
         public int rectArea = 0;
+        public RotatedRect rrect;
+        public int lowestPixelX = 0;
+        public int lowestPixelY = 0;
+
+        public int closestPixelX = 0;
+        public int closestPixelY = 0;
+
         public long captureTime = 0;
         public long processingTime = 0;
         public long processingTime2 = 0;
@@ -248,6 +266,9 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
                     + " Angle: " + frame.rectAngle
                     + " Area: " + frame.rectArea
                     + " Processing Time: " + frame.processingTime
+                    + " Adjusted Target: " + frame.adjRectCenterXOffset + "," + frame.adjRectCenterYOffset
+                    + " Lowest Pixel: " + frame.lowestPixelX + "," + frame.lowestPixelY
+                    + " Closest Pixel: " + frame.closestPixelX + "," + frame.closestPixelY
                     //+ " Capture Time: " + frame.captureTime
                     //+ " Processing Time2: " + frame.processingTime2
                     ;
@@ -501,6 +522,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             }
 
         }
+
         double xDist = Math.abs(vertices1[closestPixel].x - vertices1[lowestPixel].x);
         double yDist = Math.abs(vertices1[closestPixel].y - vertices1[lowestPixel].y);
         double realAngle = Math.toDegrees(Math.atan(yDist / xDist));
@@ -539,13 +561,22 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
             processedFrame.set(true);
 
             FrameData imgData = new FrameData();
+            imgData.rrect = rotatedRect[closestAreaSelectionNum];
             imgData.rectAngle = (int) realAngle;
             imgData.rectCenterXOffset = (int) rotatedRect[closestAreaSelectionNum].center.x - TARGET_X;
             imgData.rectCenterYOffset = -1 * ((int) rotatedRect[closestAreaSelectionNum].center.y - TARGET_Y);
+            imgData.adjRectCenterXOffset=  adjustXCenter((int)rotatedRect[closestAreaSelectionNum].center.x) - TARGET_X;
+            imgData.adjRectCenterYOffset= -1 * (adjustYCenter((int)rotatedRect[closestAreaSelectionNum].center.y) - TARGET_Y);
             imgData.rectArea = (int) rotatedRect[closestAreaSelectionNum].size.area();
             imgData.captureTime = captureTimeNanos/1000000;
             imgData.processingTime = System.currentTimeMillis() - startProcessingTime;
             imgData.processingTime2 = System.currentTimeMillis() - imgData.captureTime;
+
+            imgData.lowestPixelX = (int) vertices1[lowestPixel].x;
+            imgData.lowestPixelY = (int) vertices1[lowestPixel].y;
+            imgData.closestPixelX = (int) vertices1[closestPixel].x;
+            imgData.closestPixelY = (int) vertices1[closestPixel].y;
+
             frameDataQueue.clear(); // Only one object in the queue at a time for now.
             frameDataQueue.add(imgData);
             if (details) teamUtil.log("adding detection to queue. size: " + frameDataQueue.size());
@@ -566,6 +597,48 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
         context.contours = contours;
         return context;
     }
+
+
+
+
+    public int adjustYCenter(int y) {
+        if (TARGET_Y < HEIGHT/2) { // uniform distortion to the top, but varying to the bottom as we cross the center
+            if (y < TARGET_Y) {
+                return (int) (TARGET_Y - (TARGET_Y-y) * CAM_ANGLE_ADJUST_NEG_Y); // assumes linear from target but it really is linear from center of cam (might need a "b" coeffecient)
+            } else if (y > TARGET_Y) {
+                if (y < HEIGHT/2) { // between target and center of camera (as we move away from target we are approaching the center of the camera so distances get less distorted)
+                    return (int) ((y-TARGET_Y) * CAM_ANGLE_ADJUST_MID_Y + TARGET_Y);
+                } else { // below target and below center of camera (as we move away from center of camera, distances get more distorted
+                    return (int) ((y-HEIGHT/2) * CAM_ANGLE_ADJUST_POS_Y + HEIGHT/2+ CAM_ANGLE_ADJUST_POS_Y_B); // linear from center of cam, so needed a "b" coefficient to deal with distance from target to center of cam
+                }
+            } else { // already over the target
+                return y;
+            }
+        } else {
+            teamUtil.log("adjustYTarget Case Not Implemented!");
+            return y;
+        }
+    }
+
+    public int adjustXCenter(int x) {
+        if (TARGET_X > WIDTH/2) { // // uniform distortion to the right, but varying to the left as we cross the center
+            if (x > TARGET_X) {
+                return (int) (TARGET_X + (x-TARGET_X) * CAM_ANGLE_ADJUST_POS_X); // assumes linear from target but it really is linear from center of cam (might need a "b" coeffecient)
+            } else if (x < TARGET_X) {
+                if (x > WIDTH/2) { // between target and center of camera (as we move away from target we are approaching the center of the camera so distances get less distorted)
+                    return (int) (TARGET_X - (TARGET_X-x) * CAM_ANGLE_ADJUST_MID_X);
+                } else { // left of target and left of center of camera (as we move away from center of camera, distances get more distorted
+                    return (int) ( WIDTH/2 - (WIDTH/2-x) * CAM_ANGLE_ADJUST_NEG_X + CAM_ANGLE_ADJUST_NEG_X_B); // linear from center of cam, so needed a "b" coefficient to deal with distance from target to center of cam
+                }
+            } else { // already over the target
+                return x;
+            }
+        } else {
+            teamUtil.log("adjustXTarget Case Not Implemented!");
+            return x;
+        }
+    }
+
 
     @Override
     public void onDrawFrame(Canvas canvas, int onscreenWidth, int onscreenHeight, float scaleBmpPxToCanvasPx, float scaleCanvasDensity, Object userContext) {
