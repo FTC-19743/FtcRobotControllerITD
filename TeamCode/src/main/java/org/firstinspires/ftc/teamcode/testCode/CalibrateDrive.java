@@ -6,14 +6,10 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.teamcode.assemblies.BasicDrive;
-import org.firstinspires.ftc.teamcode.assemblies.Robot;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
-
-import java.util.concurrent.SynchronousQueue;
 
 @Config
 @TeleOp(name = "Calibrate Drive", group = "Test Code")
@@ -22,8 +18,8 @@ public class CalibrateDrive extends LinearOpMode {
     BasicDrive drive;
     public static int testVelocity = 1000;
     public static int testEndVelocity = 0;
-
     public static int testDistance = 100;
+    public static boolean powerBraking = false;
     public static double HEADING = 0;
     public static int SECONDS = 3;
     public static int botX = 72;
@@ -81,6 +77,8 @@ public class CalibrateDrive extends LinearOpMode {
         gp1.initilize(true); // Game Pads can be plugged into the computer
         gp2.initilize(false);
 
+        telemetry.addLine("Ready");
+        telemetry.update();
         waitForStart();
 
         if (isStopRequested()) {
@@ -137,7 +135,10 @@ public class CalibrateDrive extends LinearOpMode {
             telemetry.addData("Encoder", 0);
             telemetry.addData("Current Velocity", 0);
             telemetry.addData("Motor Velocity", 0);
-
+            telemetry.addData("YVelocity", 0);
+            telemetry.addData("YEncoder", 0);
+            telemetry.addData("XVelocity", 0);
+            telemetry.addData("XEncoder", 0);
 
             telemetry.update();
             //sleep(20);
@@ -228,7 +229,11 @@ public class CalibrateDrive extends LinearOpMode {
             double startForward = drive.odo.getPosX();
             double forwardTarget = (long) (startForward + testDistance);
             double startStrafe = drive.odo.getPosY()+botY;
-            drive.straightHoldingStrafeEncoder(testVelocity, forwardTarget,startStrafe,0,0,null,0,3000);
+            drive.straightHoldingStrafeEncoder(testVelocity, forwardTarget,startStrafe,0,testEndVelocity, powerBraking, null,0,3000);
+            if (testEndVelocity > 0) {
+                teamUtil.pause(1000);
+                drive.stopMotors();
+            }
         }
         if (gamepad1.dpad_down) {
             drive.setHeading(0);
@@ -236,7 +241,11 @@ public class CalibrateDrive extends LinearOpMode {
             double startForward = drive.odo.getPosX();
             double forwardTarget = (long) (startForward - testDistance);
             double startStrafe = drive.odo.getPosY()+botY;
-            drive.straightHoldingStrafeEncoder(testVelocity, forwardTarget,startStrafe,0,0,null,0,3000);
+            drive.straightHoldingStrafeEncoder(testVelocity, forwardTarget,startStrafe,0,testEndVelocity, powerBraking, null,0,3000);
+            if (testEndVelocity > 0) {
+                teamUtil.pause(1000);
+                drive.stopMotors();
+            }
         }
         if (gamepad1.dpad_right) {
             drive.setHeading(0);
@@ -306,9 +315,9 @@ public class CalibrateDrive extends LinearOpMode {
         long strafeTarget = (long) (startStrafe + drive.TICS_PER_CM_STRAIGHT_ENCODER*testDistance);
         drive.setHeading(0);
 
-        drive.straightHoldingStrafeEncoder(drive.MAX_VELOCITY, forwardTarget,startStrafe,0,0,null,0,3000);
+        drive.straightHoldingStrafeEncoder(drive.MAX_VELOCITY, forwardTarget,startStrafe,0,0, false, null,0,3000);
         drive.strafeHoldingStraightEncoder(drive.MAX_VELOCITY, strafeTarget,forwardTarget,0,0,null,0,3000);
-        drive.straightHoldingStrafeEncoder(drive.MAX_VELOCITY, startForward,strafeTarget,0,0,null,0,3000);
+        drive.straightHoldingStrafeEncoder(drive.MAX_VELOCITY, startForward,strafeTarget,0,0, false, null,0,3000);
         drive.strafeHoldingStraightEncoder(drive.MAX_VELOCITY, startStrafe,startForward,0,0,null,0,3000);
     }
 
@@ -318,45 +327,40 @@ public class CalibrateDrive extends LinearOpMode {
 
     public void brakeTestForward () {
         drive.setHeading(0);
-        drive.moveCm(testVelocity   , testDistance  , 0, 0,testVelocity);
+        drive.moveCm(testVelocity   , testDistance  , HEADING, 0,testVelocity);
         drive.setMotorsBrake();
         drive.stopMotors();
-        long timeBefore = System.currentTimeMillis();
-        long currentTime = System.currentTimeMillis()+1;
-
-        double timeElapsed;
-        double lastEncoder=drive.forwardEncoder.getCurrentPosition();;
-        double currentVelocity=0;
-        double currentMotorVelocity=0;
-
-        while (currentTime<timeBefore+2000) {
-            telemetry.addData("Velocity", drive.forwardEncoder.getVelocity());
-            teamUtil.log("Velocity: " + drive.forwardEncoder.getVelocity() + "Encoder: " + drive.forwardEncoder.getCurrentPosition()+ "Current Velocity" + currentVelocity+"Current Motor Velocity"+currentMotorVelocity);
-            telemetry.addData("Encoder", drive.forwardEncoder.getCurrentPosition());
-
-            timeElapsed = (System.currentTimeMillis()-currentTime)/1000f;
-            currentTime = System.currentTimeMillis();
-
-            currentVelocity = (drive.forwardEncoder.getCurrentPosition()-lastEncoder)/timeElapsed;
-            currentMotorVelocity = (((drive.forwardEncoder.getCurrentPosition()-lastEncoder)/76.36)/timeElapsed);
-            telemetry.addData("Current Velocity", currentVelocity);
-            telemetry.addData("Motor Velocity",currentMotorVelocity);
-
-
-            lastEncoder = drive.forwardEncoder.getCurrentPosition();
+        drive.odo.update();
+        long startBrakeTime = System.currentTimeMillis();
+        while (System.currentTimeMillis() < startBrakeTime+1000) {
+            teamUtil.log("vel:"+drive.odo.getVelX()+":enc:"+drive.odo.getPosX());
+            telemetry.addData("XVelocity", drive.odo.getVelX());
+            telemetry.addData("XEncoder", drive.odo.getPosX());
             telemetry.update();
+            drive.odo.update();
         }
-        //drive.moveCm(BasicDrive.MIN_END_VELOCITY,20,0,0);
     }
+
+
     public void brakeTestRight () {
         drive.setHeading(0);
         drive.moveCm(testVelocity   , testDistance  , 270, 0,testVelocity);
         drive.setMotorsBrake();
         drive.stopMotors();
-        while (drive.forwardEncoder.getVelocity()> 0) {
-            telemetry.addData("Velocity", drive.strafeEncoder.getVelocity());
-            telemetry.addData("Encoder", drive.strafeEncoder.getCurrentPosition());
+        drive.odo.update();
+        long startBrakeTime = System.currentTimeMillis();
+        while (System.currentTimeMillis() < startBrakeTime+1000) {
+            telemetry.addData("YVelocity", drive.odo.getVelY());
+            telemetry.addData("YEncoder", drive.odo.getPosY());
+            teamUtil.log("vel:"+drive.odo.getVelY()+":enc:"+drive.odo.getPosY());
             telemetry.update();
+            drive.odo.update();
         }
     }
+
+    public void TuneFrontBraking () {
+
+
+    }
+
 }

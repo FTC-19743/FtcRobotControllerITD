@@ -17,7 +17,7 @@ public class Outtake {
     public AnalogInput outakePotentiometer;
 
 
-    static public float ARM_UP = 0.2f;
+    static public float ARM_UP = 0.22f;
     static public float ARM_DOWN = .78f;
     static public float ARM_BUCKET_SAFE = .55f;
     static public float WRIST_GRAB = 0.15f;

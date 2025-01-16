@@ -69,7 +69,7 @@ public class BasicDrive {
     static public double MIN_END_VELOCITY = 90; //TODO (Current value works OK, but maybe could be more aggressive)
     static public double MAX_ACCELERATION = 50;
     static public double MAX_DECELERATION = 1.65;
-
+    static public double POWER_BRAKING_STRAIGHT_FACTOR = .25f; // MMs per velocity unit
     static public double MAX_STRAIGHT_ACCELERATION = 20; //TODO
     static public double MAX_STRAIGHT_DECELERATION = 1.87; //TODO
     static public double MIN_STRAFE_START_VELOCITY = 500; //TODO
@@ -842,6 +842,28 @@ public class BasicDrive {
     /************************************************************************************************************/
     // New Methods to drive based on Odometry Computer (PinPoint)
 
+    public double getPosX() {
+        odo.update();
+        double pos = odo.getPosX();
+        while (Double.isNaN(pos)) {
+            teamUtil.log("Pinpoint returned Nan!");
+            odo.update();
+            pos = odo.getPosX();
+        }
+        return pos;
+    }
+
+    public double getPosY() {
+        odo.update();
+        double pos = odo.getPosY();
+        while (Double.isNaN(pos)) {
+            teamUtil.log("Pinpoint returned Nan!");
+            odo.update();
+            pos = odo.getPosY();
+        }
+        return pos;
+    }
+
     public boolean strafeToTarget(double driveHeading, double robotHeading, double velocity, double strafeTarget, long timeout) {
         // strafe to a strafe encoder value
         long timeOutTime = System.currentTimeMillis() + timeout;
@@ -871,7 +893,7 @@ public class BasicDrive {
 
     // Drive straight forward or backward while attempting to hold the strafe encoder at a specific value
     // Robot heading should be 0,90,180, or 270.  Drive Heading will be determined by the target
-    public boolean straightHoldingStrafeEncoder(double maxVelocity, double straightTarget, double strafeTarget, int robotHeading, double endVelocity, ActionCallback action, double actionTarget, long timeout) {
+    public boolean straightHoldingStrafeEncoder(double maxVelocity, double straightTarget, double strafeTarget, int robotHeading, double endVelocity, boolean powerBraking, ActionCallback action, double actionTarget, long timeout) {
         if(robotHeading!=90&&robotHeading!=270&&robotHeading!=0&&robotHeading!=180){
             teamUtil.log("straightHoldingStrafeEncoder - ERROR INCOMPATIBLE ROBOT HEADING");
             stopMotors();
@@ -879,7 +901,7 @@ public class BasicDrive {
         }
 
         teamUtil.log("straightHoldingStrafeEncoder target: " + straightTarget +  " Strafe target: " + strafeTarget + " robotH: " + robotHeading + " MaxV: " + maxVelocity + " EndV: " + endVelocity);
-        details = true; // default to class level details member instead of false
+        details = false; // default to class level details member instead of false
         long startTime = System.currentTimeMillis();
         long timeoutTime = startTime+timeout;
 
@@ -978,7 +1000,7 @@ public class BasicDrive {
             teamUtil.log("distance after acceleration: " + distanceRemaining);
         }
         if(System.currentTimeMillis()>timeoutTime){
-            teamUtil.log("TIMEOUT Triggered After Acceleration Phase");
+            teamUtil.log("TIMEOUT Triggered in Acceleration Phase");
             stopMotors();
             return false;
         }
@@ -1010,39 +1032,126 @@ public class BasicDrive {
             teamUtil.log("distance after cruise: " + distanceRemaining);
         }
         if(System.currentTimeMillis()>timeoutTime){
-            teamUtil.log("TIMEOUT Triggered After Cruise Phase");
+            teamUtil.log("TIMEOUT Triggered in Cruise Phase");
             stopMotors();
             return false;
         }
 
-        //-------Deceleration Phase
-        while ((distanceRemaining > 0)&&teamUtil.keepGoing(timeoutTime)) {
-            odo.update();
-            currentPos = odo.getPosX();
-            if (Double.isNaN(currentPos)) {
-                teamUtil.log("Pinpoint returned Nan!");
+        if (!powerBraking) {  //-------Normal Deceleration Phase
+            //-------Normal Deceleration Phase
+            while ((distanceRemaining > 0)&&teamUtil.keepGoing(timeoutTime)) {
+                odo.update();
+                currentPos = odo.getPosX();
+                if (Double.isNaN(currentPos)) {
+                    teamUtil.log("Pinpoint returned Nan!");
+                    stopMotors();
+                    return false;
+                }
+                distanceRemaining = (!goingUp) ? currentPos-straightTarget : straightTarget - currentPos;
+                currentVelocity = MAX_STRAIGHT_DECELERATION * distanceRemaining + endVelocity;
+                adjustedDriveHeading = driveHeading + MathUtils.clamp((odo.getPosY() - strafeTarget)* STRAIGHT_HEADING_DECLINATION, -STRAIGHT_MAX_DECLINATION, STRAIGHT_MAX_DECLINATION) * headingFactor;
+                if (details) {
+                    teamUtil.log("dh: " + adjustedDriveHeading);
+                }
+
+                if (details) teamUtil.log("Decelerating at Velocity: "+ currentVelocity + " MMs Remaining: " + distanceRemaining);
+                driveMotorsHeadingsFR(adjustedDriveHeading, robotHeading, currentVelocity);
+                if(action!=null&&!actionDone&&((goingUp&&currentPos>=actionTarget)||(!goingUp&&currentPos<=actionTarget))){
+                    action.action();
+                    actionDone=true;
+                }
+            }
+            if (details) {
+                teamUtil.log("distance after deceleration: " + distanceRemaining);
+            }
+        } else {             // Power Braking: Use the built in braking of the motors to slow down fast
+            currentVelocity = Math.abs(odo.getVelX()); // find the actual current velocity of the robot
+            if (endVelocity > MIN_END_VELOCITY) {  // Assume that end position does not need to be precise and let the robot drift to a stop (or crash into something...)
+                double powerBrakingDistance = (currentVelocity-endVelocity) * POWER_BRAKING_STRAIGHT_FACTOR;
+                if (details) teamUtil.log("Preparing to PowerBrake at "+ powerBrakingDistance);
+                while ((distanceRemaining > powerBrakingDistance)&&teamUtil.keepGoing(timeoutTime)) {
+                    odo.update();
+                    currentPos = odo.getPosX();
+                    if (Double.isNaN(currentPos)) {
+                        teamUtil.log("Pinpoint returned Nan!");
+                        stopMotors();
+                        return false;
+                    }
+                    distanceRemaining = (!goingUp) ? currentPos-straightTarget : straightTarget - currentPos;
+                    adjustedDriveHeading = driveHeading + MathUtils.clamp((odo.getPosY() - strafeTarget)* STRAIGHT_HEADING_DECLINATION, -STRAIGHT_MAX_DECLINATION, STRAIGHT_MAX_DECLINATION) * headingFactor;
+                    if (details) {
+                        teamUtil.log("dh: " + adjustedDriveHeading);
+                    }
+                    if (details) teamUtil.log("Extended Cruise at Velocity: "+ maxVelocity + " MMs Remaining: " + distanceRemaining);
+
+                    driveMotorsHeadingsFR(adjustedDriveHeading, robotHeading, maxVelocity);
+                    if(action!=null&&!actionDone&&((goingUp&&currentPos>=actionTarget)||(!goingUp&&currentPos<=actionTarget))){
+                        action.action();
+                        actionDone=true;
+                    }
+                }
+                if(System.currentTimeMillis()>timeoutTime){
+                    teamUtil.log("TIMEOUT Triggered in Extended Cruise Phase");
+                    stopMotors();
+                    return false;
+                }
+                setMotorsBrake(); // hit the brakes hard--robot is drifting at this point
+                stopMotors();
+                while ((distanceRemaining > 0) && Math.abs(odo.getVelX())>endVelocity && teamUtil.keepGoing(timeoutTime)) {  // wait for distance or speed to achieve goal
+                    odo.update();
+                    currentPos = odo.getPosX();
+                    if (Double.isNaN(currentPos)) {
+                        teamUtil.log("Pinpoint returned Nan!");
+                        stopMotors();
+                        return false;
+                    }
+                    distanceRemaining = (!goingUp) ? currentPos-straightTarget : straightTarget - currentPos;
+                    if (details) teamUtil.log("Power Braking: Velocity: "+ odo.getVelX() + " MMs Remaining: " + distanceRemaining);
+                    if(action!=null&&!actionDone&&((goingUp&&currentPos>=actionTarget)||(!goingUp&&currentPos<=actionTarget))){
+                        action.action();
+                        actionDone=true;
+                    }
+                }
+                if(System.currentTimeMillis()>timeoutTime){
+                    teamUtil.log("TIMEOUT Triggered while power braking");
+                    stopMotors();
+                    return false;
+                }
+                while ((distanceRemaining > 0) && teamUtil.keepGoing(timeoutTime)) { // if there is still distance to go, cruise at endVelocity
+                    odo.update();
+                    currentPos = odo.getPosX();
+                    if (Double.isNaN(currentPos)) {
+                        teamUtil.log("Pinpoint returned Nan!");
+                        stopMotors();
+                        return false;
+                    }
+                    distanceRemaining = (!goingUp) ? currentPos-straightTarget : straightTarget - currentPos;
+                    currentVelocity = endVelocity;
+                    adjustedDriveHeading = driveHeading + MathUtils.clamp((odo.getPosY() - strafeTarget)* STRAIGHT_HEADING_DECLINATION, -STRAIGHT_MAX_DECLINATION, STRAIGHT_MAX_DECLINATION) * headingFactor;
+                    if (details) {
+                        teamUtil.log("dh: " + adjustedDriveHeading);
+                    }
+                    if (details) teamUtil.log("Cruising after power braking: "+ currentVelocity + " MMs Remaining: " + distanceRemaining);
+                    driveMotorsHeadingsFR(adjustedDriveHeading, robotHeading, currentVelocity);
+                    if(action!=null&&!actionDone&&((goingUp&&currentPos>=actionTarget)||(!goingUp&&currentPos<=actionTarget))){
+                        action.action();
+                        actionDone=true;
+                    }
+                }
+                if (details) {
+                    teamUtil.log("distance after deceleration: " + distanceRemaining);
+                }
+                if (requestedEndVelocity>0) { // power braking may have left the motors off. Turn them back on if requested.
+                    driveMotorsHeadingsFR(driveHeading, robotHeading, requestedEndVelocity);
+                }
+            } else {
+                teamUtil.log("POWER BRAKING with zero end velocity not implemented yet!");
                 stopMotors();
                 return false;
             }
-            distanceRemaining = (!goingUp) ? currentPos-straightTarget : straightTarget - currentPos;
-            currentVelocity = MAX_STRAIGHT_DECELERATION * distanceRemaining + endVelocity;
-            adjustedDriveHeading = driveHeading + MathUtils.clamp((odo.getPosY() - strafeTarget)* STRAIGHT_HEADING_DECLINATION, -STRAIGHT_MAX_DECLINATION, STRAIGHT_MAX_DECLINATION) * headingFactor;
-            if (details) {
-                teamUtil.log("dh: " + adjustedDriveHeading);
-            }
-
-            if (details) teamUtil.log("Decelerating at Velocity: "+ currentVelocity + " MMs Remaining: " + distanceRemaining);
-            driveMotorsHeadingsFR(adjustedDriveHeading, robotHeading, currentVelocity);
-            if(action!=null&&!actionDone&&((goingUp&&currentPos>=actionTarget)||(!goingUp&&currentPos<=actionTarget))){
-                action.action();
-                actionDone=true;
-            }
-
         }
-        if (details) {
-            teamUtil.log("distance after deceleration: " + distanceRemaining);
-        }
-        if (requestedEndVelocity < 1) {
+        if (requestedEndVelocity < 1) { // leave motors running if they didn't ask for a full stop
+            if (details) teamUtil.log("Stopping motors due to requested end velocity of 0");
             stopMotors();
         }
         if(System.currentTimeMillis()>timeoutTime){
@@ -1480,7 +1589,12 @@ public class BasicDrive {
         return false; // didn't get a stall
     }
 
+    /************************************************************************************************************/
+    // New movement methods with passive braking
 
+    public void TuneFrontBraking () {
+
+    }
 
     /************************************************************************************************************/
     // Methods to turn the robot in place

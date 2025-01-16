@@ -56,7 +56,7 @@ public class OpenCVSampleDetector extends OpenCVProcesser {
     static public double CAMERA_OFFSET_X = TARGET_X-WIDTH/2f;
     static public int MIN_AREA_THRESHOLD = 2000;
     static public int MAX_AREA_THRESHOLD = 15000; // was 13000 for meet #2 build
-    static public int GOLDILOCKS_ZONE_RADIUS = 100;
+    static public int GOLDILOCKS_ZONE_RADIUS = 160;
 
     public static float CAM_ANGLE_ADJUST_NEG_Y = .82f;
     public static float CAM_ANGLE_ADJUST_POS_Y = .84f;

@@ -191,8 +191,9 @@ public class Auto extends LinearOpMode {
             teamUtil.telemetry.update();
         }
 
-        robot.initCV(false); // no live stream enabled means better FPS
-
+        if (teamUtil.SIDE == teamUtil.SIDE.BASKET) { // get camera running but only if we will use it
+            robot.initCV(false); // no live stream enabled means better FPS
+        }
 
         while (!opModeIsActive()) {
             telemetry.addLine("Ready to Go!");
@@ -207,24 +208,6 @@ public class Auto extends LinearOpMode {
             }
             telemetry.update();
         }
-
-
-            /*
-            if(path == 1 && teamUtil.alliance == teamUtil.alliance.RED){
-                teamUtil.theBlinkin.setSignal(Blinkin.Signals.RED_PATH_1);
-            } else if (path == 2 && teamUtil.alliance == teamUtil.alliance.RED) {
-                teamUtil.theBlinkin.setSignal(Blinkin.Signals.RED_PATH_2);
-            } else if (path == 3 && teamUtil.alliance == teamUtil.alliance.RED) {
-                teamUtil.theBlinkin.setSignal(Blinkin.Signals.RED_PATH_3);
-            } else if (path == 1 && teamUtil.alliance == teamUtil.alliance.BLUE) {
-                teamUtil.theBlinkin.setSignal(Blinkin.Signals.BLUE_PATH_1);
-            } else if (path == 2 && teamUtil.alliance == teamUtil.alliance.BLUE) {
-                teamUtil.theBlinkin.setSignal(Blinkin.Signals.BLUE_PATH_2);
-            } else{
-                teamUtil.theBlinkin.setSignal(Blinkin.Signals.BLUE_PATH_3);
-            }
-
-             */
 
         waitForStart();
         //teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);

@@ -26,6 +26,9 @@ public class testAutoPaths extends LinearOpMode {
     boolean useArms = false;
     public static boolean liveStream = true;
     public static int BLOCKS = 2;
+    public static int CYCLES = 0;
+    public static boolean useCV = false;
+
     public static boolean ASCENT = true;
 
 
@@ -51,14 +54,15 @@ public class testAutoPaths extends LinearOpMode {
         robot = new Robot();
         teamUtil.robot = robot;
 
-
-        telemetry.addLine("Initializing CV.  Please wait.");
-        telemetry.update();
         robot.initialize();
-        robot.initCV(liveStream);
+        if (useCV) {
+            telemetry.addLine("Initializing CV.  Please wait.");
+            telemetry.update();
+            robot.initCV(liveStream);
+        }
+        telemetry.addLine("Calibrating.  Please wait.");
+        telemetry.update();
         robot.calibrate();
-
-
 
         telemetry.addLine("Ready to start");
         telemetry.update();
@@ -110,7 +114,11 @@ public class testAutoPaths extends LinearOpMode {
             }
             if(driverGamepad.wasXPressed()) {
                 long startTime = System.currentTimeMillis();
-                robot.specimenCycle(1);
+                for(int i = 1; i<=CYCLES;i++){
+                    teamUtil.log("Auto V3 Specimen Cycle Number: " + i);
+                    robot.specimenCycleV2(i);
+                }
+
                 robot.drive.stopMotors();
                 elapsedTime = System.currentTimeMillis()-startTime;
             }
@@ -123,6 +131,11 @@ public class testAutoPaths extends LinearOpMode {
             if(driverGamepad.wasBPressed()) {
                 long startTime = System.currentTimeMillis();
                 robot.autoV2Specimen(BLOCKS);
+                elapsedTime = System.currentTimeMillis()-startTime;
+            }
+            if(driverGamepad.wasAPressed()){
+                long startTime = System.currentTimeMillis();
+                robot.autoV3Specimen(CYCLES);
                 elapsedTime = System.currentTimeMillis()-startTime;
             }
             /*
