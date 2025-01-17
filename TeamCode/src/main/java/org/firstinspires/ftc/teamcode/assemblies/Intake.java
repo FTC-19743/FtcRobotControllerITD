@@ -787,6 +787,32 @@ public class Intake {
         //TODO THERE IS A BUG!!!! IT SOMETIMES DOESN"T REACH ITS ROTATION PRIOR TO ENDING THIS METHOD (AND FLIPPING DOWN)
     }
 
+    public boolean waitForArmatureStop(long timeout){
+        axonSlider.manualSliderControlWithEncoder(0);
+        extender.setTargetPosition(extender.getCurrentPosition());
+        long startTime = System.currentTimeMillis();
+        long timeoutTime = System.currentTimeMillis()+timeout;
+
+        double lastAxonPosition = axonSlider.getPositionEncoder();
+        double lastExtenderPosition = extender.getCurrentPosition();
+        teamUtil.pause(50);
+        double axonThresholdTest = 25;
+
+        while(((Math.abs(axonSlider.getPositionEncoder()-lastAxonPosition)>axonThresholdTest)||extender.getCurrentPosition()!=lastExtenderPosition)&&teamUtil.keepGoing(timeoutTime)){
+            lastAxonPosition = axonSlider.getPositionEncoder();
+            lastExtenderPosition = extender.getCurrentPosition();
+            teamUtil.pause(50);
+        }
+        long endTime = System.currentTimeMillis();
+        long elapsedTime = endTime-startTime;
+        teamUtil.log("Waited " + elapsedTime + " MS For Actuators To Stop");
+        if(System.currentTimeMillis()>=timeoutTime){
+            return false;
+        }
+        else{
+            return true;
+        }
+    }
 
     public boolean goToSampleV5(long timeOut){
         teamUtil.log("GoToSampleV5 has started");
@@ -805,8 +831,7 @@ public class Intake {
         grabber.setPosition(GRABBER_READY);
         sweeper.setPosition(SWEEPER_HORIZONTAL_READY);
         wrist.setPosition(WRIST_MIDDLE);
-        axonSlider.manualSliderControlWithEncoder(0); // shut down slider in case it was moving from manual operation
-
+        waitForArmatureStop(1000);
         // Process one frame (and one frame only--even if nothing is detected)
         // leave processor running in case we need to do a phase 1 seek
         frame = sampleDetector.processNextFrame(false, false, false, timeOut);

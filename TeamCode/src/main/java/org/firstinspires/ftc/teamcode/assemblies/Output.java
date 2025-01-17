@@ -41,6 +41,8 @@ public class Output {
     static public int LIFT_PICKUP_FOR_HOOK_HOLDER= 5; // TODO FIND OUT
     static public int LIFT_ABOVE_BAR= 1160; // TODO FIND OUT
     static public int LIFT_ONTO_BAR= 820; // TODO FIND OUT
+    static public int LIFT_AT_BAR= 900; // TODO FIND OUT
+
 
 
 

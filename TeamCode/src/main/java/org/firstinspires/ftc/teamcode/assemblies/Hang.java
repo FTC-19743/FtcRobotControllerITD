@@ -49,10 +49,12 @@ public class Hang {
     public static float PULLEYRIGHT_EXTEND = 0.35f;
 
     public static float HOOKGRABBER_STOW = .025f;
-    public static float HOOKGRABBER_GRAB = 0.105f;
+    public static float HOOKGRABBER_GRAB = 0.09f;
     public static float HOOKGRABBER_READY = 0.2f;
     public static float HOOKGRABBER_DEPLOY = 0.86f;
     public static float HOOKGRABBER_RELEASE = 1f;
+    public static float HOOKGRABBER_PRE_RELEASE = 0.79f;
+    static public int HOOKS_RELEASED= 2067;
 
     public static double HANG_HOLD_POWER = 0.1;
     public boolean hanging = false;

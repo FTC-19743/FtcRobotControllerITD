@@ -25,7 +25,7 @@ public class Auto extends LinearOpMode {
     int cycleDelay = 0;
     boolean ascent = false;
     int blocks = 1;
-    int specimen = 1;
+    int specimen = 4;
 
 
     public void initializeRobot() {
@@ -54,7 +54,7 @@ public class Auto extends LinearOpMode {
         initializeRobot();
         robot.calibrate();
         teamUtil.robot = robot;
-
+        specimen=4;
         while (!gamepad.wasAPressed()) {
             gamepad.loop();
             teamUtil.telemetry.addLine("Alliance: " + teamUtil.alliance);
@@ -216,7 +216,7 @@ public class Auto extends LinearOpMode {
         if(teamUtil.SIDE == teamUtil.Side.BASKET){
             //robot.autoV1Bucket(blocks, ascent);
         }else{
-            robot.autoV2Specimen(specimen);
+            robot.autoV3Specimen(specimen);
         }
         long endTime = System.currentTimeMillis();
         long elapsedTime = endTime - startTime;

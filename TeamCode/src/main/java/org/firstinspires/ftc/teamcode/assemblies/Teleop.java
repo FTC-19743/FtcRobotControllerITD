@@ -117,6 +117,7 @@ public class Teleop extends LinearOpMode {
 
 
         robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
+        boolean liftDropped = false;
         while (opModeIsActive()){
             driverGamepad.loop();
             armsGamepad.loop();
@@ -232,25 +233,34 @@ public class Teleop extends LinearOpMode {
 
             //HANG
 
-            if (driverGamepad.wasDownPressed()) {
-                robot.hang.engageHang();
-            }if (driverGamepad.wasUpPressed()) {
+            if (driverGamepad.wasUpPressed()) {
                 robot.hang.extendHang();
             }
             if(armsGamepad.wasOptionsPressed()){
                 optionsPresses+=1;
                 if(optionsPresses==1){
-                    robot.getReadyToHangNoWait();
+                    robot.hangPhase1();
                 }if(optionsPresses==2){
-                    robot.placeHooksNoWait();
+                    robot.hangPhase2();
                     hangManualControl=true;
                 }
             }
+
             if(hangManualControl){
+
                 robot.drive.stopMotors();
                 robot.hang.joystickDriveV2(gamepad1.left_stick_x, gamepad1.left_stick_y);
-                if (robot.hang.stringsTensioned) {
-                    robot.output.bucket.setPosition(Output.BUCKET_RELOAD); // rotate bucket to avoid bars while climbing
+                if (robot.hang.hang_Left.getCurrentPosition() > Hang.HOOKS_RELEASED && !liftDropped) {
+                    liftDropped = true;
+                    robot.hang.hook_grabber.setPosition(Hang.HOOKGRABBER_PRE_RELEASE);
+
+                    robot.output.lift.setVelocity(Output.LIFT_MAX_VELOCITY); // Run to near bottom
+                    robot.output.lift.setTargetPosition(Output.LIFT_DOWN+30);
+                    while (robot.output.lift.getCurrentPosition() > Output.LIFT_DOWN+40) {
+                        teamUtil.pause(50);
+                    }
+                    robot.output.lift.setVelocity(0); // Turn off lift motor at bottom
+                    robot.output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_BOTTOM); // rotate bucket to avoid string while tensioning
                 }
                 //break out
                 if(driverGamepad.wasHomePressed()){

@@ -5,9 +5,12 @@ import static org.firstinspires.ftc.teamcode.libs.teamUtil.Alliance.RED;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.teamcode.assemblies.BasicDrive;
+import org.firstinspires.ftc.teamcode.assemblies.Hang;
+import org.firstinspires.ftc.teamcode.assemblies.Output;
 import org.firstinspires.ftc.teamcode.assemblies.Robot;
 import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
@@ -107,7 +110,7 @@ public class testAutoPaths extends LinearOpMode {
                elapsedTime = System.currentTimeMillis()-startTime;
             }
             if(driverGamepad.wasDownPressed()) {
-                robot.specimenCollectBlocks();
+                robot.specimenCollectBlocksV2();
             }
             if(driverGamepad.wasRightTriggerPressed()) {
                 robot.drive.setRobotPosition(0,0,0);
@@ -122,17 +125,52 @@ public class testAutoPaths extends LinearOpMode {
                 robot.drive.stopMotors();
                 elapsedTime = System.currentTimeMillis()-startTime;
             }
-            if(driverGamepad.wasYPressed()) {
-                long startTime = System.currentTimeMillis();
-                robot.autoV1Specimen(BLOCKS,ASCENT);
-                elapsedTime = System.currentTimeMillis()-startTime;
+
+            // TESTING HANG
+            if(armsGamepad.wasAPressed()) {
+                robot.hang.extendHang();
+            }
+            if(armsGamepad.wasBPressed()) {
+                robot.hang.engageHang();
+            }if(armsGamepad.wasYPressed()) {
+                robot.output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_BOTTOM);
+                robot.pickUpHooks();
+                robot.readyToPlaceHooks();
+            }
+            boolean liftDropped = false;
+            if(armsGamepad.wasXPressed()) {
+                robot.hang.hang_Left.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                robot.hang.hang_Right.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                robot.output.lift.setVelocity(Robot.PLACE_HOOKS_VELOCITY);
+                robot.output.lift.setTargetPosition(Output.LIFT_AT_BAR);
+                liftDropped = false;
+                while (!driverGamepad.wasYPressed()) { // press Y to exit this mode
+                    // Start pulling up
+                    // drop output tower when hooks have released
+                    // flip bucket when needed
+                    // stop pulling up when we are there
+                    driverGamepad.loop();
+                    robot.hang.joystickDriveV2(gamepad1.left_stick_x, gamepad1.left_stick_y);
+
+                    if (robot.hang.hang_Left.getCurrentPosition() > Hang.HOOKS_RELEASED && !liftDropped) {
+                        liftDropped = true;
+                        robot.hang.hook_grabber.setPosition(Hang.HOOKGRABBER_PRE_RELEASE);
+
+                        robot.output.lift.setVelocity(Output.LIFT_MAX_VELOCITY); // Run to near bottom
+                        robot.output.lift.setTargetPosition(Output.LIFT_DOWN+30);
+                        while (robot.output.lift.getCurrentPosition() > Output.LIFT_DOWN+40) {
+                            teamUtil.pause(50);
+                        }
+                        robot.output.lift.setVelocity(0); // Turn off lift motor at bottom
+                        robot.output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_BOTTOM); // rotate bucket to avoid string while tensioning
+                    }
+                    telemetry.addLine("left: " + robot.hang.hang_Left.getCurrentPosition()+ " right: "+ robot.hang.hang_Right.getCurrentPosition());
+                    telemetry.update();
+                }
 
             }
-            if(driverGamepad.wasBPressed()) {
-                long startTime = System.currentTimeMillis();
-                robot.autoV2Specimen(BLOCKS);
-                elapsedTime = System.currentTimeMillis()-startTime;
-            }
+            robot.hang.joystickDrive(gamepad2.left_stick_x, gamepad2.left_stick_y);
+
             if(driverGamepad.wasAPressed()){
                 long startTime = System.currentTimeMillis();
                 robot.autoV3Specimen(CYCLES);

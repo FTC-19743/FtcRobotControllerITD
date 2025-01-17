@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.libs.teamUtil.Alliance.RED;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -34,6 +35,7 @@ public class Robot {
     public static int READY_TO_PLACE_HOOKS_VELOCITY = 1400;
     public static int PLACE_HOOKS_VELOCITY = 400;
 
+    public static long HANG_PHASE_2_PAUSE = 1500;
 
     static public int A01_PLACE_SPECIMEN_X = 732;
     public static int A02_PLACE_SPECIMEN_Y = -50;
@@ -154,7 +156,7 @@ public class Robot {
     static public int F15_PICKUP_1_X = 150;
     static public int F15_PICKUP_1_Y = -1150;
     static public int F16_PICKUP_1_VELOCITY = 600;
-    static public int F17_PICKUP_1_PAUSE = 200;
+    static public int F17_PICKUP_1_PAUSE = 400;
     static public int F18_CYCLE_PLACE_SPECIMEN_1_Y = 140;
     static public int F18a_CYCLE_PLACE_SPECIMEN_Y = 140;
     static public int F19_CYCLE_MIDFIELD_X = 199;
@@ -249,19 +251,6 @@ public class Robot {
         outtake.secondCalibrate();
     }
 
-    public boolean placeSpecimen(long timeout) {
-        teamUtil.log("Place Specimen");
-        long timeoutTime = System.currentTimeMillis()+timeout;
-        outtake.outakearm.setPosition(OUTAKE_ARM_ENGAGE_VAL);
-        while(outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_ATTACH && teamUtil.keepGoing(timeoutTime)){
-        }
-        if (System.currentTimeMillis() >= timeoutTime) {
-            teamUtil.log("Place Specimen -- TIMED OUT");
-            return false;
-        }
-        teamUtil.log("Place Specimen -- Finished");
-        return true;
-    }
 
 
     public boolean autoV1Bucket(int blocks, boolean ascent){
@@ -477,6 +466,50 @@ public class Robot {
         return true;
     }
 
+
+    public boolean autoV3Specimen(int cycles){
+        teamUtil.log("Running Specimen Auto V3.  Alliance: " + (teamUtil.alliance == RED ? "RED" : "BLUE"));
+        drive.setRobotPosition(0,0,0);
+        specimenCollectBlocksV2();
+        for(int i = 1; i<=cycles;i++){
+            teamUtil.log("Auto V3 Specimen Cycle Number: " + i);
+            specimenCycleV2(i);
+        }
+        drive.stopMotors();
+        return true;
+    }
+
+    public void hangPhase1(){
+        output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_BOTTOM);
+        pickUpHooks();
+        readyToPlaceHooks();
+    }
+
+    public void hangPhase2(){
+        hang.engageHang();
+        teamUtil.pause(HANG_PHASE_2_PAUSE);
+        hang.hang_Left.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        hang.hang_Right.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        output.lift.setVelocity(Robot.PLACE_HOOKS_VELOCITY);
+        output.lift.setTargetPosition(Output.LIFT_AT_BAR);
+
+    }
+
+/* OLD Code
+    public boolean placeSpecimen(long timeout) {
+        teamUtil.log("Place Specimen");
+        long timeoutTime = System.currentTimeMillis()+timeout;
+        outtake.outakearm.setPosition(OUTAKE_ARM_ENGAGE_VAL);
+        while(outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_ATTACH && teamUtil.keepGoing(timeoutTime)){
+        }
+        if (System.currentTimeMillis() >= timeoutTime) {
+            teamUtil.log("Place Specimen -- TIMED OUT");
+            return false;
+        }
+        teamUtil.log("Place Specimen -- Finished");
+        return true;
+    }
+
     public boolean specimenCycle(int cycles){
         outtake.outakearm.setPosition(Outtake.ARM_UP);
 
@@ -510,19 +543,6 @@ public class Robot {
         BasicDrive.MIN_START_VELOCITY = 300;
         return true;
     }
-
-    public boolean autoV3Specimen(int cycles){
-        teamUtil.log("Running Specimen Auto V3.  Alliance: " + (teamUtil.alliance == RED ? "RED" : "BLUE"));
-        drive.setRobotPosition(0,0,0);
-        specimenCollectBlocksV2();
-        for(int i = 1; i<=cycles;i++){
-            teamUtil.log("Auto V3 Specimen Cycle Number: " + i);
-            specimenCycleV2(i);
-        }
-        drive.stopMotors();
-        return true;
-    }
-
 
     public void specimenCollectBlocks() {
         drive.setRobotPosition(0,0,0);
@@ -560,13 +580,11 @@ public class Robot {
         drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, D12_PICKUP_X,C13_SAMPLE_2_Y,0,D13_GRAB_SPECIMEN_END_VELOCITY, false, null,0,4000);
         teamUtil.pause(D14_SPECIMEN_GRAB_TIME);
         // head back out for 3rd sample
-        /*
         drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C09_CLEAR_SAMPLE_X- C0a_FAST_STRAIGHT_ADJUST2, C13_SAMPLE_2_Y,0,C08_TRANSITION_VELOCITY_FAST,null,0,4000);
         drive.strafeToTarget(270,0,C08_TRANSITION_VELOCITY_FAST, C14_SAMPLE_3_Y+C10_SAMPLE_Y_ADJUST,2000);
 
         // push 3rd sample to observation zone
         drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, C11_DROP_SAMPLE_X+C0a_FAST_REVERSE_ADJUST, C14_SAMPLE_3_Y,0,C12_TRANSITION_VELOCITY_REVERSE,null,0,4000);
-         */
         drive.stopMotors(); // temp
 
     }
@@ -594,13 +612,11 @@ public class Robot {
 
         if(teamUtil.alliance == RED) intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
         else intake.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
-        /*
-        if(!intake.goToSampleAndGrab(5000)){
-            teamUtil.log("FAILED to intake sample.  Giving up");
-            return false;
-        }
+        //if(!intake.goToSampleAndGrab(5000)){
+        //    teamUtil.log("FAILED to intake sample.  Giving up");
+        //    return false;
+        //}
 
-         */
         intake.goToUnload(5000);
         drive.straightHoldingStrafeEncoder(BasicDrive.MAX_VELOCITY, B11_WALL_SPECIMEN_X, B12_WALL_SPECIMEN_Y,0,200, false, null,0,4000);
         output.dropSampleOutBackNoWait();
@@ -666,8 +682,6 @@ public class Robot {
         return true;
     }
 
-
-
     public void unloadNoWait(boolean seekAgain, double strafeTarget){
         teamUtil.log("Launching Thread to specimenPickUpNoWait");
         Thread thread = new Thread(new Runnable() {
@@ -695,6 +709,10 @@ public class Robot {
         thread.start();
 
     }
+
+*/
+
+
 
     public void resetRobot(){
         outtake.outtakeRest();
