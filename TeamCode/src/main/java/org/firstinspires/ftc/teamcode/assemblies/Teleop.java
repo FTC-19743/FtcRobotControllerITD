@@ -240,7 +240,7 @@ public class Teleop extends LinearOpMode {
                 optionsPresses+=1;
                 if(optionsPresses==1){
                     robot.hangPhase1();
-                }if(optionsPresses==2){
+                }if(optionsPresses==2){ // TODO: Maybe this should be inside the if (hangManualControl) block below?
                     robot.hangPhase2();
                     hangManualControl=true;
                 }
@@ -253,9 +253,8 @@ public class Teleop extends LinearOpMode {
                 if (robot.hang.hang_Left.getCurrentPosition() > Hang.HOOKS_RELEASED && !liftDropped) {
                     liftDropped = true;
                     robot.hang.hook_grabber.setPosition(Hang.HOOKGRABBER_PRE_RELEASE);
-
                     robot.output.lift.setVelocity(Output.LIFT_MAX_VELOCITY); // Run to near bottom
-                    robot.output.lift.setTargetPosition(Output.LIFT_DOWN+30);
+                    robot.output.lift.setTargetPosition(Output.LIFT_DOWN+10);
                     while (robot.output.lift.getCurrentPosition() > Output.LIFT_DOWN+40) {
                         teamUtil.pause(50);
                     }

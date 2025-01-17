@@ -128,48 +128,18 @@ public class testAutoPaths extends LinearOpMode {
 
             // TESTING HANG
             if(armsGamepad.wasAPressed()) {
-                robot.hang.extendHang();
+                robot.hangPhase1();
             }
             if(armsGamepad.wasBPressed()) {
-                robot.hang.engageHang();
-            }if(armsGamepad.wasYPressed()) {
-                robot.output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_BOTTOM);
-                robot.pickUpHooks();
-                robot.readyToPlaceHooks();
+                robot.hangPhase2();
             }
-            boolean liftDropped = false;
             if(armsGamepad.wasXPressed()) {
                 robot.hang.hang_Left.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                 robot.hang.hang_Right.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                robot.output.lift.setVelocity(Robot.PLACE_HOOKS_VELOCITY);
-                robot.output.lift.setTargetPosition(Output.LIFT_AT_BAR);
-                liftDropped = false;
-                while (!driverGamepad.wasYPressed()) { // press Y to exit this mode
-                    // Start pulling up
-                    // drop output tower when hooks have released
-                    // flip bucket when needed
-                    // stop pulling up when we are there
-                    driverGamepad.loop();
-                    robot.hang.joystickDriveV2(gamepad1.left_stick_x, gamepad1.left_stick_y);
-
-                    if (robot.hang.hang_Left.getCurrentPosition() > Hang.HOOKS_RELEASED && !liftDropped) {
-                        liftDropped = true;
-                        robot.hang.hook_grabber.setPosition(Hang.HOOKGRABBER_PRE_RELEASE);
-
-                        robot.output.lift.setVelocity(Output.LIFT_MAX_VELOCITY); // Run to near bottom
-                        robot.output.lift.setTargetPosition(Output.LIFT_DOWN+30);
-                        while (robot.output.lift.getCurrentPosition() > Output.LIFT_DOWN+40) {
-                            teamUtil.pause(50);
-                        }
-                        robot.output.lift.setVelocity(0); // Turn off lift motor at bottom
-                        robot.output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_BOTTOM); // rotate bucket to avoid string while tensioning
-                    }
-                    telemetry.addLine("left: " + robot.hang.hang_Left.getCurrentPosition()+ " right: "+ robot.hang.hang_Right.getCurrentPosition());
-                    telemetry.update();
-                }
-
             }
-            robot.hang.joystickDrive(gamepad2.left_stick_x, gamepad2.left_stick_y);
+            robot.hang.joystickDriveV2(gamepad2.left_stick_x, gamepad2.left_stick_y);
+            robot.dropLiftWhenNeeded();
+            telemetry.addLine("left: " + robot.hang.hang_Left.getCurrentPosition()+ " right: "+ robot.hang.hang_Right.getCurrentPosition());
 
             if(driverGamepad.wasAPressed()){
                 long startTime = System.currentTimeMillis();

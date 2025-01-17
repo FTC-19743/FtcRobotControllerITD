@@ -55,6 +55,7 @@ public class Output {
     static public float BUCKET_READY_TO_DEPLOY = 0.35f; //TODO Possibly use for going up to buckets (optimization for driver)
     static public float BUCKET_RELOAD = 0.66f; //was .66
     static public float BUCKET_TRAVEL = 0.5f;
+    static public float BUCKET_HANG = 0.245f;
 
     static public int DROP_SAMPLE_TIME = 500;
     static public int DROP_SAMPLE_TIME_2 = 500;
@@ -146,7 +147,7 @@ public class Output {
         outtake = teamUtil.robot.outtake;
         lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         if(intake.FlipperInUnload.get()||outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_OUTPUT_CLEAR){
-            teamUtil.log("Couldn't run Output Load Because Stuff is in the way");
+            teamUtil.log("Couldn't run Output Load Because Outtake is in the way");
         }
         else{
             outputMoving.set(true);

@@ -54,7 +54,13 @@ public class Hang {
     public static float HOOKGRABBER_DEPLOY = 0.86f;
     public static float HOOKGRABBER_RELEASE = 1f;
     public static float HOOKGRABBER_PRE_RELEASE = 0.79f;
-    static public int HOOKS_RELEASED= 2067;
+    public static int HOOKS_RELEASED= 2067;
+    public static long HANG_PHASE_2_ENGAGE_PAUSE = 1500;
+    public static int HANG_PHASE_2_SLACK_PAUSE = 500;
+    public static int SLACK_LEVEL = 1000;
+    public static int HANG_PHASE_2_PLACE_PAUSE = 1;
+    public static int AUTO_LIFT_LEVEL = 5000;
+
 
     public static double HANG_HOLD_POWER = 0.1;
     public boolean hanging = false;

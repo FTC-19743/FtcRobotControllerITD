@@ -35,7 +35,6 @@ public class Robot {
     public static int READY_TO_PLACE_HOOKS_VELOCITY = 1400;
     public static int PLACE_HOOKS_VELOCITY = 400;
 
-    public static long HANG_PHASE_2_PAUSE = 1500;
 
     static public int A01_PLACE_SPECIMEN_X = 732;
     public static int A02_PLACE_SPECIMEN_Y = -50;
@@ -480,21 +479,54 @@ public class Robot {
     }
 
     public void hangPhase1(){
-        output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_BOTTOM);
+        hang.extendHang();
+        output.bucket.setPosition(Output.BUCKET_HANG);
         pickUpHooks();
         readyToPlaceHooks();
     }
 
     public void hangPhase2(){
-        hang.engageHang();
-        teamUtil.pause(HANG_PHASE_2_PAUSE);
         hang.hang_Left.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         hang.hang_Right.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        hang.engageHang();
+
+        /*  No real need to pull in slack at this point if strings are in the right spot
+        teamUtil.pause(Hang.HANG_PHASE_2_SLACK_PAUSE);
+        hang.hang_Left.setTargetPosition(Hang.SLACK_LEVEL);
+        hang.hang_Right.setTargetPosition(Hang.SLACK_LEVEL);
+        hang.hang_Left.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        hang.hang_Right.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        hang.hang_Left.setVelocity(Hang.HANG_VELOCITY);
+        hang.hang_Right.setVelocity(Hang.HANG_VELOCITY);
+*/
+        teamUtil.pause(Hang.HANG_PHASE_2_ENGAGE_PAUSE); // don't put hooks on bar until we are off of ground
         output.lift.setVelocity(Robot.PLACE_HOOKS_VELOCITY);
         output.lift.setTargetPosition(Output.LIFT_AT_BAR);
+        teamUtil.pause(Hang.HANG_PHASE_2_PLACE_PAUSE); // currently zero...there is enough slack now to where we can place the hooks and start pulling string at the same time
+        hang.hang_Left.setTargetPosition(Hang.AUTO_LIFT_LEVEL);
+        hang.hang_Right.setTargetPosition(Hang.AUTO_LIFT_LEVEL);
+        hang.hang_Left.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        hang.hang_Right.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        hang.hang_Left.setVelocity(Hang.HANG_VELOCITY);
+        hang.hang_Right.setVelocity(Hang.HANG_VELOCITY);
+        hang.hangingL = true; hang.hangingR = true;// fake out control code to let it go up automatically until someone touches the joystick
+    }
+    boolean liftDropped = false;
+    public void dropLiftWhenNeeded() {
+        if (hang.hang_Left.getCurrentPosition() > Hang.HOOKS_RELEASED && !liftDropped) {
+            liftDropped = true;
+            hang.hook_grabber.setPosition(Hang.HOOKGRABBER_PRE_RELEASE);
+            output.lift.setVelocity(Output.LIFT_MAX_VELOCITY); // Run to near bottom
+            output.lift.setTargetPosition(Output.LIFT_DOWN);
+            while (output.lift.getCurrentPosition() > Output.LIFT_DOWN+10) {
+                teamUtil.pause(50);
+            }
+            output.lift.setVelocity(0); // Turn off lift motor at bottom
+            output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_BOTTOM); // rotate bucket to avoid string while tensioning
+        }
 
     }
-
 /* OLD Code
     public boolean placeSpecimen(long timeout) {
         teamUtil.log("Place Specimen");
