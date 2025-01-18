@@ -239,9 +239,9 @@ public class Teleop extends LinearOpMode {
             if(armsGamepad.wasOptionsPressed()){
                 optionsPresses+=1;
                 if(optionsPresses==1){
-                    robot.hangPhase1();
-                }if(optionsPresses==2){ // TODO: Maybe this should be inside the if (hangManualControl) block below?
-                    robot.hangPhase2();
+                    robot.hangPhase1NoWait();
+                }if(optionsPresses==2){
+                    robot.hangPhase2NoWait();
                     hangManualControl=true;
                 }
             }
@@ -250,17 +250,7 @@ public class Teleop extends LinearOpMode {
 
                 robot.drive.stopMotors();
                 robot.hang.joystickDriveV2(gamepad1.left_stick_x, gamepad1.left_stick_y);
-                if (robot.hang.hang_Left.getCurrentPosition() > Hang.HOOKS_RELEASED && !liftDropped) {
-                    liftDropped = true;
-                    robot.hang.hook_grabber.setPosition(Hang.HOOKGRABBER_PRE_RELEASE);
-                    robot.output.lift.setVelocity(Output.LIFT_MAX_VELOCITY); // Run to near bottom
-                    robot.output.lift.setTargetPosition(Output.LIFT_DOWN+10);
-                    while (robot.output.lift.getCurrentPosition() > Output.LIFT_DOWN+40) {
-                        teamUtil.pause(50);
-                    }
-                    robot.output.lift.setVelocity(0); // Turn off lift motor at bottom
-                    robot.output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_BOTTOM); // rotate bucket to avoid string while tensioning
-                }
+                robot.dropLiftWhenNeeded();
                 //break out
                 if(driverGamepad.wasHomePressed()){
                     hangManualControl=false;

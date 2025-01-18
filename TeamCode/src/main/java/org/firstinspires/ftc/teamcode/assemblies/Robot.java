@@ -485,6 +485,19 @@ public class Robot {
         readyToPlaceHooks();
     }
 
+    public void hangPhase1NoWait(){
+
+        teamUtil.log("hangPhase1NoWait");
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                hangPhase1();
+            }
+        });
+        thread.start();
+
+    }
+
     public void hangPhase2(){
         hang.hang_Left.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         hang.hang_Right.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -511,6 +524,19 @@ public class Robot {
         hang.hang_Left.setVelocity(Hang.HANG_VELOCITY);
         hang.hang_Right.setVelocity(Hang.HANG_VELOCITY);
         hang.hangingL = true; hang.hangingR = true;// fake out control code to let it go up automatically until someone touches the joystick
+    }
+
+    public void hangPhase2NoWait(){
+
+        teamUtil.log("hangPhase1NoWait");
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                hangPhase2();
+            }
+        });
+        thread.start();
+
     }
     boolean liftDropped = false;
     public void dropLiftWhenNeeded() {
