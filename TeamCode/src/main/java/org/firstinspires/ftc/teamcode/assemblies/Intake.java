@@ -20,6 +20,8 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.libs.AdafruitNeoDriverImpl3;
 import org.firstinspires.ftc.teamcode.libs.Blinkin;
 import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
+import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetectorV2;
+
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 import org.firstinspires.ftc.vision.VisionPortal;
 
@@ -43,7 +45,7 @@ public class Intake {
     public AnalogInput sweeperPotentiometer;
     AdafruitNeoDriver neopixels;
 
-    public OpenCVSampleDetector sampleDetector = new OpenCVSampleDetector();
+    public OpenCVSampleDetectorV2 sampleDetector = new OpenCVSampleDetectorV2();
 
     public AtomicBoolean moving = new AtomicBoolean(false);
     public AtomicBoolean timedOut = new AtomicBoolean(false);
@@ -73,6 +75,11 @@ public class Intake {
     static public float FLIPPER_UNLOAD = 0.91f;
     static public double FLIPPER_UNLOAD_POT_VOLTAGE = 0.8;
     static public double FLIPPER_UNLOAD_POT_THRESHOLD = 0.1;
+
+    static public float FLIPPER_PRE_UNLOAD = 0.91f;
+    static public double FLIPPER_PRE_UNLOAD_POT_VOLTAGE = 0.8;
+    static public double FLIPPER_PRE_UNLOAD_POT_THRESHOLD = 0.1;
+
     static public float FLIPPER_GRAB = 0.225f;
     static public float FLIPPER_PRE_GRAB = 0.27f;
     static public double FLIPPER_PRE_GRAB_POT_VOLTAGE = 2.338;
@@ -148,7 +155,7 @@ public class Intake {
     static public float MM_PER_PIX_Y = 0.5076f;
     static public float MM_PER_PIX_X = 0.4975f;
     //Old Value below = 0.64935f
-    static public float EXTENDER_TIC_PER_MM = 1.2f;
+    static public float EXTENDER_TIC_PER_MM = 2.4f;
     static public float MM_PER_EXTENDER_TIC = 1/EXTENDER_TIC_PER_MM;
     static public float MM_PER_SLIDER_TIC = 1/AxonSlider.SLIDER_TICS_PER_MM;
 
@@ -156,8 +163,8 @@ public class Intake {
     static public float PIX_PER_MM_X = 2.01f;
 
 
-    static public int EXTENDER_MAX = 610; //TODO find this number and use it in movement methods
-    static public int EXTENDER_MAX_VELOCITY = 1600;
+    static public int EXTENDER_MAX = 1130;
+    static public int EXTENDER_MAX_VELOCITY = 2800;
     static public int EXTENDER_MAX_RETRACT_VELOCITY = 2000;
     static public int EXTENDER_MIN_VELOCITY = 50;
     static public int EXTENDER_HOLD_RETRACT_VELOCITY = 1000;
@@ -174,12 +181,15 @@ public class Intake {
     static public int EXTENDER_RETRACT_TIMEOUT = 3000;
     static public int EXTENDER_SAFE_TO_UNLOAD_THRESHOLD = 6;
     static public int EXTENDER_GO_TO_SAMPLE_VELOCITY = 757;
-    static public int EXTENDER_TOLERANCE_SEEK = 5;
+    static public int EXTENDER_TOLERANCE_SEEK = 10; //was 5
     static public int EXTENDER_GOTOUNLOAD_THRESHOLD = 20;
-    static public float EXTENDER_CALIBRATE_POWER = -0.2f;
-    static public float EXTENDER_SEEK_VELOCITY = 200;
+    static public float EXTENDER_CALIBRATE_POWER = -0.3f;
+    static public float EXTENDER_JUMP_VELOCITY = 1200;//was 200
+    static public float EXTENDER_SEEK_PHASE1_VELOCITY = 400;
+
+
     static public float EXTENDER_GO_TO_SEEK_THRESHOLD = 50;
-    public static int EXTENDER_SEEK_P_COEFFICIENT = 8;
+    public static int EXTENDER_SEEK_P_COEFFICIENT = 15;
     public static int EXTENDER_DEFAULT_P_COEFFICIENT = 10;
 
     public static long GO_TO_SAMPLE_JUMP_PAUSE = 300;
@@ -226,6 +236,7 @@ public class Intake {
 
         extender = hardwareMap.get(DcMotorEx.class,"extender");
         teamUtil.log("extender tolerance " + extender.getTargetPositionTolerance());
+        teamUtil.log("extender p-coefficient " + extender.getPIDFCoefficients(DcMotor.RunMode.RUN_TO_POSITION));
         extender.setDirection(DcMotorEx.Direction.REVERSE);
         extender.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
@@ -297,7 +308,7 @@ public class Intake {
 
         // Calibrate the slider and run to center
         axonSlider.calibrateEncoder(-.2f);
-        axonSlider.runToEncoderPosition(AxonSlider.SLIDER_UNLOAD, 1500);
+        axonSlider.runToEncoderPosition(AxonSlider.SLIDER_UNLOAD, false, 1500);
         goToSafe();
 
         extender.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
@@ -348,7 +359,7 @@ public class Intake {
         telemetry.addLine(String.format("Voltage: Flipper: %.2f Grabber: %.2f Sweeper: %.2f", flipperPotentiometer.getVoltage(),grabberPotentiometer.getVoltage(), sweeperPotentiometer.getVoltage()));
     }
 
-    public void setTargetColor(OpenCVSampleDetector.TargetColor targetColor){
+    public void setTargetColor(OpenCVSampleDetectorV2.TargetColor targetColor){
         sampleDetector.setTargetColor(targetColor);
     }
 
@@ -509,7 +520,7 @@ public class Intake {
         flipperGoToSeek(FLIPPER_GO_TO_SEEK_TIMEOUT);
         wrist.setPosition(WRIST_MIDDLE);
         grabberReady();
-        axonSlider.runToEncoderPosition(axonSlider.SLIDER_READY, timeOut);
+        axonSlider.runToEncoderPosition(axonSlider.SLIDER_READY, false, timeOut);
 
         if (axonSlider.timedOut.get()) {
             timedOut.set(true);
@@ -709,7 +720,7 @@ public class Intake {
         }
 
         extender.setTargetPosition((int)yPos);
-        axonSlider.runToEncoderPosition(xPos, timeOut); // will not return until done
+        axonSlider.runToEncoderPosition(xPos, false, timeOut); // will not return until done
         while(extender.isBusy() && teamUtil.keepGoing(timeoutTime)){
             teamUtil.pause(10);
         }
@@ -757,7 +768,7 @@ public class Intake {
 
             return false;
         }
-        extender.setVelocity(EXTENDER_SEEK_VELOCITY);
+        extender.setVelocity(EXTENDER_JUMP_VELOCITY);
 
         if (details) {
             teamUtil.log("Starting X,Y :  " + axonSlider.getPositionEncoder() +", " + extender.getCurrentPosition() + "Target X,Y :  " + xPos+", " + yPos);
@@ -765,7 +776,7 @@ public class Intake {
         }
 
         extender.setTargetPosition((int)yPos);
-        axonSlider.runToEncoderPosition(xPos, timeOut); // will not return until done
+        axonSlider.runToEncoderPosition(xPos, false, timeOut); // will not return until done
         while(extender.isBusy() && teamUtil.keepGoing(timeoutTime)){
             teamUtil.pause(10);
         }
@@ -819,7 +830,7 @@ public class Intake {
         long timeoutTime = System.currentTimeMillis() + timeOut;
         long startTime = System.currentTimeMillis();
         boolean details = true;
-        OpenCVSampleDetector.FrameData frame = null;
+        OpenCVSampleDetectorV2.FrameData frame = null;
 
         lightsOnandOff(WHITE_NEOPIXEL,RED_NEOPIXEL,GREEN_NEOPIXEL,BLUE_NEOPIXEL,true);
         setSeekSignal();
@@ -841,7 +852,7 @@ public class Intake {
             // Move extender out until we see a target
             extender.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
             extender.setTargetPositionTolerance(EXTENDER_TOLERANCE_SEEK);
-            extender.setVelocity(EXTENDER_SEEK_VELOCITY);
+            extender.setVelocity(EXTENDER_SEEK_PHASE1_VELOCITY);
 
             while(teamUtil.keepGoing(timeoutTime) && frame==null && extender.getCurrentPosition()<EXTENDER_MAX-10) {
                 teamUtil.pause(30); // TODO: We need to worry about a detection outside our horizontal target range
@@ -1068,6 +1079,44 @@ public class Intake {
 
     // Go to ready position with wrist level
     // Useful for retracting extender without hitting lower bar
+    public void retractAll(boolean unload, long timeOut){
+        teamUtil.log("retractAll Started");
+        long timeOutTime = System.currentTimeMillis()+timeOut;
+
+        flipper.setPosition(FLIPPER_SEEK);
+        FlipperInSeek.set(true);
+        FlipperInUnload.set(false);
+        wrist.setPosition(WRIST_MIDDLE);
+
+        //starts slider movement
+        axonSlider.runToEncoderPositionNoWait(axonSlider.SLIDER_UNLOAD, true, 3000);
+        timedOut.set(axonSlider.timedOut.get());
+
+        //starts extender movement
+        extender.setTargetPositionTolerance(EXTENDER_TOLERANCE_RETRACT);
+        extender.setTargetPosition(EXTENDER_UNLOAD);
+        extender.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+        extender.setVelocity(EXTENDER_MAX_VELOCITY);
+
+        int sliderEncoderPos = axonSlider.getPositionEncoder();
+        while((sliderEncoderPos<axonSlider.RETRACT_LEFT_LIMIT || sliderEncoderPos> axonSlider.RETRACT_RIGHT_LIMIT) && teamUtil.keepGoing(timeOutTime)){
+            teamUtil.pause(50);
+            sliderEncoderPos = axonSlider.getPositionEncoder();
+        }
+        if(unload){
+            flipper.setPosition(FLIPPER_PRE_UNLOAD);
+        }
+
+        while((axonSlider.moving.get() || extender.getCurrentPosition()>EXTENDER_GOTOUNLOAD_THRESHOLD)&&teamUtil.keepGoing(timeOutTime)){
+            teamUtil.pause(50);
+        }
+        if (unload){
+            unload();
+        }
+        teamUtil.log("retractAll Finished");
+    }
+
+
     public void goToSafeRetract(long timeOut) {
         teamUtil.log("goToSafeRetract");
         long timeoutTime = System.currentTimeMillis()+timeOut;
@@ -1079,7 +1128,7 @@ public class Intake {
         FlipperInUnload.set(false);
 
         wrist.setPosition(WRIST_MIDDLE);
-        axonSlider.runToEncoderPosition(axonSlider.SLIDER_UNLOAD, timeOut);
+        axonSlider.runToEncoderPosition(axonSlider.SLIDER_UNLOAD, false, timeOut);
         timedOut.set(axonSlider.timedOut.get());
         moving.set(false);
         teamUtil.log("goToSafeRetract--Finished");
@@ -1134,7 +1183,7 @@ public class Intake {
         moving.set(true);
         timedOut.set(false);
         flipperGoToSeekNoWait(2000);
-        axonSlider.runToEncoderPosition(axonSlider.SLIDER_UNLOAD, timeOut);
+        axonSlider.runToEncoderPosition(axonSlider.SLIDER_UNLOAD, false, timeOut);
         if (axonSlider.timedOut.get()) {
             timedOut.set(true);
             moving.set(false);
@@ -1157,7 +1206,7 @@ public class Intake {
 //        flipper.setPosition(FLIPPER_UNLOAD);
 //        FlipperInSeek.set(false);
 //        FlipperInUnload.set(true);
-        axonSlider.runToEncoderPosition(AxonSlider.SLIDER_UNLOAD,2000);
+        axonSlider.runToEncoderPosition(AxonSlider.SLIDER_UNLOAD, false, 2000);
         flipperGoToUnload(1000);
         wrist.setPosition(WRIST_UNLOAD);
         teamUtil.pause(UNLOAD_WAIT_TIME);

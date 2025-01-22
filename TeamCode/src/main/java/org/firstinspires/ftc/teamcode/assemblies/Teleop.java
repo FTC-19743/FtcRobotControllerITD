@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
 
 import org.firstinspires.ftc.teamcode.libs.Blinkin;
+import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetectorV2;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 
@@ -116,7 +117,7 @@ public class Teleop extends LinearOpMode {
         waitForStart();
 
 
-        robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
+        robot.intake.setTargetColor(OpenCVSampleDetectorV2.TargetColor.YELLOW);
         boolean liftDropped = false;
         while (opModeIsActive()){
             driverGamepad.loop();
@@ -179,7 +180,7 @@ public class Teleop extends LinearOpMode {
 
 
             if ((armsGamepad.wasBPressed()&&teamUtil.alliance == teamUtil.Alliance.RED)&&!robot.intake.autoSeeking.get()) { //Grab Red
-                robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
+                robot.intake.setTargetColor(OpenCVSampleDetectorV2.TargetColor.RED);
                 if((robot.drive.getHeadingODO()>45&&robot.drive.getHeadingODO()<135)||(robot.drive.getHeadingODO()>225&&robot.drive.getHeadingODO()<315)){
                     robot.intake.goToSampleAndGrabNoWaitV3(true);
                 }else{
@@ -190,7 +191,7 @@ public class Teleop extends LinearOpMode {
 
             }
             if ((armsGamepad.wasYPressed())&&!robot.intake.autoSeeking.get()) { //Grab Yellow
-                robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
+                robot.intake.setTargetColor(OpenCVSampleDetectorV2.TargetColor.YELLOW);
                 if((robot.drive.getHeadingODO()>45&&robot.drive.getHeadingODO()<135)||(robot.drive.getHeadingODO()>225&&robot.drive.getHeadingODO()<315)){
                     robot.intake.goToSampleAndGrabNoWaitV3(true);
                 }else{
@@ -198,7 +199,7 @@ public class Teleop extends LinearOpMode {
                 }
             }
             if ((armsGamepad.wasXPressed()&&teamUtil.alliance == teamUtil.Alliance.BLUE)&&!robot.intake.autoSeeking.get()) { //Grab Blue
-                robot.intake.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
+                robot.intake.setTargetColor(OpenCVSampleDetectorV2.TargetColor.BLUE);
                 if((robot.drive.getHeadingODO()>45&&robot.drive.getHeadingODO()<135)||(robot.drive.getHeadingODO()>225&&robot.drive.getHeadingODO()<315)){
                     robot.intake.goToSampleAndGrabNoWaitV3(true);
                 }else{

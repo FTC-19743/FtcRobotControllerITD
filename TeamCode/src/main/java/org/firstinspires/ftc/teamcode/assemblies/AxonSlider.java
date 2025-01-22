@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.assemblies;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.digitalchickenlabs.OctoQuad;
-import com.qualcomm.hardware.digitalchickenlabs.OctoQuadBase;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -30,6 +29,8 @@ public class AxonSlider {
     public static int LEFT_LIMIT_OFFSET = -739; // TODO Recalibrate
     static public float SLIDER_UNLOAD_OFFSET = -361;// TODO Recalibrate
     static public float SLIDER_READY_OFFSET = -375; // TODO Recalibrate
+    static public int RETRACT_LEFT_LIMIT = -10000;
+    static public int RETRACT_RIGHT_LIMIT = -9000;
 
     public static float POWER_ADJUSTEMENT = -.01f;
     public static int DEGREE_NOISE_THRESHOLD = 20;
@@ -265,11 +266,11 @@ public class AxonSlider {
 
     // Run the servo to the specified position as quickly as possible
     // This method returns when the servo is in the new position
-    public void runToEncoderPosition (double target, long timeOut) {
+    public void runToEncoderPosition (double target, boolean forceMaxSpeed, long timeOut) {
         timedOut.set(false);
         moving.set(true);
         teamUtil.log("Slider Run to Position Target Encoder : " + (int)target);
-        if(Math.abs(target-getPositionEncoder())<RTP_SLOW_THRESHOLD){
+        if(Math.abs(target-getPositionEncoder())<RTP_SLOW_THRESHOLD && !forceMaxSpeed){
             runToTargetEncoder(target, RTP_SLOW_VELOCITY, RTP_LEFT_DEADBAND_SLOW_DEGREES, RTP_RIGHT_DEADBAND_SLOW_DEGREES, timeOut);
         } else {
             runToTargetEncoder(target, RTP_MAX_VELOCITY, RTP_LEFT_DEADBAND_DEGREES, RTP_RIGHT_DEADBAND_DEGREES, timeOut);
@@ -296,7 +297,7 @@ public class AxonSlider {
 
  */
 
-    public void runToEncoderPositionNoWait(double target, long timeOutTime) {
+    public void runToEncoderPositionNoWait(double target, boolean forceMaxSpeed, long timeOutTime) {
         if (moving.get()) { // Slider is already running in another thread
             teamUtil.log("WARNING: Attempt to AxonSlider.RunToPosition while slider is moving--ignored");
             return;
@@ -306,7 +307,7 @@ public class AxonSlider {
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    runToEncoderPosition(target, timeOutTime);
+                    runToEncoderPosition(target, forceMaxSpeed, timeOutTime);
                 }
             });
             thread.start();

@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.assemblies.Intake;
 import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
+import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetectorV2;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 import org.opencv.core.Point;
@@ -20,7 +21,7 @@ public class CalibrateCV extends LinearOpMode {
     private TeamGamepad gp1 = new TeamGamepad();
     private TeamGamepad gp2 = new TeamGamepad();
     int frameCount = 0;
-    OpenCVSampleDetector.FrameData frameData = null;
+    OpenCVSampleDetectorV2.FrameData frameData = null;
 
     public double calculateDistance(Point p1, Point p2) {
         double xDiff = p2.x - p1.x;
@@ -82,13 +83,13 @@ public class CalibrateCV extends LinearOpMode {
                 intake.sampleDetector.sampleRight(gp1.gamepad.right_trigger>0.5? 50: 5);
             }
             if (gp1.wasYPressed()) {
-                intake.sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
+                intake.sampleDetector.setTargetColor(OpenCVSampleDetectorV2.TargetColor.YELLOW);
             }
             if (gp1.wasXPressed()) {
-                intake.sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.BLUE);
+                intake.sampleDetector.setTargetColor(OpenCVSampleDetectorV2.TargetColor.BLUE);
             }
             if (gp1.wasBPressed()) {
-                intake.sampleDetector.setTargetColor(OpenCVSampleDetector.TargetColor.RED);
+                intake.sampleDetector.setTargetColor(OpenCVSampleDetectorV2.TargetColor.RED);
             }
             if (gp1.wasAPressed()) {
                 intake.sampleDetector.nextView();

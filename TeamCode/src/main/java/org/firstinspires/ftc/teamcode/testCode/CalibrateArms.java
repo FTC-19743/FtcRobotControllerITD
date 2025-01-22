@@ -17,6 +17,7 @@ import org.firstinspires.ftc.teamcode.assemblies.Output;
 import org.firstinspires.ftc.teamcode.assemblies.Outtake;
 import org.firstinspires.ftc.teamcode.assemblies.Robot;
 import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
+import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetectorV2;
 import org.firstinspires.ftc.teamcode.libs.TeamGamepad;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 
@@ -196,7 +197,7 @@ public class CalibrateArms extends LinearOpMode {
             //intake.axonSlider.loop();
 
             intake.intakeTelemetry();
-            OpenCVSampleDetector.FrameData frame = intake.sampleDetector.frameDataQueue.peek();
+            OpenCVSampleDetectorV2.FrameData frame = intake.sampleDetector.frameDataQueue.peek();
             if (frame != null) {
                 telemetry.addLine(String.format("CV X,Y offset in MM: %.1f, %.1f" , intake.xPixelsToMM(frame.rectCenterXOffset) , intake.yPixelsToMM(frame.rectCenterYOffset)));
             }
@@ -246,7 +247,7 @@ public class CalibrateArms extends LinearOpMode {
             intake.wrist.setPosition(Intake.WRIST_MIDDLE);
         }
         if(gp1.wasLeftTriggerPressed()){
-            intake.axonSlider.runToEncoderPosition(SLIDER_TARGET, 3000);
+            intake.axonSlider.runToEncoderPosition(SLIDER_TARGET, false, 3000);
         }
     }
 
@@ -324,10 +325,12 @@ public class CalibrateArms extends LinearOpMode {
             intake.grab();
         }
         if (gp1.wasYPressed()) {
-            intake.release();
+            //intake.release();
+            intake.retractAll(false,5000);
         }
         if (gp1.wasXPressed()) {
-            intake.grabberReady();
+            //intake.grabberReady();
+            intake.retractAll(true, 5000);
         }
         if (gp1.wasAPressed()) {
             //intake.goToSampleV2(5000);
@@ -373,11 +376,11 @@ public class CalibrateArms extends LinearOpMode {
             intake.goToSafeRetractNoWait(4000);
         }
         if (gp1.wasBPressed()) {
-            intake.axonSlider.runToEncoderPosition(AxonSlider.SLIDER_READY, 1500);
+            intake.axonSlider.runToEncoderPosition(AxonSlider.SLIDER_READY, false, 1500);
             intake.extender.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             intake.extender.setVelocity(Intake.EXTENDER_TEST_VELOCITY);
             intake.extender.setTargetPosition(Intake.TEST_EXTENDER_VAL);
-            intake.axonSlider.runToEncoderPosition(Intake.TEST_SLIDER_VAL, 1500);
+            intake.axonSlider.runToEncoderPosition(Intake.TEST_SLIDER_VAL, false, 1500);
             while(intake.extender.isBusy()){
                 ;
             }

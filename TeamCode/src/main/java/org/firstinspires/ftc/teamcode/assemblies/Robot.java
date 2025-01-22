@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.libs.Blinkin;
 import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetector;
+import org.firstinspires.ftc.teamcode.libs.OpenCVSampleDetectorV2;
 import org.firstinspires.ftc.teamcode.libs.teamUtil;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -284,7 +285,7 @@ public class Robot {
         outtake.outtakeRest();
         intake.goToSeekNoWait(2000);
         drive.moveTo(BasicDrive.MAX_VELOCITY,A03_MOVE_TO_SAMPLE_Y,A04_MOVE_TO_SAMPLE_X, 0,0, null,0, 5000);
-        intake.setTargetColor(OpenCVSampleDetector.TargetColor.YELLOW);
+        intake.setTargetColor(OpenCVSampleDetectorV2.TargetColor.YELLOW);
         /*
         if(!intake.goToSampleAndGrab(5000)){
             teamUtil.log("FAILED to intake sample.  Giving up");
