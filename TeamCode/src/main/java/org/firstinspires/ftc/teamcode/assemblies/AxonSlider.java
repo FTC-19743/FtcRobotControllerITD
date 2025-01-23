@@ -29,8 +29,8 @@ public class AxonSlider {
     public static int LEFT_LIMIT_OFFSET = -739; // TODO Recalibrate
     static public float SLIDER_UNLOAD_OFFSET = -361;// TODO Recalibrate
     static public float SLIDER_READY_OFFSET = -375; // TODO Recalibrate
-    static public int RETRACT_LEFT_LIMIT = -10000;
-    static public int RETRACT_RIGHT_LIMIT = -9000;
+    static public int RETRACT_LEFT_LIMIT = -11700;
+    static public int RETRACT_RIGHT_LIMIT = -8700;
 
     public static float POWER_ADJUSTEMENT = -.01f;
     public static int DEGREE_NOISE_THRESHOLD = 20;

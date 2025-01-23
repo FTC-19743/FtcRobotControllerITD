@@ -72,12 +72,12 @@ public class Intake {
     static public float FLIPPER_SEEK = 0.38f;
     static public double FLIPPER_SEEK_POT_VOLTAGE = 2.008;
     static public double FLIPPER_SEEK_POT_THRESHOLD = .1;
-    static public float FLIPPER_UNLOAD = 0.91f;
+    static public float FLIPPER_UNLOAD = 0.93f; //was .91
     static public double FLIPPER_UNLOAD_POT_VOLTAGE = 0.8;
     static public double FLIPPER_UNLOAD_POT_THRESHOLD = 0.1;
 
-    static public float FLIPPER_PRE_UNLOAD = 0.91f;
-    static public double FLIPPER_PRE_UNLOAD_POT_VOLTAGE = 0.8;
+    static public float FLIPPER_PRE_UNLOAD = 0.93f;
+    static public double FLIPPER_PRE_UNLOAD_POT_VOLTAGE = 0.74;
     static public double FLIPPER_PRE_UNLOAD_POT_THRESHOLD = 0.1;
 
     static public float FLIPPER_GRAB = 0.225f;
@@ -94,6 +94,9 @@ public class Intake {
     static public int FLIPPER_GRAB_PAUSE = 500;
     static public long FLIPPER_GO_TO_SEEK_TIMEOUT = 2000;
     public static double FLIPPER_GOTOUNLOAD_THRESHOLD = 0.488;
+    public static double FLIPPER_UNLOAD_SWEEPER_THRESHOLD = 0.7;
+    public static double FLIPPER_UNLOAD_GRABBER_THRESHOLD = 0.4;
+    public static long FLIPPER_UNLOAD_LOOP_TIME = 3;
 
 
 //    static public float FLIPPER_POTENTIOMETER_SAFE = ;
@@ -117,7 +120,7 @@ public class Intake {
     static public float SWEEPER_HORIZONTAL_READY = 0.35f;
     static public float SWEEPER_EXPAND = 0.59f;
     static public float SWEEPER_GRAB = 0.53f;
-    static public float SWEEPER_RELEASE = .9f;
+    static public float SWEEPER_RELEASE = .95f;
     static public float SWEEPER_VERTICAL_READY = 0.5f;
 
     /* Values with potentiometer--WAITING TO HEAR FROM AXON ON THIS
@@ -137,7 +140,7 @@ public class Intake {
     /* Values without potentiometer */
     static public float GRABBER_READY = 0.25f; //No Pot .25f
     static public float GRABBER_GRAB = 0.64f; // No Pot .64f
-    static public float GRABBER_RELEASE = .63f; // No Pot .63f TODO: Is this really the right value? Almost the same as grab?
+    static public float GRABBER_RELEASE = .17f; // No Pot .63f TODO: Is this really the right value? Almost the same as grab?
 
     /* Values with potentiometer--NOT CALIBRATED YET!
     static public float GRABBER_READY = 0.25f; //No Pot .25f
@@ -1111,7 +1114,7 @@ public class Intake {
             teamUtil.pause(50);
         }
         if (unload){
-            unload();
+            unloadV2();
         }
         teamUtil.log("retractAll Finished");
     }
@@ -1206,13 +1209,34 @@ public class Intake {
 //        flipper.setPosition(FLIPPER_UNLOAD);
 //        FlipperInSeek.set(false);
 //        FlipperInUnload.set(true);
-        axonSlider.runToEncoderPosition(AxonSlider.SLIDER_UNLOAD, false, 2000);
+        axonSlider.runToEncoderPosition(AxonSlider.SLIDER_UNLOAD, false, 2000+System.currentTimeMillis());
         flipperGoToUnload(1000);
         wrist.setPosition(WRIST_UNLOAD);
         teamUtil.pause(UNLOAD_WAIT_TIME);
         release();
         teamUtil.pause(RELEASE_WAIT_TIME);
         goToSafe();
+    }
+
+    public void unloadV2(){
+        boolean details = true;
+        teamUtil.log("unloadV2 has started");
+        flipper.setPosition(FLIPPER_UNLOAD);
+        wrist.setPosition(WRIST_UNLOAD);
+        while(flipperPotentiometer.getVoltage()>FLIPPER_UNLOAD_SWEEPER_THRESHOLD&&teamUtil.keepGoing(2000+System.currentTimeMillis())){
+            if(details)teamUtil.log("Flipper Potentiometer Voltage" + flipperPotentiometer.getVoltage());
+            teamUtil.pause(FLIPPER_UNLOAD_LOOP_TIME);
+        }
+        if(details)teamUtil.log("SWEEPER Set to RELEASE");
+        sweeper.setPosition(SWEEPER_RELEASE);
+        while(flipperPotentiometer.getVoltage()>FLIPPER_UNLOAD_GRABBER_THRESHOLD&&teamUtil.keepGoing(2000+System.currentTimeMillis())){
+            if(details)teamUtil.log("Flipper Potentiometer Voltage" + flipperPotentiometer.getVoltage());
+            teamUtil.pause(FLIPPER_UNLOAD_LOOP_TIME);
+        }
+        grabber.setPosition(GRABBER_RELEASE);
+        if(details)teamUtil.log("GRABBER Set to RELEASE");
+        teamUtil.log("unloadV2 has finished");
+
     }
 
     public void goToUnloadNoWait(long timeOut) {
