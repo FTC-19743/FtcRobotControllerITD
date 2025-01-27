@@ -42,6 +42,7 @@ public class Output {
     static public int LIFT_ABOVE_BAR= 1160; // TODO FIND OUT
     static public int LIFT_ONTO_BAR= 820; // TODO FIND OUT
     static public int LIFT_AT_BAR= 900; // TODO FIND OUT
+    static public int LIFT_HIGH_BUCKET_THRESHOLD = 250;
 
 
 
@@ -189,19 +190,22 @@ public class Output {
     }
 
 
-    public void outputLowBucket(){
+    public void outputLowBucket(long timeout){
         intake = teamUtil.robot.intake;
         outtake = teamUtil.robot.outtake;
+        long timeOutTime = System.currentTimeMillis()+timeout;
 
         if(intake.FlipperInUnload.get()||outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_OUTPUT_CLEAR){
             teamUtil.log("Couldn't Put Output Low Bucket");
         }else{
             outputMoving.set(true);
-            bucket.setPosition(BUCKET_TRAVEL);
-
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             lift.setTargetPosition(LIFT_MIDDLE_BUCKET);
             lift.setVelocity(LIFT_MAX_VELOCITY);
+            while(lift.getCurrentPosition()<LIFT_HIGH_BUCKET_THRESHOLD&&teamUtil.keepGoing(timeOutTime)){
+                teamUtil.pause(5);
+            }
+            bucket.setPosition(BUCKET_TRAVEL);
             teamUtil.log("outputLowBucket Completed");
             outputLiftAtBottom.set(false);
             outputMoving.set(false);
@@ -209,9 +213,29 @@ public class Output {
 
 
     }
-    public void outputHighBucket(){
+
+    public void outputLowBucketNoWait(long timeout){
+        if(outputMoving.get()){
+            teamUtil.log("WARNING: Attempt to outputLowBucket while output is moving--ignored");
+        }
+        else{
+            outputMoving.set(true);
+            teamUtil.log("Launching Thread to outputLowBucketNoWait");
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    outputLowBucket(timeout);
+                }
+            });
+            thread.start();
+        }
+
+    }
+
+    public void outputHighBucket(long timeout){
         intake = teamUtil.robot.intake;
         outtake = teamUtil.robot.outtake;
+        long timeOutTime = System.currentTimeMillis()+timeout;
 
         if(intake.FlipperInUnload.get()||outtake.outakePotentiometer.getVoltage()<Outtake.POTENTIOMETER_OUTPUT_CLEAR){
             if(intake.FlipperInUnload.get()){
@@ -222,15 +246,34 @@ public class Output {
             }
         }else{
             outputMoving.set(true);
-            bucket.setPosition(BUCKET_TRAVEL);
             lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             lift.setTargetPosition(LIFT_TOP_BUCKET);
             lift.setVelocity(LIFT_MAX_VELOCITY);
+            while(lift.getCurrentPosition()<LIFT_HIGH_BUCKET_THRESHOLD&&teamUtil.keepGoing(timeOutTime)){
+                teamUtil.pause(5);
+            }
+            bucket.setPosition(BUCKET_TRAVEL);
             teamUtil.log("outputHighBucket Completed"); // TODO: The lift is still moving right now...is this OK?
             outputLiftAtBottom.set(false);
             outputMoving.set(false);
         }
+    }
 
+    public void outputHighBucketNoWait(long timeout){
+        if(outputMoving.get()){
+            teamUtil.log("WARNING: Attempt to outputHighBucket while output is moving--ignored");
+        }
+        else{
+            outputMoving.set(true);
+            teamUtil.log("Launching Thread to outputHighBucketNoWait");
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    outputHighBucket(timeout);
+                }
+            });
+            thread.start();
+        }
 
     }
 

@@ -150,10 +150,10 @@ public class OpenCVSampleDetectorV2 extends OpenCVProcesser {
     static public int yellowErosionFactor = 10;
     static public int blueLowH = 90, blueLowS = 80, blueLowV = 90; // lowv was 70 meet #2 build
     static public int blueHighH = 130, blueHighS = 255, blueHighV = 255;
-    static public int blueErosionFactor = 20;
+    static public int blueErosionFactor = 10;
     static public int rbyLowH = -1, rbyLowS = 150, rbyLowV = 125;
     static public int rbyHighH = 180, rbyHighS = 255, rbyHighV = 255;
-    static public int redErosionFactor = 20;
+    static public int redErosionFactor = 10;
     static public int redDilutionFactor = 10;
 
 
@@ -432,27 +432,6 @@ public class OpenCVSampleDetectorV2 extends OpenCVProcesser {
 
                 Imgproc.erode(thresholdMat, erodedMat, redErosionElement);
 
-                /* Previous algorithm for subtracting yellow and blue threshold mats from combined threshold mat--left too many small holes that were tough to fill
-                Core.inRange(blurredMat, rbyLowHSV, rbyHighHSV, thresholdMatAll); // Get Red and Yellow
-                Core.inRange(blurredMat, yellowLowHSV, yellowHighHSV, thresholdMatYellow);
-                Core.inRange(blurredMat, blueLowHSV, blueHighHSV, thresholdMatBlue);
-                Core.add(thresholdMatBlue, thresholdMatYellow, thresholdMatYB); // combine yellow and blue threshold mat
-                Core.subtract(thresholdMatAll, thresholdMatYB, thresholdMat); // Then subtract from all to get red
-
-                Core.bitwise_not(thresholdMat,invertedMat);
-                Imgproc.rectangle(invertedMat, cropRect, new Scalar(255), 2); // white frame to provide seed and propagation for fill.
-                floodFillMask = new Mat();
-                Imgproc.floodFill(invertedMat, floodFillMask, new Point(0,0),BLACK);
-                //Imgproc.Canny(dilutedMat, edgesMat, 100, 300); // find edges
-                List<MatOfPoint> contours = new ArrayList<>();
-                contours.clear(); // empty the list from last time
-                Imgproc.findContours(invertedMat, contours, hierarchyMat, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE); // find contours around holes we need to fill
-                //for (int i = 0; i < contours.size(); i++) {
-                Imgproc.drawContours(thresholdMat,contours,-1,BLACK,-1); // fill the holes back on the original threshold mat
-
-                Imgproc.erode(thresholdMat, erodedMat, redErosionElement);
-
-                 */
                 break;
 
         }
@@ -468,37 +447,14 @@ public class OpenCVSampleDetectorV2 extends OpenCVProcesser {
 
         if (foundRects.length>0) {
             for (int i = 0; i < foundRects.length; i++) {
-                //Imgproc.circle(matImgDst,foundRects[i].center, 5,PASTEL_PURPLE); // Draw a point at the center of the brick
                 Point endPoint = new Point();
                 endPoint.x = (int) (foundRects[i].center.x + 20 * Math.cos(foundRects[i].angle * 3.14 / 180.0));
                 endPoint.y =  (int) (foundRects[i].center.y + 20 * Math.sin(foundRects[i].angle * 3.14 / 180.0));
-                //Imgproc.line(matImgDst,foundRects[i].center, endPoint, PASTEL_PURPLE,3);
-                //Imgproc.putText(matImgDst, String.valueOf((int)foundRects[i].angle),foundRects[i].center,0,1,PASTEL_PURPLE);
                 Point vertices[] = new Point[4];;
                 foundRects[i].points(vertices);
-                /*
-                for (int j = 0; j < 4; j++) {
-                    Imgproc.line(matImgDst,vertices[j], vertices[(j+1)%4], PASTEL_PURPLE,3);
-                }
 
-                 */
             }
         }
-        // DEBUG ONLY
-        /*
-        List<MatOfPoint> polys = new ArrayList<>();
-
-        for (Point[] poly : modPolys) {
-            MatOfPoint polygon = new MatOfPoint(poly);
-            polys.add(polygon);
-        }
-
-         */
-
-        // We found at least one blob of the right color
-        //MatOfPoint2f[] contoursPoly = new MatOfPoint2f[contours.size()];
-        //RotatedRect[] rotatedRect = new RotatedRect[contours.size()];
-
 
         double closestAreaSelection = 1000;
         int closestAreaSelectionNum = -1;
@@ -514,23 +470,7 @@ public class OpenCVSampleDetectorV2 extends OpenCVProcesser {
                 closestAreaSelectionNum = i;
             }
         }
-        /*
-        //Create Rotated Rectangles from contours and identify the one closest to the target that meets the threshold size
-        for (int i = 0; i < contours.size(); i++) {
-            contoursPoly[i] = new MatOfPoint2f();
-            Imgproc.approxPolyDP(new MatOfPoint2f(contours.get(i).toArray()), contoursPoly[i], 3, true);
-            foundRects[i] = Imgproc.minAreaRect(contoursPoly[i]);
 
-            // Is the closest one to the target we have seen so far?
-            xDistCenter = Math.abs(foundRects[i].center.x - TARGET_X);
-            yDistCenter = Math.abs(foundRects[i].center.y - TARGET_Y);
-            if (Math.hypot(xDistCenter, yDistCenter) < closestAreaSelection && foundRects[i].size.area() > MIN_AREA_THRESHOLD&&foundRects[i].size.area() < MAX_AREA_THRESHOLD) {
-                closestAreaSelection = Math.hypot(xDistCenter, yDistCenter);
-                closestAreaSelectionNum = i;
-            }
-        }
-
-         */
 
         if (closestAreaSelectionNum == -1) { // nothing big enough
             if (details) teamUtil.log("Saw blobs but nothing big enough");
@@ -538,14 +478,7 @@ public class OpenCVSampleDetectorV2 extends OpenCVProcesser {
             processedFrame.set(true);
             return null;
         }
-        /*
-        if(rotatedRect[closestAreaSelectionNum].size.area()>5){
-            if (details) teamUtil.log("Saw Too Big Of A Blob");
-            foundOne.set(false);
-            return null;
-        }
 
-         */
         rectArea.set((int)foundRects[closestAreaSelectionNum].size.area());
 
         //Find the point with the lowest y coordinate
@@ -582,21 +515,7 @@ public class OpenCVSampleDetectorV2 extends OpenCVProcesser {
         } else {
             realAngle = 90 - realAngle;
         }
-        /*
-        //TODO POssible change later
-        if (Math.abs((int) realAngle - rectAngle.get()) > 2) {
-            rectAngle.set((int) realAngle);
-        }
 
-        if (Math.abs((int) rotatedRect[closestAreaSelectionNum].center.y - rectCenterYOffset.get()) > 2) {
-            rectCenterYOffset.set(-1 * ((int) rotatedRect[closestAreaSelectionNum].center.y - TARGET_Y));
-        }
-        if (Math.abs((int) rotatedRect[closestAreaSelectionNum].center.x - rectCenterXOffset.get()) > 2) {
-            rectCenterXOffset.set((int) rotatedRect[closestAreaSelectionNum].center.x - TARGET_X);
-        }
-
-
-         */
         if(foundRects[closestAreaSelectionNum].center.x<FOUND_ONE_LEFT_THRESHOLD||foundRects[closestAreaSelectionNum].center.x>FOUND_ONE_RIGHT_THRESHOLD){
             if (details) {
                 teamUtil.log("OPEN CV SAMPLE DETECTOR FOUND BLOCK BUT CENTER X VALUE WAS OUTSIDE MECHANICAL RANGE");

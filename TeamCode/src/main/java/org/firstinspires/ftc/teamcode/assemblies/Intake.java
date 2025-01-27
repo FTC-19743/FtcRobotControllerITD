@@ -76,7 +76,7 @@ public class Intake {
     static public double FLIPPER_UNLOAD_POT_VOLTAGE = 0.8;
     static public double FLIPPER_UNLOAD_POT_THRESHOLD = 0.1;
 
-    static public float FLIPPER_PRE_UNLOAD = 0.93f;
+    static public float FLIPPER_PRE_UNLOAD = 0.7f;
     static public double FLIPPER_PRE_UNLOAD_POT_VOLTAGE = 0.74;
     static public double FLIPPER_PRE_UNLOAD_POT_THRESHOLD = 0.1;
 
@@ -94,9 +94,13 @@ public class Intake {
     static public int FLIPPER_GRAB_PAUSE = 500;
     static public long FLIPPER_GO_TO_SEEK_TIMEOUT = 2000;
     public static double FLIPPER_GOTOUNLOAD_THRESHOLD = 0.488;
-    public static double FLIPPER_UNLOAD_SWEEPER_THRESHOLD = 0.7;
+    public static double FLIPPER_UNLOAD_SWEEPER_THRESHOLD = 0.9;
     public static double FLIPPER_UNLOAD_GRABBER_THRESHOLD = 0.4;
     public static long FLIPPER_UNLOAD_LOOP_TIME = 3;
+    public static long UNLOAD_V2_PRE_UNLOAD_PAUSE = 350;
+    public static double FLIPPER_UNLOAD_SWEEPER_THRESHOLD_FROM_SEEK = 0.9;
+    public static double FLIPPER_UNLOAD_GRABBER_THRESHOLD_FROM_SEEK = 0.4;
+
 
 
 //    static public float FLIPPER_POTENTIOMETER_SAFE = ;
@@ -578,13 +582,14 @@ public class Intake {
             flipToSampleAndGrab(1500);
 
             if (!timedOut.get()) {
-                goToSafeRetract(2500);
-                extender.setTargetPositionTolerance(EXTENDER_TOLERANCE_RETRACT);
-                //TODO: Coach: should we be setting a velocity here?
-                extendersToPositionMaxVelo(EXTENDER_UNLOAD,3000);
-                if(unload){
-                    unload();
-                }
+//                goToSafeRetract(2500);
+//                extender.setTargetPositionTolerance(EXTENDER_TOLERANCE_RETRACT);
+//                //TODO: delete
+//                extendersToPositionMaxVelo(EXTENDER_UNLOAD,3000);
+//                if(unload){
+//                    unload();
+//                }
+                retractAll(unload,4000);
 
                 autoSeeking.set(false);
                 moving.set(false);
@@ -909,7 +914,8 @@ public class Intake {
             //boolean lastJumpStartedInGrabZone = inGrabZone(frame.rectCenterXOffset, frame.rectCenterYOffset);
             boolean lastJumpStartedInGrabZone = inGrabZone(frame.adjRectCenterXOffset, frame.adjRectCenterYOffset);
             if (lastJumpStartedInGrabZone) {
-                teamUtil.log("Starting Jump IN Grab Zone");
+                teamUtil.log("Starting Jump IN Grab Zone; Setting Flipper Down To Pre Grab");
+                flipper.setPosition(FLIPPER_PRE_GRAB);
             } else {
                 teamUtil.log("Starting Jump OUTSIDE Grab Zone");
             }
@@ -1114,7 +1120,7 @@ public class Intake {
             teamUtil.pause(50);
         }
         if (unload){
-            unloadV2();
+            unloadV2(false);
         }
         teamUtil.log("retractAll Finished");
     }
@@ -1218,15 +1224,20 @@ public class Intake {
         goToSafe();
     }
 
-    public void unloadV2(){
+    public void unloadV2(boolean fromSeek){
         boolean details = true;
         teamUtil.log("unloadV2 has started");
+        if(fromSeek){
+            flipper.setPosition(FLIPPER_PRE_UNLOAD);
+            teamUtil.pause(UNLOAD_V2_PRE_UNLOAD_PAUSE);
+        }
         flipper.setPosition(FLIPPER_UNLOAD);
         wrist.setPosition(WRIST_UNLOAD);
-        while(flipperPotentiometer.getVoltage()>FLIPPER_UNLOAD_SWEEPER_THRESHOLD&&teamUtil.keepGoing(2000+System.currentTimeMillis())){
+        while(flipperPotentiometer.getVoltage()> FLIPPER_UNLOAD_SWEEPER_THRESHOLD&&teamUtil.keepGoing(2000+System.currentTimeMillis())){
             if(details)teamUtil.log("Flipper Potentiometer Voltage" + flipperPotentiometer.getVoltage());
             teamUtil.pause(FLIPPER_UNLOAD_LOOP_TIME);
         }
+
         if(details)teamUtil.log("SWEEPER Set to RELEASE");
         sweeper.setPosition(SWEEPER_RELEASE);
         while(flipperPotentiometer.getVoltage()>FLIPPER_UNLOAD_GRABBER_THRESHOLD&&teamUtil.keepGoing(2000+System.currentTimeMillis())){
@@ -1238,6 +1249,29 @@ public class Intake {
         teamUtil.log("unloadV2 has finished");
 
     }
+
+
+
+    public void unloadV2NoWait(boolean fromSeek) {
+        if (moving.get()) { // Intake is already moving in another thread
+            teamUtil.log("WARNING: Attempt to goToUnloadV2 while intake is moving--ignored");
+            return;
+        } else {
+            moving.set(true);
+            teamUtil.log("Launching Thread to goToUnloadV2");
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    unloadV2(fromSeek);
+                    moving.set(false);
+
+                }
+            });
+            thread.start();
+        }
+    }
+
+
 
     public void goToUnloadNoWait(long timeOut) {
         if (moving.get()) { // Intake is already moving in another thread

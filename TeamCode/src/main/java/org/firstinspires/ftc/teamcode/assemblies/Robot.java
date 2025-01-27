@@ -172,7 +172,8 @@ public class Robot {
     static public int F27_CYCLE_PICKUP_VELOCITY = 300;
     static public int F28_CYCLE_PICKUP_PAUSE = 200;
 
-
+    static public long DROP_SAMPLE_OUT_BACK_WITH_FLIPPER_RESET_1 = 350;
+    static public long DROP_SAMPLE_OUT_BACK_WITH_FLIPPER_RESET_2 = 250;
 
     public AtomicBoolean autoUnloadNoWaitDone = new AtomicBoolean(false);
 
@@ -554,6 +555,68 @@ public class Robot {
         }
 
     }
+
+
+    public void goToSampleAndGrabAndLiftToBucket(boolean HighBucket){
+        intake.goToSampleAndGrabV3(true);
+        if(HighBucket){
+            output.outputHighBucket(3000);
+        }
+        else{
+            output.outputLowBucket(3000);
+        }
+        intake.flipperGoToSafe(3000);
+    }
+    public void goToSampleAndGrabAndLiftToBucketNoWait(boolean highBucket){
+
+        teamUtil.log("hangPhase1NoWait");
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                goToSampleAndGrabAndLiftToBucket(highBucket);
+            }
+        });
+        thread.start();
+
+    }
+
+    public void dropSampleOutBackWithFlipperReset(){
+        output.outputMoving.set(true);
+        if(output.outputLiftAtBottom.get()){
+            output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_BOTTOM);
+
+        }else{
+            output.bucket.setPosition(Output.BUCKET_DEPLOY_AT_TOP);
+
+        }
+
+        teamUtil.pause(DROP_SAMPLE_OUT_BACK_WITH_FLIPPER_RESET_1);
+        intake.flipper.setPosition(Intake.FLIPPER_SAFE);
+
+        if(output.outputLiftAtBottom.get()){
+            output.bucket.setPosition(Output.BUCKET_RELOAD);
+            teamUtil.pause((Output.DROP_SAMPLE_TIME_2));
+        }
+        else{
+            output.bucket.setPosition(Output.BUCKET_SAFE);
+        }
+        output.outputMoving.set(false);
+        teamUtil.log("DropSampleOutBack Completed");
+    }
+
+    public void dropSampleOutBackWithFlipperResetNoWait(){
+
+        teamUtil.log("dropSampleOutBackWithFlipperResetNoWait");
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                dropSampleOutBackWithFlipperReset();}
+        });
+        thread.start();
+
+    }
+
+
 /* OLD Code
     public boolean placeSpecimen(long timeout) {
         teamUtil.log("Place Specimen");
@@ -784,8 +847,8 @@ public class Robot {
     }
 
     public void sampleInBucketAndDeploy(){
-        intake.unload();
-        output.outputHighBucket();
+        intake.unloadV2(false);
+        output.outputHighBucket(3000);
     }
 
     public void sampleInBucketAndDeployNoWait(){
@@ -832,9 +895,12 @@ public class Robot {
 
     public boolean dropSampleOutBackAndArmGrab(long timeout){
         //TODO Implement Timeout
+        outtake.outakewrist.setPosition(Outtake.WRIST_GRAB);
 
-        output.dropSampleOutBackNoWait();
-        outtake.outtakeGrab();
+        dropSampleOutBackWithFlipperReset();
+        outtake.outakearm.setPosition(Outtake.ARM_DOWN);
+
+
         return true;
     }
 

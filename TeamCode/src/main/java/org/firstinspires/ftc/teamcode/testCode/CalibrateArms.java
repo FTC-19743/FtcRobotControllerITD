@@ -307,7 +307,7 @@ public class CalibrateArms extends LinearOpMode {
         if (gp1.wasLeftPressed()) {
             //intake.goToUnload(2000);
             //intake.flipperGoToUnload(2000);
-            intake.unloadV2();
+            intake.unloadV2(false);
         }
 
         if (gp1.wasRightPressed()) {
@@ -325,8 +325,8 @@ public class CalibrateArms extends LinearOpMode {
             intake.grab();
         }
         if (gp1.wasYPressed()) {
-            intake.release();
-            //intake.retractAll(false,5000);
+            //intake.release();
+            intake.retractAll(false,5000);
         }
         if (gp1.wasXPressed()) {
             //intake.grabberReady();
@@ -338,6 +338,7 @@ public class CalibrateArms extends LinearOpMode {
         }
         if(gp1.wasRightBumperPressed()){
             //intake.goToSampleAndGrab(5000);
+            intake.release();
         }
         if(gp1.wasRightTriggerPressed()){
             intake.calibrate();
@@ -446,10 +447,10 @@ public class CalibrateArms extends LinearOpMode {
             //output.outputHighBucketV2();
         }
         if(gp1.wasBPressed()){
-            output.outputHighBucket();
+            output.outputHighBucket(3000);
         }
         if(gp1.wasAPressed()){
-            output.outputLowBucket();
+            output.outputLowBucket(3000);
         }
         if(gp1.wasRightTriggerPressed()){
             output.calibrate();
@@ -518,7 +519,9 @@ public class CalibrateArms extends LinearOpMode {
         if(gp2.wasAPressed()){
             hang.stowHang();
         }
-        if(gp1.wasOptionsPressed()){
+        if(gp2.wasOptionsPressed()){
+            output.lift.setVelocity(PLACE_HOOKS_VELOCITY);
+            output.lift.setTargetPosition(Output.LIFT_AT_BAR);
         }
 
 
