@@ -96,6 +96,7 @@ public class Hang {
         hang_Left.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         hang_Right.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         hang_Left.setDirection(DcMotorSimple.Direction.REVERSE);
+
         stringsTensioned = false;
 
     }

@@ -558,7 +558,9 @@ public class Robot {
 
 
     public void goToSampleAndGrabAndLiftToBucket(boolean HighBucket){
-        intake.goToSampleAndGrabV3(true);
+        if(!intake.goToSampleAndGrabV3(true)){
+            return;
+        }
         if(HighBucket){
             output.outputHighBucket(3000);
         }

@@ -82,6 +82,10 @@ public class Intake {
 
     static public float FLIPPER_GRAB = 0.225f;
     static public float FLIPPER_PRE_GRAB = 0.27f;
+    static public float FLIPPER_GRAB_STEP_1 =.255f;
+    static public float FLIPPER_GRAB_STEP_2 = .240f;
+    static public long FLIPPER_GRAB_STEP_1_PAUSE = 50;
+    static public long FLIPPER_GRAB_STEP_2_PAUSE = 50;
     static public double FLIPPER_PRE_GRAB_POT_VOLTAGE = 2.338;
     static public long FLIPPER_PRE_GRAB_MOMENTUM_PAUSE = 100;
 
@@ -100,6 +104,7 @@ public class Intake {
     public static long UNLOAD_V2_PRE_UNLOAD_PAUSE = 350;
     public static double FLIPPER_UNLOAD_SWEEPER_THRESHOLD_FROM_SEEK = 0.9;
     public static double FLIPPER_UNLOAD_GRABBER_THRESHOLD_FROM_SEEK = 0.4;
+    static public int FLIPPER_PRE_UNLOAD_PAUSE = 250;
 
 
 
@@ -456,17 +461,12 @@ public class Intake {
         boolean details = true;
 
 
-        flipper.setPosition(FLIPPER_PRE_GRAB);
+        flipper.setPosition(FLIPPER_GRAB_STEP_1);
+        teamUtil.pause(FLIPPER_GRAB_STEP_1_PAUSE);
 
-        while(Math.abs(flipperPotentiometer.getVoltage()-FLIPPER_PRE_GRAB_POT_VOLTAGE)>FLIPPER_GRAB_POT_THRESHOLD&&teamUtil.keepGoing(timeoutTime)){
-            if(details)teamUtil.log("Voltage: " + flipperPotentiometer.getVoltage() + "Target Voltage: " + FLIPPER_GRAB_POT_VOLTAGE);
-            teamUtil.pause(10);
-        }
-        if(!teamUtil.keepGoing(timeoutTime)) {
-            teamUtil.log("flipperGoToGrab has FAILED");
-            return false;
-        }
-        teamUtil.pause(FLIPPER_PRE_GRAB_MOMENTUM_PAUSE);
+        flipper.setPosition(FLIPPER_GRAB_STEP_2);
+        teamUtil.pause(FLIPPER_GRAB_STEP_2_PAUSE);
+
 
         flipper.setPosition(FLIPPER_GRAB);
 
@@ -1114,12 +1114,14 @@ public class Intake {
         }
         if(unload){
             flipper.setPosition(FLIPPER_PRE_UNLOAD);
+            teamUtil.pause(FLIPPER_PRE_UNLOAD_PAUSE);
         }
 
         while((axonSlider.moving.get() || extender.getCurrentPosition()>EXTENDER_GOTOUNLOAD_THRESHOLD)&&teamUtil.keepGoing(timeOutTime)){
             teamUtil.pause(50);
         }
         if (unload){
+
             unloadV2(false);
         }
         teamUtil.log("retractAll Finished");

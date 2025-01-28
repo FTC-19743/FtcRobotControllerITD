@@ -51,7 +51,7 @@ public class OpenCVSampleDetectorV2 extends OpenCVProcesser {
     Rect cropRect = new Rect(0, 0, WIDTH, HEIGHT);
 
     static public int TARGET_X = 336;
-    static public int TARGET_Y = 176;
+    static public int TARGET_Y = 190;
     static public double CAMERA_OFFSET_Y = TARGET_Y-HEIGHT/2f;
     static public double CAMERA_OFFSET_X = TARGET_X-WIDTH/2f;
     static public int MIN_AREA_THRESHOLD = 2000;
