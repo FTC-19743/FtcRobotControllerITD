@@ -142,22 +142,22 @@ public class Hang {
     }
 
     public void engageHang(){
-        if (details) teamUtil.log("Extending Hang");
+        if (details) teamUtil.log("Engaging Hang");
         hangMoving.set(true);
         pulley_left.setPosition(PULLEYLEFT_HANG);
         pulley_right.setPosition(PULLEYRIGHT_HANG);
 
-        teamUtil.log("Hang Extended");
+        teamUtil.log("Hang Engaged");
         hangMoving.set(false);
     }
 
     public void stowHang(){
-        if (details) teamUtil.log("Extending Hang");
+        if (details) teamUtil.log("Stowing Hang");
         hangMoving.set(true);
         pulley_left.setPosition(PULLEYLEFT_STOW);
         pulley_right.setPosition(PULLEYRIGHT_STOW);
 
-        teamUtil.log("Hang Extended");
+        teamUtil.log("Hang Stowed");
         hangMoving.set(false);
     }
 

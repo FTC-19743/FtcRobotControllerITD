@@ -260,12 +260,12 @@ public class OpenCVSampleDetectorV2 extends OpenCVProcesser {
     }
     @Override
     public void init(int width, int height, CameraCalibration calibration) {
-        teamUtil.log("Initializing OpenCVSampleDetector processor");
+        teamUtil.log("Initializing OpenCVSampleDetectorV2 processor");
         for (int i=0;i<3;i++)
             cameraMatrix.put(i,0, cameraMatrixData[i]); // preload calibration data
         distCoeffs.put(0, 0, distCoeffsData);
 
-        teamUtil.log("Initializing OpenCVSampleDetector processor - FINISHED");
+        teamUtil.log("Initializing OpenCVSampleDetectorV2 processor - FINISHED");
     }
     public void setVisionPortal(VisionPortal portal) {
         myPortal = portal;

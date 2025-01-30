@@ -88,6 +88,7 @@ public class Intake {
     static public long FLIPPER_GRAB_STEP_2_PAUSE = 50;
     static public double FLIPPER_PRE_GRAB_POT_VOLTAGE = 2.338;
     static public long FLIPPER_PRE_GRAB_MOMENTUM_PAUSE = 100;
+    static public long FLIPPER_SEEK_TO_PRE_GRAB_TIME = 150;
 
 
     static public double FLIPPER_GRAB_POT_VOLTAGE = 2.44;
@@ -209,6 +210,8 @@ public class Intake {
     static public int TEST_EXTENDER_VAL = 1000;
     static public int TEST_SLIDER_VAL = 0;
     static public int EXTENDER_TEST_VELOCITY = 500;
+
+    public long setToPreGrabTime = 0;
 
 
 
@@ -338,7 +341,7 @@ public class Intake {
         extender.setTargetPositionTolerance(EXTENDER_TOLERANCE_RETRACT);// make that our zero position
         extender.setTargetPosition(EXTENDER_CALIBRATE);
         extender.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-        extender.setVelocity(EXTENDER_HOLD_RETRACT_VELOCITY);
+        extender.setVelocity(0);
 
         teamUtil.log("Calibrate Intake Final: Extender: "+extender.getCurrentPosition());
     }
@@ -577,8 +580,13 @@ public class Intake {
         autoSeeking.set(true);
         teamUtil.log("Launched GoToSample and Grab" );
         timedOut.set(false);
-
+        long timeOutTime = System.currentTimeMillis() + 1000;
         if(goToSampleV5(3000) && !timedOut.get()) {
+            long loopStarTime = System.currentTimeMillis();
+            while(System.currentTimeMillis()-setToPreGrabTime<FLIPPER_SEEK_TO_PRE_GRAB_TIME&&teamUtil.keepGoing(timeOutTime)){
+            }
+            long loopTime = System.currentTimeMillis()-loopStarTime;
+            teamUtil.log("Time Taken In Order to make sure that Pre Grab Is Achieved: " + loopTime);
             flipToSampleAndGrab(1500);
 
             if (!timedOut.get()) {
@@ -915,6 +923,7 @@ public class Intake {
             boolean lastJumpStartedInGrabZone = inGrabZone(frame.adjRectCenterXOffset, frame.adjRectCenterYOffset);
             if (lastJumpStartedInGrabZone) {
                 teamUtil.log("Starting Jump IN Grab Zone; Setting Flipper Down To Pre Grab");
+                setToPreGrabTime=System.currentTimeMillis();
                 flipper.setPosition(FLIPPER_PRE_GRAB);
             } else {
                 teamUtil.log("Starting Jump OUTSIDE Grab Zone");
@@ -1235,14 +1244,16 @@ public class Intake {
         }
         flipper.setPosition(FLIPPER_UNLOAD);
         wrist.setPosition(WRIST_UNLOAD);
-        while(flipperPotentiometer.getVoltage()> FLIPPER_UNLOAD_SWEEPER_THRESHOLD&&teamUtil.keepGoing(2000+System.currentTimeMillis())){
+        long timeOutTime = 2000+System.currentTimeMillis();
+        while(flipperPotentiometer.getVoltage()> FLIPPER_UNLOAD_SWEEPER_THRESHOLD&&teamUtil.keepGoing(timeOutTime)){
             if(details)teamUtil.log("Flipper Potentiometer Voltage" + flipperPotentiometer.getVoltage());
             teamUtil.pause(FLIPPER_UNLOAD_LOOP_TIME);
         }
 
         if(details)teamUtil.log("SWEEPER Set to RELEASE");
         sweeper.setPosition(SWEEPER_RELEASE);
-        while(flipperPotentiometer.getVoltage()>FLIPPER_UNLOAD_GRABBER_THRESHOLD&&teamUtil.keepGoing(2000+System.currentTimeMillis())){
+        long timeOutTime2 = 2000+System.currentTimeMillis();
+        while(flipperPotentiometer.getVoltage()>FLIPPER_UNLOAD_GRABBER_THRESHOLD&&teamUtil.keepGoing(timeOutTime2)){
             if(details)teamUtil.log("Flipper Potentiometer Voltage" + flipperPotentiometer.getVoltage());
             teamUtil.pause(FLIPPER_UNLOAD_LOOP_TIME);
         }

@@ -405,9 +405,11 @@ public class BasicDrive {
     // set the robot position x,y and heading
     // X and Y are in Cms, Heading is in degrees
     public void setRobotPosition(double x, double y, double heading) {
+        teamUtil.log("setRobotPosition: x: "+ x + " y: " + y + " heading: " + heading);
         Pose2D pose = new Pose2D(DistanceUnit.CM,x,y,AngleUnit.DEGREES,heading);
         odo.setPosition(pose);
         odo.update();
+        teamUtil.log("odoHeading after reset: " + getRawHeadingODO());
         setHeading((int) heading);
     }
 

@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.assemblies;
 
+import static org.firstinspires.ftc.teamcode.assemblies.Intake.EXTENDER_HOLD_RETRACT_VELOCITY;
+
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -213,6 +215,8 @@ public class Auto extends LinearOpMode {
         //teamUtil.theBlinkin.setSignal(Blinkin.Signals.OFF);
         long startTime = System.currentTimeMillis();
         teamUtil.pause(delay);
+        robot.intake.extender.setVelocity(EXTENDER_HOLD_RETRACT_VELOCITY);
+
         if(teamUtil.SIDE == teamUtil.Side.BASKET){
             //robot.autoV1Bucket(blocks, ascent);
         }else{

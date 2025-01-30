@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.assemblies;
 
+import static org.firstinspires.ftc.teamcode.assemblies.Intake.EXTENDER_HOLD_RETRACT_VELOCITY;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -116,7 +118,7 @@ public class Teleop extends LinearOpMode {
         //TODO: FIX ALL STATE MANAGEMENT
         waitForStart();
 
-
+        robot.intake.extender.setVelocity(EXTENDER_HOLD_RETRACT_VELOCITY);
         robot.intake.setTargetColor(OpenCVSampleDetectorV2.TargetColor.YELLOW);
         boolean liftDropped = false;
         while (opModeIsActive()){

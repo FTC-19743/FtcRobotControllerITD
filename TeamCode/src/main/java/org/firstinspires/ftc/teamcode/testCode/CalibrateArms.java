@@ -66,6 +66,8 @@ public class CalibrateArms extends LinearOpMode {
     public static int DEPLOY_HOOKS_PAUSE_4 = 500;
     public static int DEPLOY_HOOKS_PAUSE_5 = 500;
 
+    public static long FLIPPER_TEST_TIME = 400;
+
 
 
 
@@ -582,6 +584,12 @@ public class CalibrateArms extends LinearOpMode {
         }
         if(gp1.wasAPressed()){
             intake.flipToSampleAndGrab(2000);
+        }if(gp1.wasYPressed()){
+            intake.flipper.setPosition(Intake.FLIPPER_PRE_GRAB);
+            teamUtil.pause(FLIPPER_TEST_TIME);
+            intake.flipper.setPosition(Intake.FLIPPER_SEEK);
+
+
         }
         if(gp1.wasBPressed()){
             intake.restartCVPipeline();
