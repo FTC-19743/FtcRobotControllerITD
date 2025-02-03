@@ -215,22 +215,9 @@ public class OpenCVSampleDetectorBlockChecker extends OpenCVProcesser {
 
 
     public static class FrameData {
-        public int rectAngle =-1;
-        public int rectCenterXOffset = 0;
-        public int rectCenterYOffset = 0;
-        public int adjRectCenterXOffset = 0;
-        public int adjRectCenterYOffset = 0;
-        public int rectArea = 0;
-        public RotatedRect rrect;
-        public int lowestPixelX = 0;
-        public int lowestPixelY = 0;
-
-        public int closestPixelX = 0;
-        public int closestPixelY = 0;
-
-        public long captureTime = 0;
-        public long processingTime = 0;
-        public long processingTime2 = 0;
+        public double avgH;
+        public double avgS;
+        public double avgV;
 
     }
     public ConcurrentLinkedQueue<FrameData> frameDataQueue = new ConcurrentLinkedQueue<FrameData>();
@@ -278,6 +265,7 @@ public class OpenCVSampleDetectorBlockChecker extends OpenCVProcesser {
         if (frame == null) {
             return "No Detection";
         } else {
+            /*
             return "Detection x,y: " + frame.rectCenterXOffset + ", " + frame.rectCenterYOffset
                     + " Angle: " + frame.rectAngle
                     + " Area: " + frame.rectArea
@@ -288,6 +276,9 @@ public class OpenCVSampleDetectorBlockChecker extends OpenCVProcesser {
                     //+ " Capture Time: " + frame.captureTime
                     //+ " Processing Time2: " + frame.processingTime2
                     ;
+
+             */
+            return "Not Implemented";
         }
     }
 
@@ -326,7 +317,7 @@ public class OpenCVSampleDetectorBlockChecker extends OpenCVProcesser {
     }
 
     List<MatOfPoint> contours = new ArrayList<>();
-    double largestArea;
+
 
 
     public void reset() {
@@ -378,9 +369,12 @@ public class OpenCVSampleDetectorBlockChecker extends OpenCVProcesser {
         Imgproc.cvtColor(undistortedMat, HSVMat, Imgproc.COLOR_RGB2HSV); // convert to HSV
         Imgproc.blur(HSVMat, blurredMat, blurFactorSize); // get rid of noise
 
+        sampleAvgs = getAverages(blurredMat,checkArea);
 
-
-
+        FrameData checkData = new FrameData();
+        checkData.avgH = sampleAvgs.val[0];
+        checkData.avgS = sampleAvgs.val[1];
+        checkData.avgV = sampleAvgs.val[2];
 
 
 

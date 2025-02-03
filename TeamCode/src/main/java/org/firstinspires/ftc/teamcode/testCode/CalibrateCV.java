@@ -124,6 +124,7 @@ public class CalibrateCV extends LinearOpMode {
             } else {
                 telemetry.addLine("No Sample Average");
             }
+            telemetry.addLine("Found One?: " + intake.sampleDetector.foundOne.get());
             telemetry.update();
             teamUtil.pause(100);
 
